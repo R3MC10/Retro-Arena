@@ -91,14 +91,18 @@ const CUT=[null,
  [[0,-1],[.62,-.15],[.86,.35],[.58,.88],[0,.98],[-.58,.88],[-.86,.35],[-.62,-.15]]];  // amber: pear drop
 const JRGB=[null,[226,24,48],[24,200,84],[36,96,248],[250,196,24],[196,56,232],[250,118,24]];
 const DITH=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
-function gem(c){const k=document.createElement('canvas');k.width=k.height=CS;const g=k.getContext('2d'),im=g.createImageData(CS,CS),o=im.data;
+// unlockable jewel sets (achievements): same cuts, other stone colours
+const GSET={Pastel:[null,[248,140,160],[150,232,170],[150,180,250],[250,230,150],[220,170,248],[250,190,140]],
+ Royal:[null,[150,8,40],[8,110,60],[20,40,160],[200,150,20],[110,20,150],[190,70,10]],
+ Neon:[null,[255,40,120],[60,255,90],[40,200,255],[255,255,60],[230,60,255],[255,150,30]]};
+function gem(c,pal){const k=document.createElement('canvas');k.width=k.height=CS;const g=k.getContext('2d'),im=g.createImageData(CS,CS),o=im.data;
  const put=(x,y,r,gg,bb)=>{const q=(y*CS+x)*4,d=(DITH[(y&3)*4+(x&3)]-7.5)*1.6;o[q]=Math.max(0,Math.min(255,r+d));o[q+1]=Math.max(0,Math.min(255,gg+d));o[q+2]=Math.max(0,Math.min(255,bb+d));o[q+3]=255};
  if(c===7){for(let y=0;y<CS;y++)for(let x=0;x<CS;x++){const n=Math.abs(Math.sin(x*12.9+y*78.2)*437.5)%1,edge=x===0||y===0||x===CS-1||y===CS-1,
    lit=x===1||y===1?1.35:x===CS-2||y===CS-2?.6:1,crack=(x===4&&y>3&&y<9)||(y===8&&x>3&&x<9);
    const v=edge?30:crack?60:(110+n*40)*lit;put(x,y,v,v*.96,v*.9)}
   g.putImageData(im,0,0);return k}
  const P=CUT[c],E=P.map((v,i)=>{const w=P[(i+1)%P.length];let nx=w[1]-v[1],ny=v[0]-w[0];const l=Math.hypot(nx,ny);nx/=l;ny/=l;let cc=nx*v[0]+ny*v[1];if(cc<0){nx=-nx;ny=-ny;cc=-cc}return[nx,ny,cc]});
- const L=[-.5,-.68,.53],base=JRGB[c];
+ const L=[-.5,-.68,.53],base=(pal||JRGB)[c];
  for(let y=0;y<CS;y++)for(let x=0;x<CS;x++){const u=((x+.5)/CS*2-1)/.99,v=((y+.5)/CS*2-1)/.99;let d=0,f=0;
   E.forEach((e,i)=>{const t=(e[0]*u+e[1]*v)/e[2];if(t>d){d=t;f=i}});if(d>1)continue;
   let N=d<.5?[0,0,1]:[E[f][0]*.8,E[f][1]*.8,.6];const nl=Math.hypot(...N);
@@ -107,7 +111,11 @@ function gem(c){const k=document.createElement('canvas');k.width=k.height=CS;con
   const hl=d<.5&&Math.hypot(u+.18,v+.2)<.17?1:0;                       // specular glint on the table
   const w=Math.max(0,sh-1)*200+hl*255;put(x,y,base[0]*sh+w,base[1]*sh+w,base[2]*sh+w)}
  g.putImageData(im,0,0);return k}
-const GEM=[null,1,2,3,4,5,6,7].map(c=>c&&gem(c));
+let GEM=[null,1,2,3,4,5,6,7].map(c=>c&&gem(c));const GEM0=GEM,GEMS={};
+const gemSet=n=>GSET[n]?GEMS[n]||(GEMS[n]=[null,1,2,3,4,5,6,7].map(c=>c&&gem(c,c<7?GSET[n]:null))):GEM0;
+const FRAMES={Silver:'#d8dce8',Ruby:'#e02848'};
+// a board's equipped look: mine from the save, online guests from their room presence
+function lookOf(b){if(!b||b.ctrl==='cpu')return{};if(b.peer)return R.look(b.peer);return RA.look('jewels')}
 
 /* ---------- sound + music ---------- */
 RA.audio.add('gem',(AC,now,g,ch)=>{const base=520*Math.pow(1.19,Math.min(8,(ch|1)-1));
@@ -146,12 +154,12 @@ let saved=null;try{saved=JSON.parse(localStorage.getItem('mj-setup'))}catch(e){}
 // your Magic Jewelry save file; the old device-only best score moves into it
 const SAVE=RA.save('jewels');let best=0;try{best=+localStorage.getItem('mj-best')||0}catch(e){}
 const ACH=RA.achievements('jewels',[
- {id:'first',name:'Polished',desc:'Finish your first game',test:s=>s.played>=1,unlock:'title:Polished'},
- {id:'win1',name:'Crown Jewel',desc:'Win a versus match',test:s=>s.wins>=1,unlock:'title:Crown Jewel'},
- {id:'s5k',name:'Treasure Hunter',desc:'Score 5,000 in one game',test:(s,m)=>m.bestScore>=5000,unlock:'title:Treasure Hunter'},
- {id:'s20k',name:'Jeweller',desc:'Score 20,000 in one game',test:(s,m)=>m.bestScore>=20000,unlock:'title:Jeweller'},
- {id:'lv10',name:'Deep Mine',desc:'Reach level 10',test:(s,m)=>m.bestLevel>=10,unlock:'title:Deep Miner'},
- {id:'ko3',name:'Rock Thrower',desc:'3 KOs in one match',test:(s,m)=>m.ko>=3,unlock:'title:Rock Thrower'}]);
+ {id:'first',name:'Polished',desc:'Finish your first game',test:s=>s.played>=1,unlock:['title:Polished','frame:Silver']},
+ {id:'win1',name:'Crown Jewel',desc:'Win a versus match',test:s=>s.wins>=1,unlock:['title:Crown Jewel','burst:Stardust']},
+ {id:'s5k',name:'Treasure Hunter',desc:'Score 5,000 in one game',test:(s,m)=>m.bestScore>=5000,unlock:['title:Treasure Hunter','gems:Pastel']},
+ {id:'s20k',name:'Jeweller',desc:'Score 20,000 in one game',test:(s,m)=>m.bestScore>=20000,unlock:['title:Jeweller','gems:Royal']},
+ {id:'lv10',name:'Deep Mine',desc:'Reach level 10',test:(s,m)=>m.bestLevel>=10,unlock:['title:Deep Miner','gems:Neon']},
+ {id:'ko3',name:'Rock Thrower',desc:'3 KOs in one match',test:(s,m)=>m.ko>=3,unlock:['title:Rock Thrower','frame:Ruby']}]);
 const syncBest=()=>{best=Math.max(best,SAVE.stats.bestScore|0)};syncBest();SAVE.ready.then(syncBest);
 $('mjSlots').innerHTML=COLORS.map((c,i)=>'<div class="slot" id="mjs'+i+'"><span class="chip" style="background:'+c[1]+'">'+(i+1)+'</span><select id="mjc'+i+'" aria-label="'+c[0]+' controls">'+CTRL.map(o=>'<option value="'+o[0]+'">'+o[1]+'</option>').join('')+'</select></div>').join('');
 for(let i=0;i<MAXP;i++)$('mjc'+i).value=(saved&&saved.c&&saved.c[i])||(i===0?(touchDev?'touch':'mk'):'cpu');
@@ -321,7 +329,7 @@ function applyHit(o,k,v,by){if(!o.alive)return;
  else{const js=[];for(let q=0;q<BW*BH;q++){const c=C(o.g[q]);if(c>=1&&c<=6)js.push(q)}
   for(let k2=0;k2<8&&js.length;k2++){const q=js.splice(Math.floor(Math.random()*js.length),1)[0];o.g[q]=rnd6()|(o.g[q]&0xf0)}}
  noise('magic',0,o,true);say(o,P.n+'!',P.col,60)}
-function burst(bi,x,y,c){for(let k=0;k<4;k++)parts.push({b:bi,x:x*CS+CS/2,y:y*CS+CS/2,vx:(Math.random()-.5)*2.4,vy:-Math.random()*2.2,t:28,col:(c&15)>=1&&(c&15)<=6?JC[c&15][1]:'#fcfcfc'})}
+function burst(bi,x,y,c){for(let k=0;k<4;k++)parts.push({b:bi,x:x*CS+CS/2,y:y*CS+CS/2,vx:(Math.random()-.5)*2.4,vy:-Math.random()*2.2,t:28,col:boards[bi]&&boards[bi]._bu==='Stardust'?(k&1?'#fff8c0':'#fcfcfc'):(c&15)>=1&&(c&15)<=6?JC[c&15][1]:'#fcfcfc'})}
 function addRocks(b){const n=Math.min(3,b.garb);if(!n)return;b.garb-=n;b.shake=10;noise('rock',0,b);
  for(let k=0;k<n;k++){for(let x=0;x<BW;x++)if(b.g[x]){topout(b);return}
   b.g.copyWithin(0,BW);for(let x=0;x<BW;x++)b.g[(BH-1)*BW+x]=7}}
@@ -529,14 +537,14 @@ const ICON=POW.map(P=>{if(!P)return null;const k=document.createElement('canvas'
 function sparkle(v,x,y){const t=PW(v);if(!t)return;const on=(tick>>3)&1,cx=x+CS-4,cy=y+3,col=on?POW[t].col:'#fcfcfc';
  RA.fx.light(ctx,cx,cy,5,POW[t].col,.35);ctx.fillStyle='#000';ctx.fillRect(cx-3,cy-1,7,3);ctx.fillRect(cx-1,cy-3,3,7);
  ctx.fillStyle=col;ctx.fillRect(cx-2,cy,5,1);ctx.fillRect(cx,cy-2,1,5);ctx.fillStyle='#fff';ctx.fillRect(cx,cy,1,1)}
-function drawBoard(b,L){ctx.save();discoOn=!!b.fx.disco&&b.alive;
+function drawBoard(b,L){ctx.save();discoOn=!!b.fx.disco&&b.alive;const lk=lookOf(b);GEM=gemSet(lk.gems);b._fr=FRAMES[lk.frame];b._bu=lk.burst;
  if(b.fx.flip&&b.alive){const cy=L.y+10+BH*CS/2;ctx.translate(0,cy*2);ctx.scale(1,-1)}
- drawBoard0(b,L);ctx.restore();discoOn=false}
+ drawBoard0(b,L);ctx.restore();discoOn=false;GEM=GEM0}
 function drawBoard0(b,L){
  const sx=b.shake?Math.round((Math.random()-.5)*3):0,X=L.x+2+sx,Y=L.y+10,txt=RA.gfx.text,danger=b.alive&&height(b)>=BH-3;
  txt(ctx,b.name.slice(0,9),X+BW*CS/2,L.y,b.alive?b.col:'#7c7c7c');
  if(focus(b)&&!demo&&boards.length>1){ctx.fillStyle=b.col;ctx.fillRect(X+BW*CS/2-12,L.y+7,24,1)}
- frameRect(X,Y,BW*CS,BH*CS,!b.alive?'#4c4c4c':danger?((tick>>3)&1?'#d82800':'#881400'):b.fx.speed?((tick>>2)&1?'#f8b800':'#fcfcfc'):b.garb?'#e45c10':'#f8b800');
+ frameRect(X,Y,BW*CS,BH*CS,!b.alive?'#4c4c4c':danger?((tick>>3)&1?'#d82800':'#881400'):b.fx.speed?((tick>>2)&1?'#f8b800':'#fcfcfc'):b.garb?'#e45c10':(b._fr||'#f8b800'));
  // the well is a box with depth: lit back wall, darker inner walls on the left and top, jewels cast shadows on it
  glass(X,Y,BW*CS,BH*CS,danger);
  ctx.fillStyle='rgba(255,255,255,.035)';for(let x=1;x<BW;x+=2)ctx.fillRect(X+x*CS,Y,CS,BH*CS);

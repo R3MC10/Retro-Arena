@@ -397,7 +397,7 @@ function addFeed(k,v){
 function die(p,boom){
  if(!p.alive)return;
  p.alive=false;p.lives--;if(p.lives<=0)p.outAt=matchT;p.respawn=120;p.charging=false;p.burst=0;p.kami=0;p.rope=p.hook=null;p.jet=0;p.chute=0;
- if(p.y<WATER){graves.push({x:p.x,y:p.y-4,vy:-1.5,col:p.col});if(graves.length>40)graves.shift()}
+ if(p.y<WATER){graves.push({x:p.x,y:p.y-4,vy:-1.5,col:p.col,c:lookOf(p).grave==='Celtic'});if(graves.length>40)graves.shift()}
  const killer=p.lastBy&&p.lastBy!==p?p.lastBy:null;
  if(killer)killer.kills++;
  addFeed(killer?killer.i:-1,p.i);
@@ -869,11 +869,15 @@ const GRUB=[[
  '...kkkk..','..klbbbk.','..klwwpk.','..kbwwpk.','..kbbbbk.','..kbbbk..','..kbbbbk.','..kbbbbdk','.kbdbbbbk','.kkkkkkkk']];
 // PS1 worms: pre-rendered shaded bodies (RA.fx.model), 4 walk frames + a flying frame, cached per colour
 const WSPR={};
-function wormSprite(col,f,flash){const key=col+f+(flash?1:0);if(WSPR[key])return WSPR[key];
- const body=flash?'#ffffff':mix('#f4a0b0',col,.38),balls=[],air=f===4,ph=f*Math.PI/2;
+// unlockable skins (achievements): body colour + shine
+const SKIN={Golden:['#f0c040',40,.95],Zombie:['#7ca05c',6,.2],Chrome:['#c4ccd8',60,1]};
+function lookOf(p){if(!p)return{};if(NET.mode==='online'){if(!p.peer)return{};const pe=NET.room&&NET.room.peers().find(q=>q.peer===p.peer);return RA.look.clean(pe&&pe.presence&&pe.presence.lk)}
+ return p.ctrl&&p.ctrl!=='cpu'?RA.look('worms'):{}}
+function wormSprite(col,f,flash,skin){const sk=SKIN[skin],key=col+f+(flash?1:0)+(sk?skin:'');if(WSPR[key])return WSPR[key];
+ const body=flash?'#ffffff':sk?mix(sk[0],col,.15):mix('#f4a0b0',col,.38),balls=[],air=f===4,ph=f*Math.PI/2;
  for(let i=0;i<=9;i++){const t=i/9,st=t<.3?0:t>1?1:(t-.3)/.7,ss=st*st*(3-2*st);
   const x=air?3.5+4*t:2+9*t-(t>.55?(t-.55)*5:0),y=air?18-14*t:18.4-12.5*ss-(t<.6&&!air?Math.max(0,Math.sin(t*9+ph))*2.2:0);
-  balls.push({x,y,z:0,r:2.1+2.5*t,col:body,spec:12,gloss:.55})}
+  balls.push({x,y,z:0,r:2.1+2.5*t,col:body,spec:sk?sk[1]:12,gloss:sk?sk[2]:.55})}
  const hx=balls[9].x,hy=balls[9].y;
  balls.push({x:hx+1.8,y:hy-1.6,z:3.6,r:1.75,col:'#ffffff',spec:30,gloss:.9},{x:hx+3.2,y:hy-1.4,z:3.2,r:1.55,col:'#ffffff',spec:30,gloss:.9});
  balls.push({x:hx+2.5,y:hy-1.2,z:5.1,r:1,col:'#101010',gloss:.9},{x:hx+3.9,y:hy-1,z:4.6,r:.9,col:'#101010',gloss:.9});
@@ -896,7 +900,7 @@ function drawWorm(u){
  if(u.inv>0&&(tick>>2)%2){ctx.globalAlpha=1;return drawLabel(u,x,y)}
  if(u.grounded!==false)RA.fx.shadow(ctx,x,y+1,5,.35);
  {const mv=Math.abs(u.x-(u._lx==null?u.x:u._lx))>.05;u._lx=u.x;if(mv)u._mv=8;else if(u._mv>0)u._mv--;
-  const fr=u.grounded===false?4:u._mv>0?(Math.round(u.x/1.5)&3):((tick>>5)&1)*2,img=wormSprite(u.col,fr,u.flash>0&&(u.flash&2));
+  const fr=u.grounded===false?4:u._mv>0?(Math.round(u.x/1.5)&3):((tick>>5)&1)*2,img=wormSprite(u.col,fr,u.flash>0&&(u.flash&2),lookOf(u).skin);
   ctx.save();ctx.translate(x,y+1);if(d<0)ctx.scale(-1,1);ctx.drawImage(img,-7,-21);
   // held weapon: a shaded tube along the aim
   {const a=-u.aim;ctx.translate(6,-9);ctx.rotate(a);const gr=ctx.createLinearGradient(0,-1.5,0,1.5);gr.addColorStop(0,'#c8ccd8');gr.addColorStop(.5,'#5c6070');gr.addColorStop(1,'#20222c');
@@ -936,7 +940,7 @@ const CHUTE=['..kkkkk..','.kwrwrwk.','kwrwrwrwk','k.......k','.k.....k.','..k...
 const CR_COLS={k:'#000',L:NES.dirtL,m:NES.dirt,d:NES.dirtD,y:'#fcfcfc',w:'#fcfcfc',r:'#d82800',g:'#bcbcbc'};
 const WAVE='..LLL...';
 // Projectiles as plain view data: kind 0 rocket, 1 grenade, 2 mega, 3 dynamite; f = fuse seconds shown.
-const projView=q=>({x:q.x,y:q.y,k:q.w.spr|0,f:q.fuse!=null&&q.w.fuse&&q.w!==DEF.bomblet?Math.ceil(q.fuse/60):0,d:(q.dir||(q.vx<0?-1:1))<0?-1:1,a:Math.round(Math.atan2(q.vy||0,Math.abs(q.vx||0)+.001)*20)});
+const projView=q=>({x:q.x,y:q.y,k:q.w.spr|0,f:q.fuse!=null&&q.w.fuse&&q.w!==DEF.bomblet?Math.ceil(q.fuse/60):0,d:(q.dir||(q.vx<0?-1:1))<0?-1:1,a:Math.round(Math.atan2(q.vy||0,Math.abs(q.vx||0)+.001)*20),o:players.indexOf(q.owner)});
 const PC={k:'#000',w:'#fcfcfc',g:'#00a800',y:'#f8b800',r:'#d82800',s:'#7c7c7c',l:'#bcbcbc',p:'#6844fc',o:'#e45c10'};
 const SPR=[['kkkk','kwwk','kwwk','kkkk'],['.kk.','kggk','kggk','.kk.'],['kkk','kgk','kkk'],['..w.','.kk.','krrk','krrk','krrk','.kk.'],
  ['kk...','kyyk.','.kyyk','..kyk','...k.'],['..w..','.kyk.','kyyyk','kyyyk','.kkk.'],['kkk','ksk','kkk'],['.k.','kok','krk','.k.'],
@@ -946,6 +950,8 @@ const SPR=[['kkkk','kwwk','kwwk','kkkk'],['.kk.','kggk','kggk','.kk.'],['kkk','k
  ['.kkk.','ksssk','ksssk','.kyk.'],['k.kkkk.','kkwwkkk','kkkkkkw','.k.k.k.'],['kkkkk','kwwwk','kwkwk','kkkkk']];
 // walkers waddle: their leg row shifts every few frames
 const WALKS=new Set([8,9,14,18]);
+// Celtic cross grave (unlock)
+const GRAVEC=RA.fx.model(10,13,[{x:5,y:3,r:1.6,col:'#a8a8b4'},{x:5,y:6,r:1.8,col:'#a0a0ac'},{x:5,y:9,r:1.7,col:'#98989f'},{x:5,y:11.3,r:1.8,col:'#8c8c94'},{x:2.3,y:5,r:1.5,col:'#a0a0ac'},{x:7.7,y:5,r:1.5,col:'#a0a0ac'},{x:5,y:5,r:2.6,z:-1,col:'#7c8c70',gloss:.1}]);
 // gravestone: rounded grey stone with a cross
 const GRAVEM=RA.fx.model(8,11,[{x:4,y:4,r:3.3,col:'#9c9ca8'},{x:4,y:7,r:3.4,col:'#94949c'},{x:4,y:9,r:3.3,col:'#8c8c94'},{x:4,y:3.4,r:.7,z:3.2,col:'#e8e8f0',gloss:0},{x:4,y:4.8,r:.7,z:3.2,col:'#e8e8f0',gloss:0},{x:2.9,y:4,r:.6,z:3.2,col:'#e8e8f0',gloss:0},{x:5.1,y:4,r:.6,z:3.2,col:'#e8e8f0',gloss:0}]);
 const CHUTEM=RA.fx.model(15,8,[...Array.from({length:7},(_,i)=>({x:1.5+i*2,y:4.2-Math.sin(i/6*Math.PI)*2,r:2.4,col:i%2?'#f4f4f4':'#e03020',spec:10}))],{amb:.5});
@@ -1102,9 +1108,10 @@ function render(){
  for(const c of crates){const x=c.x-4,y=Math.round(c.y)-7;
   if(!c.landed)blit(ctx,CHUTE,x-1,y-7,CR_COLS);
   RA.fx.shadow(ctx,c.x,Math.round(c.y)+1,5,c.landed?.35:0);ctx.drawImage(crateSprite(c.party?'p':c.hp?'h':'w'),x-1,y-2);}
- for(const g of graves){RA.fx.shadow(ctx,Math.round(g.x),Math.round(g.y)+4,4,.3);ctx.drawImage(GRAVEM,Math.round(g.x)-4,Math.round(g.y)-6)}
+ for(const g of graves){RA.fx.shadow(ctx,Math.round(g.x),Math.round(g.y)+4,4,.3);if(g.c)ctx.drawImage(GRAVEC,Math.round(g.x)-5,Math.round(g.y)-8);else ctx.drawImage(GRAVEM,Math.round(g.x)-4,Math.round(g.y)-6)}
  for(const u of players)if(u.alive&&showWorm(u))drawWorm(u);
  for(const p of (isClient()?projs:projs.map(projView))){if(!seen(p.x,p.y))continue;const x=Math.round(p.x),y=Math.round(p.y);
+  {const tr=p.o>=0&&lookOf(players[p.o]).trail;if(tr&&parts.length<400)parts.push({x:x+rnd(-1,1),y:y+rnd(-1,1),vx:0,vy:tr==='Fire'?-.2:0,t:tr==='Fire'?10:16,col:tr==='Fire'?(tick&2?'#f8b800':'#e04010'):'hsl('+((tick*12)%360)+',90%,60%)',g:0})}
   drawProj(p.k,x,y,p.d||1,(p.a|0)/20);
   if(p.f)drawNum(p.f,x,y-10,'#fcfcfc')}
  for(const p of parts){
@@ -1240,7 +1247,7 @@ async function enterRoom(code,asHost){
  netMsg('');audio();saveSetup();
  try{NET.room=await NET.lobby.join('gb-'+code.toLowerCase())}catch(e){netMsg('Could not join that room ('+(e&&e.code||'error')+'). Try again.');return}
  Object.assign(NET,{mode:'online',host:asHost,code,order:[],matchId:0,late:false,hostGone:0,lastI:-1});
- const pr={j:1,w:+$('ow').value,i:0,nm:nick()};RA.player.room(NET.room);
+ const pr={j:1,w:+$('ow').value,i:0,nm:nick(),lk:RA.look('worms')};RA.player.room(NET.room);
  NET.room.presence(pr).catch(()=>{});
  NET.room.onPeers(onRoomPeers,()=>{netMsg('Lost the room connection.');leaveRoom()});
  $('onHome').hidden=true;$('onRoom').hidden=false;$('rcode').textContent=code;
@@ -1315,7 +1322,7 @@ function snapshot(){
    WLIST.indexOf(p.wpn),(p.ammo||[]).map(a=>a<0?'i':Math.min(9,a)).join(''),p.kami>0?1:0,p.kills,p.inv>0?1:0,p.grounded?1:0,p.reveal>0?1:0,
    (p.rope||p.hook)?Math.round((p.rope||p.hook).x):-1,(p.rope||p.hook)?Math.round((p.rope||p.hook).y):-1,(p.chute?1:0)|(p.jet>0?2:0),p.life|0,p.hide>0?1:0,p.poison>0?1:0]),hx:SY.pack(),lg:NET.lowG|0,
   c:crates.map(c=>[c.x,Math.round(c.y),c.party?2:c.hp?1:0,c.landed?1:0]),f:NET.feed,
-  x:NET.xlog,pr:projs.slice(0,30).map(q=>{const v=projView(q);return[Math.round(v.x),Math.round(v.y),v.k,v.f,v.d,v.a]})};
+  x:NET.xlog,pr:projs.slice(0,30).map(q=>{const v=projView(q);return[Math.round(v.x),Math.round(v.y),v.k,v.f,v.d,v.a,v.o]})};
  while(JSON.stringify(g).length>3800&&g.pr.length)g.pr.pop();
  return g;
 }
@@ -1344,7 +1351,7 @@ function applySnap(g){
  g.p.slice(0,n).forEach((a,i)=>{const p=players[i];if(!p||!Array.isArray(a))return;
   const hp=a[2]|0,alive=!!a[6];
   if(p.alive&&alive&&hp<p.hp){texts.push({x:a[0]/2,y:a[1]/2-17,n:p.hp-hp,t:50,col:p.col});p.flash=6}
-  if(p.alive&&!alive&&p.y<WATER)graves.push({x:p.x,y:p.y-4,vy:-1.5,col:p.col});
+  if(p.alive&&!alive&&p.y<WATER)graves.push({x:p.x,y:p.y-4,vy:-1.5,col:p.col,c:lookOf(p).grave==='Celtic'});
   const peer=typeof g.r[i]==='string'?g.r[i]:'',pe=all.find(q=>q.peer===peer);
   const mine=!!(pe&&pe.sameTab),life=a[18]|0,ammo=typeof a[9]==='string'?[...a[9]].slice(0,WLIST.length).map(c=>c==='i'?-1:(+c||0)):p.ammo;
   Object.assign(p,{hp,lives:a[3]|0,alive,ammo,kills:a[11]|0,inv:a[12]?1:0,reveal:a[14]?1:0,hide:a[19]?1:0,poison:a[20]?1:0,peer,mine,ctrl:mine?'me':'net'});
@@ -1353,7 +1360,7 @@ function applySnap(g){
   p.nx=a[0]/2;p.ny=a[1]/2;if(fresh||mine){p.x=p.nx;p.y=p.ny;p.vx=0;p.vy=0}
   Object.assign(p,{dir:a[4]<0?-1:1,aim:a[5]/100,charging:a[7]>0,power:Math.max(0,(a[7]-1)/98),
    wpn:WLIST[a[8]]||'bazooka',grounded:a[13]!==0,rope:a[15]>=0&&a[16]!=null?{x:a[15],y:a[16]}:null,hook:null,chute:(a[17]|0)&1,jet:(a[17]|0)&2?1:0})});
- projs=(g.pr||[]).map(a=>({x:a[0],y:a[1],k:a[2]|0,f:a[3]|0,d:a[4]<0?-1:1,a:a[5]|0}));
+ projs=(g.pr||[]).map(a=>({x:a[0],y:a[1],k:a[2]|0,f:a[3]|0,d:a[4]<0?-1:1,a:a[5]|0,o:a[6]==null?-1:a[6]|0}));
  crates=(g.c||[]).map(a=>({x:a[0],y:a[1],hp:a[2]===1,party:a[2]===2,landed:!!a[3]}));
  G=(g.lg|0)>0?.05:G0;
  wind=(g.wd|0)/5;WATER=Math.max(40,Math.min(H-2,g.wt|0));NET.sd=g.sd|0;
@@ -1377,12 +1384,12 @@ const SAVE=RA.save('worms',{doc:'grub',migrate:d=>d.stats||d.matches==null?d:{st
 function loadStats(){const apply=()=>{const w=SAVE.data.weapon;if(w!=null&&!(saved&&saved.ow!=null))$('ow').value=w;showRecord()};apply();SAVE.ready.then(apply)}
 function showRecord(){const s=SAVE.stats;$('record').textContent=s.played?'Your save: '+(s.wins|0)+' wins · '+(s.played|0)+' matches · '+(s.kills|0)+' KOs':''}
 const ACH=RA.achievements('worms',[
- {id:'first',name:'Fresh Grub',desc:'Finish your first match',test:s=>s.played>=1,unlock:'title:Grub'},
- {id:'win1',name:'Last Worm Standing',desc:'Win a match',test:s=>s.wins>=1,unlock:'title:Survivor'},
- {id:'ko3',name:'Hat Trick',desc:'3 KOs in one match',test:(s,m)=>m.kills>=3,unlock:'title:Hat Trick'},
- {id:'ko25',name:'Grave Digger',desc:'25 KOs in total',test:s=>s.kills>=25,unlock:'title:Grave Digger'},
- {id:'win10',name:'Worm Lord',desc:'Win 10 matches',test:s=>s.wins>=10,unlock:'title:Worm Lord'},
- {id:'play50',name:'Veteran',desc:'Play 50 matches',test:s=>s.played>=50,unlock:'title:Veteran'}]);
+ {id:'first',name:'Fresh Grub',desc:'Finish your first match',test:s=>s.played>=1,unlock:['title:Grub','grave:Celtic']},
+ {id:'win1',name:'Last Worm Standing',desc:'Win a match',test:s=>s.wins>=1,unlock:['title:Survivor','skin:Golden']},
+ {id:'ko3',name:'Hat Trick',desc:'3 KOs in one match',test:(s,m)=>m.kills>=3,unlock:['title:Hat Trick','trail:Fire']},
+ {id:'ko25',name:'Grave Digger',desc:'25 KOs in total',test:s=>s.kills>=25,unlock:['title:Grave Digger','skin:Zombie']},
+ {id:'win10',name:'Worm Lord',desc:'Win 10 matches',test:s=>s.wins>=10,unlock:['title:Worm Lord','skin:Chrome']},
+ {id:'play50',name:'Veteran',desc:'Play 50 matches',test:s=>s.played>=50,unlock:['title:Veteran','trail:Rainbow']}]);
 function saveStats(){
  if(NET.saved||NET.late)return;NET.saved=true;
  const me=players.find(p=>p.mine)||(NET.mode!=='online'&&players.find(p=>p.ctrl!=='cpu'));if(!me)return;

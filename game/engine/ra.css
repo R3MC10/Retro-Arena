@@ -305,3 +305,5 @@ button{border-radius:6px;background:linear-gradient(180deg,#4a4f8a,#24275a);bord
 .achBox li{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,.25);opacity:.6}
 .achBox li.got{opacity:1;background:linear-gradient(90deg,rgba(248,184,0,.25),rgba(0,0,0,.2))}
 .achBox li .st{color:#f8b800;font-size:20px}.achBox li i{display:block;font-style:normal;color:#c8ccff;font-size:16px}.achBox li em{font-style:normal;font-size:14px;color:#f8d878;text-align:right}
+
+.achLocker{display:flex;flex-wrap:wrap;gap:6px 14px;margin:6px 0 4px;padding:6px 8px;border:1px solid #3a4a7a;background:rgba(10,14,40,.6)}.achLocker b{color:#f8d878;margin-right:6px}.achLocker span{display:flex;gap:4px;align-items:center}.achLocker i{font-style:normal;color:#9ab;font-size:.8em;margin-right:2px}.achLocker button{font:inherit;font-size:.85em;padding:2px 7px;background:#1a2250;color:#dde;border:1px solid #4a5a9a;cursor:pointer}.achLocker button.on{background:#c89a20;color:#000;border-color:#f8d878}

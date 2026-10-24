@@ -6,7 +6,7 @@
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v37';
+RA.VERSION='v38';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -333,10 +333,14 @@ RA.achievements=(id,defs)=>ACHS[id]||(ACHS[id]=(()=>{const S=RA.save(id);
   count:()=>defs.filter(d=>A.has(d.id)).length,
   check(match){const s=S.stats,ach=Object.assign({},S.data.ach),un=Object.assign({},S.data.unlocks),got=[];
    for(const d of defs){if(ach[d.id])continue;let ok=false;try{ok=!!d.test(s,match||{})}catch(e){}
-    if(ok){ach[d.id]=Date.now();if(d.unlock)un[d.unlock]=true;got.push(d)}}
-   if(got.length){S.set({ach,unlocks:un});got.forEach(d=>{RA.audio.sfx&&RA.audio.sfx('pick');achToast('★ '+d.name.toUpperCase()+(d.unlock?' · UNLOCKED '+String(d.unlock).split(':').pop().toUpperCase():''))})}
+    if(ok){ach[d.id]=Date.now();for(const u of [].concat(d.unlock||[]))un[u]=true;got.push(d)}}
+   if(got.length){S.set({ach,unlocks:un});got.forEach(d=>{RA.audio.sfx&&RA.audio.sfx('pick');achToast('★ '+d.name.toUpperCase()+(d.unlock?' · UNLOCKED '+[].concat(d.unlock).map(u=>String(u).split(':').pop().toUpperCase()).join(' + '):''))})}
    return got}};
  return A})());
+// cosmetics the player equips from unlocks: RA.look('worms') -> {skin:'Golden',trail:'Fire',...}; RA.look.set(game,slot,val)
+RA.look=id=>Object.assign({},RA.save(id).data.look);
+RA.look.set=(id,slot,v)=>{const l=RA.look(id);if(v)l[slot]=v;else delete l[slot];RA.save(id).set({look:l})};
+RA.look.clean=o=>{const r={};if(o&&typeof o==='object')for(const k of Object.keys(o).slice(0,8))if(typeof o[k]==='string')r[k.slice(0,8)]=o[k].replace(/[^\w ]/g,'').slice(0,16);return r};
 
 /* ---------- host match presets: 3 named slots per game in the host's save (surveys: "host picks") ----------
    const P=RA.presets('worms',defaults); P.get(n) -> settings of slot n (1-3, falls back to defaults),
@@ -402,6 +406,7 @@ RA.rooms=o=>{
   if(!n&&pe&&pe.by){wantName(pe.by);n=(R.names[pe.by]||'').split(' ')[0]}
   if(!n)n='P'+(i+1);return n};
  R.peer=id=>R.room?R.room.peers().find(pe=>pe.peer===id)||null:null;
+ R.look=id=>{const pe=R.peer(id);return RA.look.clean(pe&&pe.presence&&pe.presence.lk)};
  R.input=id=>{const pe=R.peer(id);return pe?pe.presence:null};
  R.hostPeer=()=>{if(!R.room)return null;const hs=R.room.peers().filter(pe=>pe.presence&&pe.presence.host===1&&pe.presence.g);return hs.sort((a,b)=>a.peer<b.peer?-1:1)[0]||null};
  R.roster=()=>{const ps=R.room.peers().filter(pe=>pe.kind==='viewer'&&pe.presence&&pe.presence.j===1);
@@ -434,7 +439,7 @@ RA.rooms=o=>{
   if(!R.lobby){off();return}msg('');RA.audio.ensure();
   try{R.room=await R.lobby.join(o.game+'-'+code.toLowerCase())}catch(e){msg('Could not join that room ('+(e&&e.code||'error')+'). Try again.');return}
   Object.assign(R,{host,code,order:[],hostGone:0,lastSend:''});
-  R.room.presence({j:1,nm:PLAYER.name||undefined}).catch(()=>{});RA.player.room(R.room);
+  R.room.presence({j:1,nm:PLAYER.name||undefined,lk:RA.look(o.game)}).catch(()=>{});RA.player.room(R.room);
   R.room.onPeers(changed,()=>{msg('Lost the room connection.');R.leave()});
   q('home').hidden=true;q('inroom').hidden=false;q('rcode').textContent=code;renderRoster();if(o.onEnter)o.onEnter()};
  R.leave=async()=>{const r=R.room;R.room=null;if(r)RA.player.unroom(r);R.host=false;R.code='';
@@ -544,13 +549,13 @@ function card(){const el=$('pstats');if(!el)return;let a=0,t=0,pl=0;
  setH(el,'<button type="button" class="achBtn" id="achBtn">★ '+a+'/'+t+' ACHIEVEMENTS</button><span>'+pl+' MATCHES</span>'+(CHAT.peers?'<span class="on">● '+CHAT.peers+' ONLINE</span>':'')+(ti?'<span class="ttl">“'+RA.util.esc(ti)+'”</span>':''))}
 // Achievements & unlocks screen: every game's list, what you have, what it unlocked; pick a title to wear
 function achOpen(){let m=$('achModal');if(!m){m=document.createElement('div');m.id='achModal';m.className='achModal';document.body.appendChild(m);
-  m.addEventListener('click',e=>{if(e.target===m||e.target.id==='achX'){m.hidden=true;return}const b=e.target.closest('[data-title]');
+  m.addEventListener('click',e=>{if(e.target===m||e.target.id==='achX'){m.hidden=true;return}const lb=e.target.closest('[data-look]');if(lb){const[g,k,v]=lb.dataset.look.split('|');RA.look.set(g,k,v);blip(880);achOpen();return}const b=e.target.closest('[data-title]');
    if(b){const v=b.dataset.title;RA.save('profile').set({title:RA.save('profile').data.title===v?'':v});blip(880);achOpen();card()}})}
  const cur=RA.save('profile').data.title||'';let titles=[];
- const sec=GAMES.filter(g=>ACHS[g.id]).map(g=>{const A=ACHS[g.id],L=A.list();
-  return '<section><h3>'+RA.util.esc(g.name)+' <small>'+A.count()+'/'+L.length+'</small></h3><ul>'+L.map(d=>{const un=d.unlock?String(d.unlock):'',nm=un.split(':').pop();
-   if(d.got&&un.startsWith('title:'))titles.push(nm);
-   return '<li class="'+(d.got?'got':'')+'"><span class="st">'+(d.got?'★':'☆')+'</span><span><b>'+RA.util.esc(d.name)+'</b><i>'+RA.util.esc(d.desc||'')+'</i></span><em>'+(un?(d.got?'UNLOCKED: ':'REWARD: ')+RA.util.esc(nm):'')+(d.got?'<br>'+new Date(d.got).toLocaleDateString():'')+'</em></li>'}).join('')+'</ul></section>'}).join('');
+ const sec=GAMES.filter(g=>ACHS[g.id]).map(g=>{const A=ACHS[g.id],L=A.list(),lock={},lk=RA.look(g.id);
+  return '<section><h3>'+RA.util.esc(g.name)+' <small>'+A.count()+'/'+L.length+'</small></h3><ul>'+L.map(d=>{const us=[].concat(d.unlock||[]).map(String),un=us.join(' '),nm=us.map(u=>u.split(':').pop()).join(' + ');
+   for(const u of us){const[k,v]=u.split(':');if(!d.got)continue;if(k==='title')titles.push(v);else (lock[k]=lock[k]||[]).push(v)}
+   return '<li class="'+(d.got?'got':'')+'"><span class="st">'+(d.got?'★':'☆')+'</span><span><b>'+RA.util.esc(d.name)+'</b><i>'+RA.util.esc(d.desc||'')+'</i></span><em>'+(un?(d.got?'UNLOCKED: ':'REWARD: ')+RA.util.esc(nm):'')+(d.got?'<br>'+new Date(d.got).toLocaleDateString():'')+'</em></li>'}).join('')+'</ul>'+(Object.keys(lock).length?'<div class="achLocker"><b>EQUIP</b>'+Object.keys(lock).map(k=>'<span><i>'+RA.util.esc(k.toUpperCase())+'</i>'+['',...lock[k]].map(v=>'<button type="button" data-look="'+g.id+'|'+k+'|'+RA.util.esc(v)+'"'+((lk[k]||'')===v?' class="on"':'')+'>'+(v?RA.util.esc(v):'Default')+'</button>').join('')+'</span>').join('')+'</div>':'')+'</section>'}).join('');
  m.innerHTML='<div class="achBox"><div class="achHead"><h2>ACHIEVEMENTS & UNLOCKS</h2><button id="achX">✕</button></div>'+
   '<div class="achTitles"><b>YOUR TITLE</b> '+(titles.length?titles.map(t=>'<button type="button" data-title="'+RA.util.esc(t)+'"'+(t===cur?' class="on"':'')+'>'+RA.util.esc(t)+'</button>').join(''):'<span>Unlock titles by earning achievements.</span>')+'</div>'+sec+'</div>';
  m.hidden=false}
