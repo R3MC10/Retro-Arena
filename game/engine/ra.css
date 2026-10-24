@@ -319,3 +319,43 @@ button{border-radius:6px;background:linear-gradient(180deg,#4a4f8a,#24275a);bord
 .ra-legend .gA{background:#2e9e3e}.ra-legend .gB{background:#c8282c}.ra-legend .gX{background:#2c5ad0}.ra-legend .gY{background:#d8a818;color:#201800;text-shadow:none}
 .ra-legend .gS{background:#4c5064;border-radius:4px}.ra-legend .gT{background:#2a2c38;border:1px solid #8890a8}
 body:not(.playing) .ra-legend{display:none}
+
+/* ===== v40 RELOADED-style menus, capped at PS1: scene-installer black, chrome 3D logo, glow, no 8-bit fonts ===== */
+:root{--pixel:"Russo One","Arial Black",Impact,sans-serif;--font:"Exo 2","Segoe UI",Tahoma,sans-serif;--hot:#ffd23c;--rl:#38e8ff;--rl2:#ff3050}
+body{font-size:17px;line-height:1.25}
+body:not(.playing){background:#000}
+body:not(.playing)::before{background:
+ radial-gradient(60% 45% at 50% 8%,rgba(56,232,255,.18),transparent 70%),
+ radial-gradient(50% 40% at 85% 95%,rgba(255,48,80,.14),transparent 70%),
+ repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px),#04050a}
+body:not(.playing)::after{background:linear-gradient(transparent 0 96%,rgba(56,232,255,.32) 96%) 0 0/100% 40px,linear-gradient(90deg,transparent 0 97%,rgba(56,232,255,.22) 97%) 0 0/60px 100%}
+.tv,.panel{background:linear-gradient(180deg,rgba(26,28,36,.94),rgba(8,9,14,.96));backdrop-filter:none;-webkit-backdrop-filter:none;border:1px solid #6c7486;border-radius:3px;
+ box-shadow:0 0 0 1px #000,0 0 0 2px #2a2e3a,inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.8),0 0 22px rgba(56,232,255,.10),0 14px 30px rgba(0,0,0,.7)}
+.panel{background:linear-gradient(180deg,rgba(30,33,44,.92),rgba(12,13,20,.95))}
+.tv h1{font-family:"Russo One",Impact,sans-serif;letter-spacing:.06em;font-size:clamp(30px,6.4vw,64px);line-height:1.05;
+ background:linear-gradient(180deg,#ffffff 0%,#dfe6f2 22%,#8c96aa 46%,#2c3240 50%,#b8c4d8 54%,#ffffff 72%,#9aa6bc 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+ filter:drop-shadow(0 1px 0 #555)drop-shadow(0 2px 0 #333)drop-shadow(0 3px 0 #1a1a1a)drop-shadow(0 0 14px rgba(56,232,255,.55))drop-shadow(0 0 2px rgba(255,48,80,.7))}
+.tv .sub,.cartTop .sub{font-family:var(--font);font-weight:700;font-size:12px;letter-spacing:.42em;color:var(--rl);text-shadow:0 0 8px rgba(56,232,255,.6)}
+h2,h3,.panel>b,.panel h3,.lbl{font-family:"Russo One",sans-serif;letter-spacing:.08em}
+.games button{font-family:var(--font);font-weight:700;letter-spacing:.04em}
+.games .sel{background:linear-gradient(90deg,rgba(56,232,255,.22),rgba(56,232,255,.02));box-shadow:inset 3px 0 0 var(--rl),0 0 14px rgba(56,232,255,.25);border-color:var(--rl)}
+.games button:hover{background:rgba(56,232,255,.08)}
+button{font-family:var(--font);font-weight:700;letter-spacing:.06em;background:linear-gradient(180deg,#4c5262 0%,#262a36 50%,#14161e 51%,#2a2e3c 100%);border:1px solid #8a94aa;color:#eef2ff;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 0 0 1px #000}
+button:hover{border-color:var(--rl);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 0 0 1px #000,0 0 10px rgba(56,232,255,.4)}
+.go{background:linear-gradient(180deg,#ff6a78 0%,#d01830 50%,#980818 51%,#e02840 100%);border-color:#ffb0b8}
+input,select{font-family:var(--font);background:#06070c;border:1px solid #5a6276;color:#fff}
+.tab,.go,#join,#leave,#toMenu,.padMenu,.code,.brand{font-family:"Russo One",sans-serif;letter-spacing:.06em}
+.tab,.go,#join,#leave,#toMenu{font-size:13px}
+.overlay h1{font-family:"Russo One",sans-serif;color:#fff;text-shadow:0 2px 0 #333,0 0 14px rgba(56,232,255,.6)}
+.achBox h2,.achBox h3{font-family:"Russo One",sans-serif}
+.chip2{font-family:"Russo One",sans-serif;letter-spacing:.06em}
+.chip2{font-size:11px;padding:4px 8px;color:#e8fbff;background:linear-gradient(180deg,#2a3a48,#0c141c);border:1px solid var(--rl);box-shadow:0 0 8px rgba(56,232,255,.3)}
+.chip2.soonC{color:#ffd0d6;border-color:var(--rl2);box-shadow:0 0 8px rgba(255,48,80,.3)}
+.sound input[type=range]{accent-color:var(--rl)}
+#nick,input[type=text]{background:#06070c}
+#blurb{font-size:15px}
+.tabs{background:#06070c!important;border-color:#5a6276!important}
+.tab.on{background:linear-gradient(180deg,#bff6ff 0%,#38e8ff 50%,#0aa8c8 51%,#58ecff 100%)!important;color:#001018!important;box-shadow:0 0 10px rgba(56,232,255,.5)}
+.overlay h1{background:linear-gradient(180deg,#fff 0%,#dfe6f2 40%,#4a5264 50%,#c4cede 58%,#fff 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 2px 0 #222)drop-shadow(0 0 10px rgba(56,232,255,.55))}
+.brand{color:var(--rl)}.brand b{color:var(--rl2)}
