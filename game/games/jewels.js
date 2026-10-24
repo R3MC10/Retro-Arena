@@ -636,7 +636,9 @@ function showOver(w){state='over';
   list.slice(0,8).map((b,k)=>'<li style="animation-delay:'+k*60+'ms"><span class="pos">'+(k+1)+'</span><span style="color:'+b.col+'">'+esc(b.name)+'</span><em>'+(b.ko?b.ko+' KO · ':'')+b.score+'</em></li>').join('');
  $('mjAgain').hidden=isClient();$('mjSetupBtn').hidden=isClient();$('mjOverNote').hidden=!isClient();
  $('mjAgain').textContent=hostOnline()?'BACK TO ROOM':'PLAY AGAIN';$('mjSetupBtn').textContent=R.online?'LEAVE ROOM':'SETUP';
- $('mjOver').hidden=false;root.querySelector('.pad').hidden=true;sfx('pick')}
+ $('mjOver').hidden=false;root.querySelector('.pad').hidden=true;sfx('pick');
+ if(hostOnline())RA.autoBack({still:()=>state==='over'&&hostOnline(),label:n=>$('mjAgain').textContent='BACK TO ROOM ('+n+')',go:()=>$('mjAgain').click()});
+ else if(isClient())RA.autoBack({still:()=>state==='over',label:n=>$('mjOverNote').textContent='Back to the room in '+n+'…'})}
 function hudInfo(){if(demo||state!=='play')return;const s=(matchT/60)|0,b=boards[NET.myIdx]||boards.find(b=>b.ctrl!=='cpu')||boards[0];
  const lim=boards.length>1?(M.len?M.len*60:M.mode==='coop'?180:0):0,rs=lim?Math.max(0,lim-s):s,t=Math.floor(rs/60)+':'+String(rs%60).padStart(2,'0'),n=boards.filter(b=>b.alive).length;
  const MN={teams:'Teams',royale:'Battle royale',coop:'Co-op',race:'Race to 150'}[M.mode];

@@ -569,7 +569,9 @@ function showOver(){state='over';
  $('bcRanks').innerHTML=list.slice(0,10).map((c,k)=>'<li style="animation-delay:'+k*60+'ms"><span class="pos">'+(k+1)+'</span><span style="color:'+c.col+'">'+esc(c.name)+'</span><em>'+c.kills+' KO · '+c.score+'</em></li>').join('');
  $('bcAgain').hidden=isClient();$('bcSetupBtn').hidden=isClient();$('bcOverNote').hidden=!isClient();
  $('bcAgain').textContent=hostOnline()?'BACK TO ROOM':'PLAY AGAIN';$('bcSetupBtn').textContent=R.online?'LEAVE ROOM':'SETUP';
- $('bcOver').hidden=false;root.querySelector('.pad').hidden=true;sfx('pick')}
+ $('bcOver').hidden=false;root.querySelector('.pad').hidden=true;sfx('pick');
+ if(hostOnline())RA.autoBack({still:()=>state==='over'&&hostOnline(),label:n=>$('bcAgain').textContent='BACK TO ROOM ('+n+')',go:()=>$('bcAgain').click()});
+ else if(isClient())RA.autoBack({still:()=>state==='over',label:n=>$('bcOverNote').textContent='Back to the room in '+n+'…'})}
 function enterPlay(tp){
  document.body.classList.add('playing');document.body.classList.toggle('touchplay',tp);
  document.body.classList.toggle('mouseaim',!touchDev&&(R.online?NET.myIdx>=0:crews.some(c=>c.ctrl==='mk')));

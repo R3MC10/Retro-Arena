@@ -2,7 +2,7 @@
    Built on the shared engine (engine/ra.js): screen fit, input, sound, music, online rooms and the menu come from RA.
    This file is only what makes Worms feel like Worms: terrain, weapons, worm physics, bots, camera, HUD. */
 (()=>{
-const {$,rnd,hash,mulberry,hex,mix,esc,touchDev}=RA.util,{blit,NES}=RA.gfx;
+const {$,rnd,hash,mulberry,hex,mix,esc,touchDev,setH}=RA.util,{blit,NES}=RA.gfx;
 const audio=RA.audio.ensure,sfx=RA.audio.sfx,blip=RA.audio.blip,music=RA.music,toast=RA.ui.toast;
 const {touchK,mouse,touchAim}=RA.input;
 const root=RA.mount(`
@@ -379,6 +379,7 @@ function gameOver(p){
  renderRanks();
  $('again').textContent=NET.mode==='online'?'BACK TO ROOM':'NEW MATCH';$('again').hidden=false;$('overNote').hidden=true;
  if(NET.host||NET.mode!=='online')saveStats();
+ if(NET.mode==='online'&&NET.host)RA.autoBack({still:()=>state==='over'&&NET.mode==='online',label:n=>$('again').textContent='BACK TO ROOM ('+n+')',go:()=>$('again').click()});
  hud();
 }
 
@@ -1144,10 +1145,10 @@ function renderRooms(){
  const others=NET.lobby.peers().filter(pe=>!pe.sameTab&&pe.kind==='viewer');
  const open=others.filter(pe=>pe.presence&&pe.presence.open&&!pe.presence.open.gm&&typeof pe.presence.open.c==='string');
  const names=others.map((pe,i)=>esc(peerName(pe,i))+(pe.presence&&pe.presence._ip?' (LAN)':'')).slice(0,30);
- $('whoOnline').textContent=others.length?others.length+' other player'+(others.length>1?'s':'')+' online: '+names.join(', ').replace(/&amp;/g,'&'):'No other players online right now.';
- $('rooms').innerHTML=open.length?open.map(pe=>{const o=pe.presence.open,c=String(o.c).replace(/[^A-Z0-9]/g,'').slice(0,5);
+ setH($('whoOnline'),esc(others.length?others.length+' other player'+(others.length>1?'s':'')+' online: '+names.join(', ').replace(/&amp;/g,'&'):'No other players online right now.'));
+setH($('rooms'),open.length?open.map(pe=>{const o=pe.presence.open,c=String(o.c).replace(/[^A-Z0-9]/g,'').slice(0,5);
   return '<div class="room"><span>Room <b class="code">'+c+'</b> · '+Math.min(MAXP,o.n|0)+'/'+MAXP+' · '+(o.ph==='play'?'playing':'waiting')+(pe.presence._ip?' · LAN':'')+'</span><button data-room="'+c+'">JOIN</button></div>'}).join('')
-  :'<p class="note">No open rooms right now. Create one and share the code.</p>';
+  :'<p class="note">No open rooms right now. Create one and share the code.</p>');
 }
 $('rooms').addEventListener('click',e=>{const c=e.target.dataset&&e.target.dataset.room;if(c)enterRoom(c,false)});
 const newCode=RA.net.newCode;
@@ -1189,11 +1190,11 @@ function renderRoom(){
  if(NET.host)peers=rosterPeers().map(pe=>pe.peer);
  else{const h=hostPeer();peers=h&&Array.isArray(h.presence.g.r)?h.presence.g.r:[]}
  const all=NET.room.peers(),cpus=NET.host?+$('cpus').value:(hostPeer()?(hostPeer().presence.g.cpu|0):0);
- $('roster').innerHTML=peers.slice(0,MAXP).map((id,i)=>{const pe=all.find(q=>q.peer===id);
+setH($('roster'),peers.slice(0,MAXP).map((id,i)=>{const pe=all.find(q=>q.peer===id);
   return '<span style="color:'+COLORS[i][1]+'">'+esc(pe?peerName(pe,i):'P'+(i+1))+(i===0?' · host':'')+'</span>'}).join('')+
-  (cpus?'<span class="note">+ '+Math.min(cpus,MAXP-peers.length)+' CPU</span>':'');
- $('hostCtl').hidden=!NET.host;$('msetO').hidden=!NET.host;$('rwait').hidden=NET.host;
- if(!NET.host&&!hostPeer())$('rwait').textContent='Looking for the host…';else $('rwait').textContent='Waiting for the host to start…';
+  (cpus?'<span class="note">+ '+Math.min(cpus,MAXP-peers.length)+' CPU</span>':''));
+ for(const[id,v]of[['hostCtl',!NET.host],['msetO',!NET.host],['rwait',NET.host]])if($(id).hidden!==v)$(id).hidden=v;
+ {const t=!NET.host&&!hostPeer()?'Looking for the host…':'Waiting for the host to start…';if($('rwait').textContent!==t)$('rwait').textContent=t}
 }
 function onRoomPeers(){
  if(NET.host){renderRoom();return}
@@ -1280,6 +1281,7 @@ function applySnap(g){
  for(const e of g.f||[])if((e[2]|0)>NET.fseen){NET.fseen=e[2]|0;feedView.push({k:e[0]|0,v:e[1]|0,until:performance.now()+5000})}
  if(g.ph==='over'&&state!=='over'){
   state='over';NET.winner=g.win|0;const wp=players[NET.winner];
+  RA.autoBack({still:()=>state==='over',label:n=>{$('overNote').textContent='Back to the room in '+n+'…'}});
   $('winner').textContent=g.wl||(wp?nameOf(wp).toUpperCase()+' WINS':'DRAW');
   renderRanks();$('over').hidden=false;$('again').hidden=true;$('overNote').hidden=false;$('pad').hidden=true;
   saveStats();

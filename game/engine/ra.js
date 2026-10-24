@@ -6,7 +6,7 @@
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v33';
+RA.VERSION='v34';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -122,6 +122,10 @@ RA.audio={ensure,sfx,blip,vol:VOL,setVol(k,v){VOL[k]=v;applyVol();try{localStora
 /* ---------- music: every game has its own set of tracks, played on a PS1-style synth (warm pads, filtered leads, reverb) ---------- */
 // A track: 4 bars of 16th steps. mel = pulse lead ("-" holds, "." rests), ch = one chord per bar (drives bass + arpeggio),
 // dr = drum loop (k kick, s snare, h hat). Make one with RA.music.track(name, bpm, chords, drums, melody).
+// set innerHTML only when it changed (rewriting it every presence tick closes open dropdowns on Windows)
+const setH=RA.util.setH=(el,h)=>{if(el&&el._h!==h){el._h=h;el.innerHTML=h}};
+// after an online match everyone returns to the room by themselves: the host's button counts down and fires
+RA.autoBack=o=>{clearInterval(RA._ab);let n=o.secs||8;const t=()=>{if(!o.still()){clearInterval(RA._ab);return}o.label&&o.label(n);if(n--<=0){clearInterval(RA._ab);o.go&&o.go()}};t();RA._ab=setInterval(t,1000)};
 const music=RA.music=(()=>{
  const NOTE={c:0,'c#':1,db:1,d:2,'d#':3,eb:3,e:4,f:5,'f#':6,gb:6,g:7,'g#':8,ab:8,a:9,'a#':10,bb:10,b:11};
  const midi=m=>440*Math.pow(2,(m-69)/12);
@@ -396,18 +400,18 @@ RA.rooms=o=>{
  function renderRooms(){if(!R.lobby)return;
   const others=R.lobby.peers().filter(pe=>!pe.sameTab&&pe.kind==='viewer');
   const open=others.filter(pe=>pe.presence&&pe.presence.open&&pe.presence.open.gm===o.game&&typeof pe.presence.open.c==='string');
-  q('who').textContent=others.length?others.length+' other player'+(others.length>1?'s':'')+' online: '+others.slice(0,30).map((pe,i)=>R.name(pe,i)).join(', '):'No other players online right now.';
-  q('rooms').innerHTML=open.length?open.map(pe=>{const x=pe.presence.open,c=String(x.c).replace(/[^A-Z0-9]/g,'').slice(0,5);
+  setH(q('who'),RA.util.esc(others.length?others.length+' other player'+(others.length>1?'s':'')+' online: '+others.slice(0,30).map((pe,i)=>R.name(pe,i)).join(', '):'No other players online right now.'));
+  setH(q('rooms'),open.length?open.map(pe=>{const x=pe.presence.open,c=String(x.c).replace(/[^A-Z0-9]/g,'').slice(0,5);
    return'<div class="room"><span>Room <b class="code">'+c+'</b> · '+Math.min(max,x.n|0)+'/'+max+' · '+(x.ph==='play'?'playing':'waiting')+'</span><button data-room="'+c+'">JOIN</button></div>'}).join('')
-   :'<p class="note">No open rooms right now. Create one and share the code.</p>'}
+   :'<p class="note">No open rooms right now. Create one and share the code.</p>')}
  function renderRoster(){if(!R.room)return;let ids;const g=R.host?null:(R.hostPeer()||{presence:{}}).presence.g;
   if(R.host)ids=R.roster().map(pe=>pe.peer);else ids=g&&Array.isArray(g.r)?g.r:[];
   const cpus=R.host?+q('cpus').value:(g?g.cpu|0:0),all=R.room.peers();
-  q('roster').innerHTML=ids.slice(0,max).map((id,i)=>{const pe=all.find(p=>p.peer===id),c=o.colors&&o.colors[i]?o.colors[i][1]:'#fcfcfc';
+  setH(q('roster'),ids.slice(0,max).map((id,i)=>{const pe=all.find(p=>p.peer===id),c=o.colors&&o.colors[i]?o.colors[i][1]:'#fcfcfc';
    return'<span style="color:'+c+'">'+RA.util.esc(R.name(pe,i))+(pe&&pe.sameTab?' (you)':'')+(i===0?' · host':'')+'</span>'}).join('')+
-   (cpus?'<span class="note">+ '+Math.min(cpus,max-ids.length)+' CPU</span>':'');
-  q('hostctl').hidden=!R.host;q('wait').hidden=R.host;
-  q('wait').textContent=!R.host&&!R.hostPeer()?'Looking for the host…':'Waiting for the host to start…'}
+   (cpus?'<span class="note">+ '+Math.min(cpus,max-ids.length)+' CPU</span>':''));
+  if(q('hostctl').hidden!==!R.host)q('hostctl').hidden=!R.host;if(q('wait').hidden!==R.host)q('wait').hidden=R.host;
+  {const t=!R.host&&!R.hostPeer()?'Looking for the host…':'Waiting for the host to start…';if(q('wait').textContent!==t)q('wait').textContent=t}}
  R.render=renderRoster;
  function changed(){if(!R.room)return;
   if(!R.host){const h=R.hostPeer();if(!h){if(!R.hostGone)R.hostGone=performance.now()}else R.hostGone=0;
