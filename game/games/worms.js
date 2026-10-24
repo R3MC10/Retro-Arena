@@ -44,8 +44,9 @@ const root=RA.mount(`
         <select id="np" hidden aria-label="Players"></select></div>
       <button class="go" id="start">START ▶</button>
     </div>
+    <div class="row mset" id="msetL"></div>
     <div class="list" id="slots"></div>
-    <p class="note" id="localNote">Mouse + keys: A/D walk, Space jump (W/S climb the Ninja Rope and fly the Jet Pack), the mouse aims, left click fires (hold to charge, the dotted line shows where it lands), E/Q or the mouse wheel switch weapon, right-click or Tab opens the full weapon list, Esc for the menu. Extra players on one keyboard: IJKL + U jump, O fire, P weapon · Arrows + . jump, / fire, ' weapon · Numpad 4 6 8 5, 7 jump, 9 fire, 1 weapon. Gamepad: A jump, B/X/RB fire, Y/LB weapon. 3 lives each. Water rises after 2:30.</p>
+    <p class="note" id="localNote">Mouse + keys: A/D walk, Space jump (W/S climb the Ninja Rope and fly the Jet Pack), the mouse aims, left click fires (hold to charge, the dotted line shows where it lands), E/Q or the mouse wheel switch weapon, right-click or Tab opens the full weapon list, Esc for the menu. Extra players on one keyboard: IJKL + U jump, O fire, P weapon · Arrows + . jump, / fire, ' weapon · Numpad 4 6 8 5, 7 jump, 9 fire, 1 weapon. Gamepad: A jump, B/X/RB fire, Y/LB weapon. Pick lives, water, time limit, fog and mode above. Worms that are out can click the map to drop a crate.</p>
   </section>
 
   <section class="panel" id="online" hidden>
@@ -64,7 +65,7 @@ const root=RA.mount(`
       <p class="note online" id="whoOnline"></p>
       <div class="list" id="rooms"></div>
       <p class="note" id="record"></p>
-      <p class="note" id="netNote">Up to 20 players per room. Friends need to be signed in to claude.ai and have this page shared with them. Controls: A/D walk, Space jump, mouse aims, click fires, E/Q or wheel switch weapon, right-click for the weapon list. Gamepad and touch work too.</p>
+      <p class="note" id="netNote">Up to 20 players per room. Friends need to be signed in to claude.ai and have this page shared with them. Controls: A/D walk (the mouse only aims), Space jump, mouse aims, click fires, E/Q or wheel switch weapon, right-click for the weapon list. Gamepad and touch work too.</p>
     </div>
     <div class="list" id="onRoom" hidden>
       <div class="row between"><div class="row"><span class="lbl">ROOM</span><span class="code" id="rcode"></span></div><button id="leave">LEAVE</button></div>
@@ -73,6 +74,7 @@ const root=RA.mount(`
         <label for="cpus">CPU worms <select id="cpus"></select></label>
         <button class="go" id="hstart">START</button>
       </div>
+      <div class="row mset" id="msetO"></div>
       <p class="note" id="rwait">Waiting for the host to start…</p>
     </div>
   </section>
@@ -91,7 +93,7 @@ const sky=document.createElement('canvas');
 let terr,tImg,tDirty=true,shake=0;
 const solid=(x,y)=>{x=Math.floor(x);y=Math.floor(y);if(x<0||x>=W||y<0)return false;if(y>=H)return true;return terr[y*W+x]===1};
 // The world is bigger than the screen: map size grows with player count, a fixed 8-bit view window follows you.
-let VW=384,VH=216;const VIS=128;
+let VW=384,VH=216;const visR=()=>M.fog===2?190:128;
 const cam={x:0,y:0,z:1,snap:true};
 let layers=[],tD=null,skyG=null;
 const mm=document.createElement('canvas'),mmCtx=mm.getContext('2d');let mmDirty=true;
@@ -110,16 +112,16 @@ const CLOUD=['.....kkkk.......','...kkwwwwkk.....','..kwwwwwwwwkkk..','.kwwwwwww
 // Parallax background: clouds and far mountains drift slowly, near hills faster. Same 8-bit art, modern depth.
 function layer(f,draw){const c=document.createElement('canvas');c.width=Math.ceil(VW+(W-VW)*f)+2;c.height=Math.ceil(VH+(H-VH)*f)+2;draw(c.getContext('2d'),c.width,c.height);return{c,f}}
 function buildSky(){
- skyG=RA.fx.gradientCanvas(VW,VH,'#26407e','#f2b47a',24);
+ const T=THEME,hc=T.hills;skyG=RA.fx.gradientCanvas(VW,VH,T.sky[0],T.sky[1],24);
  const range=(s,w,h,base,amp,top,bot,seed)=>{const g=s.createLinearGradient(0,h*(base-amp/h*2),0,h);g.addColorStop(0,top);g.addColorStop(1,bot);s.fillStyle=g;
   for(let x=0;x<w;x++){const y=Math.round(h*base+amp*Math.sin(x*.013+seed)+amp*.5*Math.sin(x*.041+seed*2)+amp*.2*Math.sin(x*.13));s.fillRect(x,y,1,h-y)}};
  layers=[
   layer(.08,(s,w,h)=>{for(let i=0;i<Math.max(4,Math.round(w/90));i++){const cx=(i*97+30)%w,cy=10+(i*41)%Math.max(24,h*.3),n=4+i%3;
    for(let k=0;k<n;k++){const x=cx+k*9-n*4,y=cy+(k%2?-3:0),r=7+(k*5)%5;s.fillStyle='rgba(120,110,150,.55)';RA.gfx.disc(s,x+1,y+2,r);s.fillStyle='rgba(255,236,220,.8)';RA.gfx.disc(s,x,y,r)}}}),
-  layer(.22,(s,w,h)=>range(s,w,h,.5,16,'#8c7ca8','#c8a0a0',2)),
-  layer(.4,(s,w,h)=>range(s,w,h,.6,12,'#5c6c8c','#a88c8c',5)),
-  layer(.6,(s,w,h)=>{range(s,w,h,.68,9,'#2c5c44','#4c6c4c',1);
-   for(let x=4;x<w;x+=7){const y=Math.round(h*.68+9*Math.sin(x*.013+1)+4.5*Math.sin(x*.041+2)+1.8*Math.sin(x*.13))-1,t=4+hash(x,5)%5;s.fillStyle='#1c4430';for(let k=0;k<t;k++)s.fillRect(x-(t-k>>1),y-k,(t-k>>1)*2+1,1)}})];
+  layer(.22,(s,w,h)=>range(s,w,h,.5,16,hc[0],hc[1],2)),
+  layer(.4,(s,w,h)=>range(s,w,h,.6,12,hc[2],hc[3],5)),
+  layer(.6,(s,w,h)=>{range(s,w,h,.68,9,hc[4],hc[5],1);
+   for(let x=4;x<w;x+=7){const y=Math.round(h*.68+9*Math.sin(x*.013+1)+4.5*Math.sin(x*.041+2)+1.8*Math.sin(x*.13))-1,t=4+hash(x,5)%5;s.fillStyle=hc[6];for(let k=0;k<t;k++)s.fillRect(x-(t-k>>1),y-k,(t-k>>1)*2+1,1)}})];
 }
 
 /* ---------- terrain (seeded so every online player builds the same map) ---------- */
@@ -131,11 +133,20 @@ function soil(x,y,depth){const n=hash(x>>2,y>>2)%100/100,f=hash(x,y)%100/100,ban
  if(hh%6===0){const cx=(px<<3)+(hh>>4)%6+1,cy=(py<<3)+(hh>>8)%6+1,d=(x-cx)**2+(y-cy)**2;if(d<6){const l=(x<cx||y<cy)?1.25:d>3?.7:1;c=[128*l,120*l,110*l]}}
  else if(hh%11===1&&Math.abs((x&7)-(y&7))<1&&f<.8)c=[150,120,80];                       // a root
  const k=Math.max(.5,1-depth/160)*(1+(DIT[(y&3)*4+(x&3)]-7.5)/90);return c.map(v=>v*k)}
-const GRASS=[[176,236,88],[120,200,56],[80,164,44],[56,124,36],[44,96,30]];
+// Map themes: a random one every round (survey). Cap = top layer colours, soil tint, sky + hill colours.
+const THEMES=[
+ {n:'Meadow',cap:[[176,236,88],[120,200,56],[80,164,44],[56,124,36],[44,96,30]],tint:[1,1,1],sky:['#26407e','#f2b47a'],hills:['#8c7ca8','#c8a0a0','#5c6c8c','#a88c8c','#2c5c44','#4c6c4c','#1c4430']},
+ {n:'Desert',cap:[[248,220,140],[236,196,112],[216,168,88],[188,140,72],[160,116,60]],tint:[1.35,1.15,.8],sky:['#3a78c8','#f8d898'],hills:['#c89c78','#e8c098','#b07c58','#d0a078','#8c5c38','#a87850','#6c4428']},
+ {n:'Arctic',cap:[[252,252,252],[224,236,248],[196,216,240],[168,192,224],[140,168,208]],tint:[.85,.95,1.3],sky:['#1c2c5c','#a8c8f0'],hills:['#9cb0d0','#d0e0f4','#7890b8','#b8c8e0','#5c7498','#8ca0c0','#3c5478']},
+ {n:'Hell',cap:[[255,140,40],[232,88,24],[192,48,20],[140,28,20],[100,20,20]],tint:[1.3,.6,.55],sky:['#1c0408','#c83c14'],hills:['#5c1c1c','#943020','#3c1010','#782818','#240808','#481010','#140404']},
+ {n:'Candy',cap:[[255,200,232],[248,160,208],[232,120,184],[200,96,160],[168,72,136]],tint:[1.25,.9,1.2],sky:['#5c3c9c','#ffc8e0'],hills:['#c89ce0','#f0c0e8','#a07cc8','#d8a0d0','#7c5ca8','#a888c8','#5c3c88']}];
+let THEME=THEMES[0];
+const GRASS=THEME.cap;
 function setPix(i,c){const q=i*4,d=tImg.data;d[q]=c[0];d[q+1]=c[1];d[q+2]=c[2];d[q+3]=255}
 const airAt=(x,y)=>x<0||x>=W||y<0?true:y>=H?false:!terr[y*W+x];
 function genTerrain(seed){
  const R=mulberry(seed),r=(a,b)=>a+R()*(b-a);
+ THEME=THEMES[(seed>>>0)%THEMES.length];buildSky();
  terr.fill(0);
  const p=[r(0,7),r(0,7),r(0,7)],f=[r(.005,.009),r(.017,.03),r(.07,.11)],base=H*.56,a0=H*.12,a1=H*.07;
  for(let x=0;x<W;x++){
@@ -156,7 +167,7 @@ function genTerrain(seed){
   for(let y=0;y<H;y++){const i=y*W+x;
    if(!terr[i]){depth=0;continue}
    const grass=depth<5+(hash(x,3)%3),below=airAt(x,y+1)||airAt(x+1,y+1),lit=airAt(x-1,y)||airAt(x-1,y-1);
-   let c=grass?GRASS[Math.min(4,depth)]:soil(x,y,depth);
+   let c=grass?THEME.cap[Math.min(4,depth)]:soil(x,y,depth).map((v,k)=>Math.min(255,v*THEME.tint[k]));
    if(below)c=c.map(v=>v*.45);else if(lit&&!grass)c=c.map(v=>Math.min(255,v*1.35+12));else if(airAt(x+1,y))c=c.map(v=>v*.6);
    setPix(i,c);
    depth++;}}
@@ -258,13 +269,25 @@ if(!nickVal)nickVal='Worm'+Math.floor(rnd(10,99));
 $('nick').value=nickVal;$('nickRow').hidden=true;   // the nickname is picked once in the main menu (RA.player)
 const nick=()=>RA.player.name||nickVal;
 if(touchDev)$('localNote').textContent='Touch: put a finger on the game screen to aim at that spot. Hold to charge (the dotted line shows where it lands), let go to fire; guns fire right away; strikes and teleport land where you tap. Slide your thumb on the pad to walk. JUMP: tap for a hop, hold for a high jump, double-tap for a backflip. WPN switches weapon, tap the weapon name at the top for the full list. One player per phone; other slots can be CPU or a gamepad. Turn the phone sideways for a bigger screen.';
-if(APP)$('netNote').textContent='Up to 20 players per room. Players on your network show up on their own; internet players appear once connected. Controls: A/D walk, Space jump, mouse aims, click fires, E/Q or wheel switch weapon, right-click for the weapon list, or a gamepad.';
+if(APP)$('netNote').textContent='Up to 20 players per room. Players on your network show up on their own; internet players appear once connected. Controls: A/D walk (the mouse only aims), Space jump, mouse aims, click fires, E/Q or wheel switch weapon, right-click for the weapon list, or a gamepad.';
 
 /* ---------- state ---------- */
 let padWanted=false;
 let players=[],projs=[],parts=[],texts=[],crates=[],feedView=[];
 let state='menu',wind=0,tick=0,matchT=0,crateT=0,windT=0,armT=0,armBy=null,graves=[];
-const SUDDEN=150*60;
+// Host match settings (survey: host picks mode, lives, water, length, fog; spectators drop crates)
+const MSET=[['mode','Mode',[['ffa','Free for all'],['teams','2 teams'],['sudden','Sudden death']]],
+ ['lives','Lives',[[1,'1'],[2,'2'],[3,'3'],[5,'5']]],
+ ['water','Water rises',[[30,'0:30'],[90,'1:30'],[150,'2:30'],[240,'4:00'],[0,'Never']]],
+ ['len','Time limit',[[0,'None'],[5,'5 min'],[10,'10 min']]],
+ ['fog','Fog of war',[[1,'Normal'],[2,'Wide'],[0,'Off']]],
+ ['drops','Spectator crates',[[1,'On'],[0,'Off']]]];
+let CFG={mode:'ffa',lives:3,water:150,len:0,fog:1,drops:1};
+try{Object.assign(CFG,JSON.parse(localStorage.getItem('ra-worms-mset')||'{}'))}catch(e){}
+let M={...CFG};   // settings of the match being played
+const TEAMC=['#f04848','#4890f8'],TEAMN=['RED TEAM','BLUE TEAM'];
+const suddenAt=()=>M.mode==='sudden'?60:M.water?M.water*60:1e9;
+const sdLeft=()=>Math.max(0,Math.min(9999,Math.ceil((suddenAt()-matchT)/60)));
 // Online: host runs the match, others send buttons and draw what the host sends.
 const NET={mode:'local',host:false,lobby:null,room:null,user:null,db:null,me:null,code:'',
  order:[],mroster:[],matchId:0,seed:0,xs:0,xlog:[],feed:[],fs:0,fseen:0,winner:-1,names:{},lastI:-1,lastA:'',lastAT:0,lastB:0,lastL:0,hostGone:0,late:false,saved:false,sd:0,rec:null};
@@ -292,9 +315,10 @@ function spawn(p){
 }
 function startMatch(list,seed){
  setSize(list.length);genTerrain(seed);projs=[];parts=[];texts=[];crates=[];feedView=[];
- players=list.map((d,i)=>({i,col:COLORS[i][1],lives:3,kills:0,prev:{},ammo:startAmmo(),wpn:d.weapon,...d}));
+ M={...CFG};if(M.mode==='sudden')M.lives=1;
+ players=list.map((d,i)=>({i,col:M.mode==='teams'?TEAMC[i%2]:COLORS[i][1],team:M.mode==='teams'?i%2:i,lives:M.lives,kills:0,prev:{},ammo:startAmmo(),wpn:d.weapon,...d}));
  players.forEach(spawn);
- wind=0;tick=0;matchT=0;crateT=240;windT=0;armT=0;armBy=null;graves=[];NET.xs=0;NET.xlog=[];NET.feed=[];NET.fs=0;NET.winner=-1;NET.saved=false;state='play';if(NET.mode==='online')SY.reset();
+ wind=0;tick=0;matchT=0;crateT=240;windT=0;armT=0;armBy=null;graves=[];NET.xs=0;NET.xlog=[];NET.feed=[];NET.fs=0;NET.winner=-1;NET.wl='';NET.dt={};NET.saved=false;state='play';if(NET.mode==='online')SY.reset();
  showGame();
 }
 function newLocalGame(){
@@ -321,9 +345,12 @@ function renderRanks(){
  const list=players.slice().sort((a,b)=>(b.lives>0)-(a.lives>0)||(b.outAt||0)-(a.outAt||0)||b.lives-a.lives||b.kills-a.kills);
  $('ranks').innerHTML=list.slice(0,8).map((p,k)=>'<li style="animation-delay:'+k*60+'ms"><span class="pos">'+(k+1)+'</span><span style="color:'+p.col+'">'+esc(nameOf(p))+'</span><em>'+p.kills+' KO</em></li>').join('');
 }
+// time limit: most worms left, then most KOs (per team in team mode)
+function leader(){const sc={};for(const p of players){const k=p.team,o=sc[k]||(sc[k]={k,l:0,ko:0,p});o.l+=Math.max(0,p.lives);o.ko+=p.kills|0;if(p.lives>o.p.lives)o.p=p}
+ const a=Object.values(sc).sort((x,y)=>y.l-x.l||y.ko-x.ko);return a.length>1&&a[0].l===a[1].l&&a[0].ko===a[1].ko?null:a[0].p}
 function gameOver(p){
- state='over';NET.winner=p?p.i:-1;
- $('winner').textContent=p?nameOf(p).toUpperCase()+' WINS':'DRAW';$('over').hidden=false;$('pad').hidden=true;
+ state='over';NET.winner=p?p.i:-1;NET.wl=p?(M.mode==='teams'?TEAMN[p.team]:nameOf(p).toUpperCase())+' WINS':'DRAW';
+ $('winner').textContent=NET.wl;$('over').hidden=false;$('pad').hidden=true;
  renderRanks();
  $('again').textContent=NET.mode==='online'?'BACK TO ROOM':'NEW MATCH';$('again').hidden=false;$('overNote').hidden=true;
  if(NET.host||NET.mode!=='online')saveStats();
@@ -557,8 +584,8 @@ function fire(p){
 }
 
 /* ---------- crates ---------- */
-function spawnCrate(){
- if(crates.length>=Math.max(4,Math.round(W/220)))return;
+function spawnCrate(force){
+ if(!force&&crates.length>=Math.max(4,Math.round(W/220)))return;
  const hp=Math.random()<.3;
  let id=null;if(!hp){let t=Math.random()*CRATES.reduce((a,k)=>a+DEF[k].crate,0);id=CRATES.find(k=>(t-=DEF[k].crate)<0)||'homing'}
  crates.push({x:Math.round(rnd(12,W-12)),y:-8,hp,id,landed:false});
@@ -597,7 +624,7 @@ function aimFor(p){if(!p||!p.alive)return null;let x,y;
 RA.input.attachPointer(cv,{
  active:()=>state==='play',
  touchActive:()=>state==='play'&&document.body.classList.contains('touchplay'),
- click:()=>{if(panelOn){openPanel(false);return false}},
+ click:()=>{if(panelOn){openPanel(false);return false}if(spectatorClick())return false},
  touch:()=>{if(panelOn){openPanel(false);return false}},
  right:()=>openPanel(!panelOn),
  wheel:dy=>pulse(dy>0?'next':'prev')});
@@ -654,17 +681,19 @@ function control(p,inp){
  if(p.grounded)p.coy=6;else if(p.coy>0)p.coy--;
  if(!flying&&inp.jump&&!pr.jump){
   // Worms backflip: tap jump twice quickly
-  if(!p.grounded&&p.jumping&&tick-p.lastJ<14&&!p.flip){p.vy=-3.4;p.vx=-p.dir*.7;p.flip=1;p.jumping=false;p.jb=0}else p.jb=7;
+  if(!p.grounded&&p.jumping&&tick-p.lastJ<14&&!p.flip){p.vy=-3.4;p.vx=-(p.face||p.dir)*.7;p.flip=1;p.jumping=false;p.jb=0}else p.jb=7;
   p.lastJ=tick}else if(p.jb>0)p.jb--;
  if(!p.charging&&p.grounded&&!(p.jet>0&&(inp.jump||inp.up))){if(inp.left)walk(p,-1);else if(inp.right)walk(p,1)}
  if(!p.grounded&&!p.charging&&!flying){
   if(inp.left){p.vx=Math.max(-1.4,p.vx-.05);p.dir=-1}
   else if(inp.right){p.vx=Math.min(1.4,p.vx+.05);p.dir=1}}
+ // body faces where you walk; the mouse only aims (weapon side follows the cursor)
+ if(inp.left)p.face=-1;else if(inp.right)p.face=1;else if(p.grounded&&!flying)p.face=null;
  if(inp.aimTo){p.dir=inp.aimTo.dir;p.aim=inp.aimTo.aim}
  if(!inp.aimTo&&!flying){if(inp.up)p.aim=Math.min(1.5,p.aim+.035);if(inp.down)p.aim=Math.max(-1.5,p.aim-.035)}
  // where strikes / teleport / girder / homing land: the cursor or finger, else 110 px along the aim
  {const[cx,cy]=aimVec(p),d=inp.aimTo&&inp.aimTo.d!=null?inp.aimTo.d:110;p.tx=p.x+cx*d;p.ty=p.y-5+cy*d}
- if(p.jb>0&&p.coy>0&&!p.charging&&!flying){p.vy=-2.8;p.vx=p.dir*1.1;p.grounded=false;p.coy=0;p.jb=0;p.jumping=true}
+ if(p.jb>0&&p.coy>0&&!p.charging&&!flying){p.vy=-2.8;p.vx=(p.face||p.dir)*1.1;p.grounded=false;p.coy=0;p.jb=0;p.jumping=true}
  if(p.jumping&&!inp.jump&&p.vy<-1){p.vy*=.5;p.jumping=false}
  if(p.burst>0&&--p.burstT<=0){p.burst--;p.burstT=p.burstW.every;shootRay(p,p.burstW)}
  if(inp.fire&&!pr.fire){const rm=projs.find(q=>q.owner===p&&q.w&&q.w.remote&&!q.dead);
@@ -721,6 +750,7 @@ function stepFx(){
 function readGuest(p){
  const pe=NET.room&&NET.room.peers().find(q=>q.peer===p.peer);
  if(!pe){if(p.lives>0){p.lives=0;p.alive=false}return}
+ {const dc=pe.presence.dc;if(Array.isArray(dc)&&(dc[0]|0)>(p.dcSeen|0)){p.dcSeen=dc[0]|0;if(p.lives<=0)dropCrateAt(+dc[1]||0,p)}}
  if(p.cd>0)p.cd--;
  if(p.burst>0&&--p.burstT<=0){p.burst--;p.burstT=p.burstW.every;shootRay(p,p.burstW)}
  const u=SY.read(pe.presence,NET.matchId,p.i);if(!u||!Array.isArray(u.s))return;const s=u.s;
@@ -759,10 +789,11 @@ function update(){
   else if(!p.alive&&p.lives>0&&--p.respawn<=0)spawn(p);}
  if(--crateT<=0){spawnCrate();crateT=rnd(360,540)*4/Math.max(4,players.length)}
  if(--windT<=0){wind=Math.round(rnd(-1,1)*5)/5;windT=20*60}
- if(matchT===SUDDEN)music.play('worms',4);
- if(matchT>SUDDEN&&tick%30===0&&WATER>H*.4)WATER--;
+ if(matchT===suddenAt())music.play('worms',4);
+ if(matchT>suddenAt()&&tick%30===0&&WATER>H*.4)WATER--;
  const left=players.filter(p=>p.lives>0);
- if(left.length<=1){gameOver(left[0]);return}
+ if(new Set(left.map(p=>p.team)).size<=1){gameOver(left[0]);return}
+ if(M.len&&matchT>=M.len*3600){gameOver(leader());return}
  if(tick%6===0)hud();
 }
 
@@ -781,7 +812,7 @@ function grubCols(c,flash){
  return shade[c]||(shade[c]={k:'#000',b:c,l:mix(c,'#ffffff',.45),d:mix(c,'#000000',.45),w:'#fcfcfc',p:'#000'});
 }
 function drawWorm(u){
- const x=Math.round(u.x),y=Math.round(u.y),d=u.dir;
+ const x=Math.round(u.x),y=Math.round(u.y),d=u.face||u.dir;
  const an=u.rope||u.hook;
  if(an){const dx=an.x-u.x,dy=an.y-(u.y-5),n=Math.max(1,Math.ceil(Math.hypot(dx,dy)));
   for(let i=0;i<=n;i++){ctx.fillStyle=(i>>1)&1?'#d82800':'#fcfcfc';ctx.fillRect(Math.round(u.x+dx*i/n),Math.round(u.y-5+dy*i/n),1,1)}
@@ -845,15 +876,15 @@ function computeView(){
  if(state==='menu'||!players.length)return{pts:[],vw:[],fog:false,spec:false,t:null};
  const mine=humans().filter(p=>p.lives>0);
  if(mine.length){const al=mine.filter(p=>p.alive);if(al.length)lastPts=al.map(p=>[p.x,p.y-5]);
-  return{pts:lastPts,vw:al,fog:state==='play',spec:false,t:null}}
+  return{pts:lastPts,vw:al,fog:state==='play'&&M.fog>0,spec:false,t:null}}
  // You're out (or only CPUs play): watch a living worm.
  const alive=players.filter(p=>p.alive);
  let t=players[specIdx];if(!t||!t.alive)t=alive[0]||null;if(t)specIdx=t.i;
- return{pts:t?[[t.x,t.y-5]]:lastPts,vw:t?[t]:[],fog:state==='play'&&!!t,spec:state==='play',t}
+ return{pts:t?[[t.x,t.y-5]]:lastPts,vw:t?[t]:[],fog:state==='play'&&M.fog>0&&!!t,spec:state==='play',t}
 }
 function specStep(d){const alive=players.filter(p=>p.alive);if(!alive.length)return;
  const k=alive.findIndex(p=>p.i===specIdx);specIdx=alive[((k<0?0:k+d)%alive.length+alive.length)%alive.length].i;blip(520);V=computeView();hud()}
-function seen(x,y){if(!V.fog)return true;for(const q of V.pts)if((x-q[0])**2+(y-q[1])**2<VIS*VIS)return true;return false}
+function seen(x,y){if(!V.fog)return true;for(const q of V.pts)if((x-q[0])**2+(y-q[1])**2<visR()*visR())return true;return false}
 const showWorm=u=>!V.fog||V.vw.includes(u)||u.mine||u.reveal>0||seen(u.x,u.y-5);
 function camStep(){
  V=computeView();
@@ -881,7 +912,7 @@ function drawFog(z,ox,oy){
  fCtx.globalCompositeOperation='source-over';fCtx.clearRect(0,0,VW,VH);
  fCtx.fillStyle='rgba(0,0,28,.8)';fCtx.fillRect(0,0,VW,VH);
  fCtx.globalCompositeOperation='destination-out';
- const R=Math.round(VIS*z);
+ const R=Math.round(visR()*z);
  for(const q of V.pts){const x=q[0]*z-ox,y=q[1]*z-oy;
   fCtx.fillStyle='rgba(0,0,0,.45)';rowsCircle(fCtx,x,y,R+6);
   fCtx.fillStyle='#000';rowsCircle(fCtx,x,y,R-3)}
@@ -1001,8 +1032,8 @@ function hud(){
  if(panelOn){if(showW)renderPanel();else openPanel(false)}
  document.body.classList.toggle('mouseaim',showW&&usesMouse(fp)&&!panelOn);
  if(state!=='play'){$('info').textContent=NET.mode==='online'&&NET.code?'Room '+NET.code:'';return}
- const s=isClient()?NET.sd:Math.max(0,Math.ceil((SUDDEN-matchT)/60));
- $('info').innerHTML=(NET.late?'<b>Joined mid-match, you play next round</b> · ':'')+(s>0?'Water rises in <b>'+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+'</b>':'<b style="color:var(--fire)">Water rising!</b>')+
+ const s=isClient()?NET.sd:sdLeft();
+ $('info').innerHTML=(NET.late?'<b>Joined mid-match, you play next round</b> · ':'')+(M.mode==='teams'?'<b>Teams</b> · ':'')+(s>=9999?'No rising water':s>0?'Water rises in <b>'+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+'</b>':'<b style="color:var(--fire)">Water rising!</b>')+
   ' · Wind <b>'+(wind===0?'calm':(wind<0?'◀ ':'')+Math.abs(Math.round(wind*5))+(wind>0?' ▶':''))+'</b>';
 }
 
@@ -1089,7 +1120,7 @@ function renderRoom(){
  $('roster').innerHTML=peers.slice(0,MAXP).map((id,i)=>{const pe=all.find(q=>q.peer===id);
   return '<span style="color:'+COLORS[i][1]+'">'+esc(pe?peerName(pe,i):'P'+(i+1))+(i===0?' · host':'')+'</span>'}).join('')+
   (cpus?'<span class="note">+ '+Math.min(cpus,MAXP-peers.length)+' CPU</span>':'');
- $('hostCtl').hidden=!NET.host;$('rwait').hidden=NET.host;
+ $('hostCtl').hidden=!NET.host;$('msetO').hidden=!NET.host;$('rwait').hidden=NET.host;
  if(!NET.host&&!hostPeer())$('rwait').textContent='Looking for the host…';else $('rwait').textContent='Waiting for the host to start…';
 }
 function onRoomPeers(){
@@ -1125,7 +1156,7 @@ $('hstart').addEventListener('click',()=>{
 /* host -> everyone: the match as compact arrays (fits the 4 KiB presence limit) */
 function snapshot(){
  const g={ph:state==='over'?'over':'play',id:NET.matchId,seed:NET.seed,n:players.length,el:(matchT/60)|0,
-  wd:Math.round(wind*5),wt:WATER,sd:Math.max(0,Math.ceil((SUDDEN-matchT)/60)),win:NET.winner,r:NET.mroster,
+  wd:Math.round(wind*5),wt:WATER,sd:sdLeft(),cf:[M.mode,M.fog,M.drops],wl:NET.wl||'',win:NET.winner,r:NET.mroster,
   p:players.map(p=>[Math.round(p.x*2),Math.round(p.y*2),Math.max(0,p.hp|0),p.lives,p.dir,Math.round(p.aim*100),p.alive?1:0,p.charging?Math.round(p.power*98)+1:0,
    WLIST.indexOf(p.wpn),(p.ammo||[]).map(a=>a<0?'i':Math.min(9,a)).join(''),p.kami>0?1:0,p.kills,p.inv>0?1:0,p.grounded?1:0,p.reveal>0?1:0,
    (p.rope||p.hook)?Math.round((p.rope||p.hook).x):-1,(p.rope||p.hook)?Math.round((p.rope||p.hook).y):-1,(p.chute?1:0)|(p.jet>0?2:0),p.life|0]),hx:SY.pack(),
@@ -1170,12 +1201,13 @@ function applySnap(g){
    wpn:WLIST[a[8]]||'bazooka',grounded:a[13]!==0,rope:a[15]>=0&&a[16]!=null?{x:a[15],y:a[16]}:null,hook:null,chute:(a[17]|0)&1,jet:(a[17]|0)&2?1:0})});
  projs=(g.pr||[]).map(a=>({x:a[0],y:a[1],k:a[2]|0,f:a[3]|0}));
  crates=(g.c||[]).map(a=>({x:a[0],y:a[1],hp:!!a[2],landed:!!a[3]}));
- wind=(g.wd|0)/5;WATER=Math.max(40,Math.min(H-2,g.wt|0));NET.sd=g.sd|0;if(g.ph==='play'&&NET.sd===0)music.play('worms',4);
+ wind=(g.wd|0)/5;WATER=Math.max(40,Math.min(H-2,g.wt|0));NET.sd=g.sd|0;
+ if(Array.isArray(g.cf)){M.mode=g.cf[0];M.fog=g.cf[1]|0;M.drops=g.cf[2]|0;for(const p of players){p.team=M.mode==='teams'?p.i%2:p.i;if(M.mode==='teams')p.col=TEAMC[p.i%2]}}if(g.ph==='play'&&NET.sd===0)music.play('worms',4);
  for(const e of g.x||[])if(e[0]>NET.xs){NET.xs=e[0];if(e[3]<0){addGirder(e[1],e[2]);continue}carve(e[1],e[2],Math.min(48,e[3]));debris(e[1],e[2],e[3]);sfx('boom',e[3])}
  for(const e of g.f||[])if((e[2]|0)>NET.fseen){NET.fseen=e[2]|0;feedView.push({k:e[0]|0,v:e[1]|0,until:performance.now()+5000})}
  if(g.ph==='over'&&state!=='over'){
   state='over';NET.winner=g.win|0;const wp=players[NET.winner];
-  $('winner').textContent=wp?nameOf(wp).toUpperCase()+' WINS':'DRAW';
+  $('winner').textContent=g.wl||(wp?nameOf(wp).toUpperCase()+' WINS':'DRAW');
   renderRanks();$('over').hidden=false;$('again').hidden=true;$('overNote').hidden=false;$('pad').hidden=true;
   saveStats();
  }
@@ -1198,7 +1230,26 @@ const ACH=RA.achievements('worms',[
 function saveStats(){
  if(NET.saved||NET.late)return;NET.saved=true;
  const me=players.find(p=>p.mine)||(NET.mode!=='online'&&players.find(p=>p.ctrl!=='cpu'));if(!me)return;
- SAVE.set({weapon:+$('ow').value});const m={won:NET.winner===me.i,kills:me.kills|0};SAVE.record(m);ACH.check(m);showRecord()}
+ SAVE.set({weapon:+$('ow').value});const wp=players[NET.winner],m={won:!!wp&&(wp===me||(M.mode==='teams'&&wp.team===me.team)),kills:me.kills|0};SAVE.record(m);ACH.check(m);showRecord()}
+
+/* ---------- match settings (host picks) ---------- */
+for(const pre of['L','O'])$('mset'+pre).innerHTML=MSET.map(([k,t,o])=>'<label>'+t+' <select data-k="'+k+'" id="m'+pre+k+'">'+
+ o.map(([v,l])=>'<option value="'+v+'"'+(String(CFG[k])===String(v)?' selected':'')+'>'+l+'</option>').join('')+'</select></label>').join('');
+for(const[k]of MSET)for(const pre of['L','O'])$('m'+pre+k).addEventListener('change',e=>{const v=e.target.value;CFG[k]=isNaN(+v)?v:+v;
+ for(const q of['L','O'])$('m'+q+k).value=v;try{localStorage.setItem('ra-worms-mset',JSON.stringify(CFG))}catch(_){}});
+/* ---------- spectator crates: worms that are out click the map to airdrop a crate (one per 25 s) ---------- */
+const DROPCD=25*60;let dropReady=0;
+function dropCrateAt(x,by){if(state!=='play'||!M.drops)return;
+ const k=by?by.i:-1;NET.dt=NET.dt||{};if((NET.dt[k]|0)>matchT)return;NET.dt[k]=matchT+DROPCD;
+ const n=crates.length;spawnCrate(true);const c=crates[n];if(c)c.x=Math.round(Math.max(12,Math.min(W-12,x)))}
+function spectatorClick(){
+ if(state!=='play'||!M.drops||!mouse.on)return false;
+ const me=NET.mode==='online'?players.find(p=>p.mine):humans().find(p=>p.ctrl==='mk');
+ if(!me||me.lives>0)return false;
+ const now=performance.now();if(now<dropReady)return true;dropReady=now+DROPCD/60*1000;
+ const[x]=toWorld(mouse);
+ if(isClient()){NET.dc=[(NET.dc?NET.dc[0]:0)+1,Math.round(x)]}else dropCrateAt(x,me);
+ return true}
 
 /* ---------- menu ---------- */
 function setTab(online){$('tabLocal').classList.toggle('on',!online);$('tabOnline').classList.toggle('on',online);
@@ -1227,7 +1278,7 @@ function step(){
 function frame(now){
  if(isClient()&&NET.room){const p=players.find(q=>q.mine);
   if(p&&state==='play')SY.upload(NET.room,now,[Math.round(p.x*10),Math.round(p.y*10),Math.round((p.vx||0)*100),Math.round((p.vy||0)*100),p.dir,Math.round(p.aim*100),p.grounded?1:0,
-   (p.chute?1:0)|(p.jet>0?2:0)|(p.rope?4:0),p.rope?Math.round(p.rope.x):0,p.rope?Math.round(p.rope.y):0,p.charging?Math.round(p.power*98)+1:0,WLIST.indexOf(p.wpn),NET.fd|0,p.life|0],NET.matchId,{wf:NET.fq});
+   (p.chute?1:0)|(p.jet>0?2:0)|(p.rope?4:0),p.rope?Math.round(p.rope.x):0,p.rope?Math.round(p.rope.y):0,p.charging?Math.round(p.power*98)+1:0,WLIST.indexOf(p.wpn),NET.fd|0,p.life|0],NET.matchId,{wf:NET.fq,dc:NET.dc});
   if(NET.hostGone&&now-NET.hostGone>4000){NET.hostGone=0;netMsg('The host left the room.');leaveRoom()}}
  if(isClient()&&state==='play'&&tick%6===0)hud();
  if(V.spec&&state==='play'){const g=readPad(0),pg=specPad;if(g.left&&!pg.left)specStep(-1);if(g.right&&!pg.right)specStep(1);specPad=g}
@@ -1246,6 +1297,6 @@ RA.register({id:'worms',name:'WORMS',kind:'Artillery',players:'2-20 players',rea
  onEsc(){if(panelOn){openPanel(false);return true}},
  onQuit(){if(NET.mode==='online'){leaveRoom();return}
   players=[];projs=[];crates=[];setSize(2);genTerrain((Math.random()*1e9)|0);showMenu()}});
-window.__gb={solid:(x,y)=>solid(x,y),get projs(){return projs},explodeAt:(x,y)=>explode(x,y,20,25,null),get cam(){return cam},get VW(){return VW},get VH(){return VH},get state(){return state},get players(){return players},update,newLocalGame,snapshot,applySnap,NET,
+window.__gb={solid:(x,y)=>solid(x,y),get projs(){return projs},explodeAt:(x,y)=>explode(x,y,20,25,null),get cam(){return cam},get VW(){return VW},get VH(){return VH},get state(){return state},get players(){return players},get crates(){return crates},get M(){return M},get theme(){return THEME.n},update,newLocalGame,snapshot,applySnap,NET,
  terrSum:()=>{let s=0;for(let i=0;i<terr.length;i++)if(terr[i])s=(s+i*7)%1000003;return s}};
 })();
