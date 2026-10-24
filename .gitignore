@@ -2,3 +2,4 @@ node_modules/
 dist/
 app/app/
 app/retro-arena.html
+__pycache__/

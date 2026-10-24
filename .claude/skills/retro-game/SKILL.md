@@ -69,6 +69,7 @@ Ask these again at every milestone: *Does this make sense? Does it align with th
   places, eliminations) belong to the host; hits are sent to the victim's owner as events (seq numbers).
 - **snap() keys must not clash with the kit's:** ph id r md bs sd n t mt w rk e (the kit warns in the console).
 - Sync what others need to draw: pose, suspension, crash state, not just x/y.
+- Measure content against each other: track lengths / level sizes within ~20% of each other (Frosty Peaks was 2x).
 
 ## 5. Play-testing protocol (do all of it, every game)
 
@@ -78,9 +79,17 @@ Serve: `cd game && python3 -m http.server 8765`. Tools in `game/tools/test` (see
    `RA.input.keys`): a *lazy* player (only the main button) and a *skilled* player (uses the game's techniques).
    Targets: the lazy player finishes and isn't humiliated; the skilled player usually beats normal CPUs; crashes /
    deaths have causes you can name. Log failure causes (reason, position) and fix patterns that hit everyone.
+   For steering games a random "lazy" player tells you nothing (nobody steers at random): use a *novice* instead,
+   the CPU brain's steering delayed 6-10 steps, no advanced technique (drift, turbo), items at random. Targets:
+   the novice finishes mid-pack-ish, results get better step by step with skill (delay 10 → 6 → 0 → skilled).
+   Check whether newcomers even move: if the main button isn't "go", make going automatic (Turbo Karts accelerates by itself).
+   Watch CPUs over a whole match (log position + speed every few seconds): CPUs parked against a wall or pillar mean
+   the brain needs look-ahead obstacle steering and a back-out-when-stuck rule.
+   CPUs must never be faster than a clean human on Normal: rubber-band from the back, ease off when far ahead of every human.
 3. `node sim.js <id> <mode> 8` and with 20 players - every mode ends properly, results make sense, snapshot under 3 KB,
    frame time reasonable.
-4. `node frames.js ...` - contact sheets of the animations (jump, lean, crash, celebrate). Look at them.
+4. `node shots.js <id> <n> <name> 300,900 [mode] [settings]` - real-play screenshots of every track / level / mode.
+   `node frames.js ...` - contact sheets of the animations (jump, lean, crash, celebrate). Look at them.
 5. `node online.js <id>` - the guest gets a seat (myIdx >= 0), moves, and the host sees its poses/crashes.
 6. Split screen (2 local humans) and the lobby demo look right.
 In tests, blur the focused button before pressing Space (it would click it).
