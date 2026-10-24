@@ -311,15 +311,6 @@ function skyStrip(th){const key=th.sky.join();if(SKY[key])return SKY[key];const 
   g.lineTo(W,H);g.closePath();const gr=g.createLinearGradient(0,H-base-amp,0,H);gr.addColorStop(0,mix(th.hill[L],'#ffffff',.25));gr.addColorStop(1,mix(th.hill[L],'#000000',.25));g.fillStyle=gr;g.fill();
   if(th.ice&&L===0){g.fillStyle='rgba(255,255,255,.7)';for(let x=0;x<W;x+=66){g.beginPath();g.arc(x+33,H-base-amp+4,6,0,7);g.fill()}}}
  return SKY[key]=c}
-// fast Mode 7 floor: same projection as RA.fx.floor (forward = (-sin a, cos a)), but steps the texture
-// coordinates along each row and reads packed 32-bit texels, about 10x quicker; the haze gradient is drawn on top
-let FB=null,FC=null;const T32=new WeakMap();
-function floor7(g,tex,cx,cz,ang,H,F,hor,x0,y0,w,h){let tx=T32.get(tex);if(!tx){tx=new Uint32Array(tex.getContext('2d').getImageData(0,0,TS,TS).data.buffer);T32.set(tex,tx)}
- const rows=h-hor;if(rows<=0)return;if(!FB||FB.width!==w||FB.height!==rows){FC=FC||document.createElement('canvas');FC.width=w;FC.height=rows;FB=FC.getContext('2d').createImageData(w,rows)}
- const out=new Uint32Array(FB.data.buffer),ca=Math.cos(ang),sa=Math.sin(ang),M=TS-1;let o=0;
- for(let r=0;r<rows;r++){const d=H*F/(r+1),lx=-sa*d,lz=ca*d,rx=ca*d*w/F/2,rz=sa*d*w/F/2;let u=cx+lx-rx,t=cz+lz-rz;const du=2*rx/w,dt=2*rz/w;
-  for(let i=0;i<w;i++){out[o++]=tx[(((t|0)&M)<<10)|((u|0)&M)];u+=du;t+=dt}}
- FC.getContext('2d').putImageData(FB,0,0);g.drawImage(FC,x0,y0+hor)}
 const cams=[];
 // one camera view of the world: sky, Mode 7 road, depth-sorted billboards, then this kart's HUD
 function view(g,p,vx,vy,vw,vh,ci,many){const th=MAP.th;let cam=cams[ci];if(!cam||cam.p!==p.i){cam=cams[ci]={p:p.i,a:p.a,x:p.x,z:p.z}}
@@ -330,7 +321,7 @@ function view(g,p,vx,vy,vw,vh,ci,many){const th=MAP.th;let cam=cams[ci];if(!cam|
  if(!th.night){g.fillStyle='rgba(255,250,220,.9)';const sx=vx+vw/2+wrapA(cam.a-2.2)*F;g.beginPath();g.arc(sx,vy+hor*.35,8,0,7);g.fill();RA.fx.light(g,sx,vy+hor*.35,22,'#fff0b0',.25)}
  else{g.fillStyle='#fff';for(let k=0;k<40;k++){const sx=vx+((k*97+cam.a*F*.5)%vw+vw)%vw,sy=vy+(k*53%Math.max(1,hor-10));g.fillRect(sx,sy,.8,.8)}}
  const strip=skyStrip(th),SW=2*Math.PI*F,sh=48*F/84;let ox=((vw/2+cam.a*F)%SW+SW)%SW-SW;for(;ox<vw;ox+=SW)g.drawImage(strip,vx+ox,vy+hor-sh,SW,sh);
- const fr=many?2:3;g.save();g.scale(1/fr,1/fr);floor7(g,MAP.tex,cam.x,cam.z,cam.a,H,F*fr,hor*fr,Math.round(vx*fr),Math.round(vy*fr),Math.round(vw*fr),Math.round(vh*fr));g.restore();
+ const fr=many?2:3;g.save();g.scale(1/fr,1/fr);RA.fx.floor7(g,MAP.tex,{x:cam.x,z:cam.z,angle:cam.a,height:H,fov:F*fr,horizon:hor*fr},Math.round(vx*fr),Math.round(vy*fr),Math.round(vw*fr),Math.round(vh*fr));g.restore();
  const hg=g.createLinearGradient(0,vy+hor,0,vy+hor+vh*.16);hg.addColorStop(0,th.hz);hg.addColorStop(1,th.hz+'00');g.globalAlpha=.85;g.fillStyle=hg;g.fillRect(vx,vy+hor,vw,vh*.16);g.globalAlpha=1;
  const P=(x,z)=>{const dx=x-cam.x,dz=z-cam.z,f=-dx*sa+dz*ca;if(f<5)return null;const r=dx*ca+dz*sa,s=F/f;return{x:vx+vw/2+r*s,y:vy+hor+H*s,s,f}};
  const L=[],lim=vw/2+40;

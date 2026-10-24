@@ -6,7 +6,7 @@
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v59';
+RA.VERSION='v60';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -94,6 +94,21 @@ RA.fx={
   if(!floorC)floorC=document.createElement('canvas');if(floorC.width!==floorBuf.width||floorC.height!==floorBuf.height){floorC.width=floorBuf.width;floorC.height=floorBuf.height}
   floorC.getContext('2d').putImageData(floorBuf,0,0);const sm=c.imageSmoothingEnabled;c.imageSmoothingEnabled=true;c.drawImage(floorC,x0,y0+hor);c.imageSmoothingEnabled=sm}};
 let floorBuf=null,floorC=null;const floorCache=new WeakMap();
+// RA.fx.floor7: the same Mode 7 floor about 10x faster (steps the texture along each row, reads packed 32-bit texels).
+// tex must be a square power-of-two canvas; it wraps. view {x,z,angle,height,fov,horizon}: forward = (-sin a, cos a), right = (cos a, sin a).
+// The horizon may sit above the view (negative) for steep cameras such as a football broadcast. No fog: draw your own haze on top.
+// Sprites on the floor at world (x,z): f = -(x-v.x)*sin a + (z-v.z)*cos a (depth), s = fov/f, screen x = x0+w/2 + ((x-v.x)*cos a + (z-v.z)*sin a)*s,
+// screen y = y0+horizon + height*s, an object h tall reaches up h*s pixels.
+const f7={buf:null,cv:null,tex:new WeakMap()};
+RA.fx.floor7=(c,tex,v,x0,y0,w,h)=>{let T=f7.tex.get(tex);const S=tex.width,M=S-1,sh=Math.log2(S)|0;
+ if(!T){T=new Uint32Array(tex.getContext('2d').getImageData(0,0,S,S).data.buffer);f7.tex.set(tex,T)}
+ const hor=Math.round(v.horizon),r0=Math.max(0,-hor),rows=h-hor-r0;if(rows<=0||w<=0)return;
+ if(!f7.cv)f7.cv=document.createElement('canvas');if(!f7.buf||f7.buf.width!==w||f7.buf.height!==rows){f7.cv.width=w;f7.cv.height=rows;f7.buf=f7.cv.getContext('2d').createImageData(w,rows)}
+ const out=new Uint32Array(f7.buf.data.buffer),a=v.angle||0,ca=Math.cos(a),sa=Math.sin(a),H=v.height||40,F=v.fov||120;let o=0;
+ for(let r=r0;r<r0+rows;r++){const d=H*F/(r+1),rx=ca*d*w/F/2,rz=sa*d*w/F/2;let u=v.x-sa*d-rx,t=v.z+ca*d-rz;const du=2*rx/w,dt=2*rz/w;
+  for(let i=0;i<w;i++){out[o++]=T[(((t|0)&M)<<sh)|((u|0)&M)];u+=du;t+=dt}}
+ f7.cv.getContext('2d').putImageData(f7.buf,0,0);c.drawImage(f7.cv,x0,y0+hor+r0)};
+
 function floorData(tex){let d=floorCache.get(tex);if(!d){d=tex.getContext('2d').getImageData(0,0,tex.width,tex.height).data;floorCache.set(tex,d)}return d}
 
 /* ---------- screen: whole-number pixel scale, the view widens or narrows to fill any window ---------- */
