@@ -6,7 +6,7 @@
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v44';
+RA.VERSION='v45';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -582,6 +582,35 @@ function achOpen(){let m=$('achModal');if(!m){m=document.createElement('div');m.
   '<div class="achTitles"><b>YOUR TITLE</b> '+(titles.length?titles.map(t=>'<button type="button" data-title="'+RA.util.esc(t)+'"'+(t===cur?' class="on"':'')+'>'+RA.util.esc(t)+'</button>').join(''):'<span>Unlock titles by earning achievements.</span>')+'</div>'+sec+'</div>';
  m.hidden=false}
 document.addEventListener('click',e=>{if(e.target&&e.target.id==='achBtn')achOpen()});
+
+/* ---------- custom dropdowns: every <select> gets a RELOADED-style picker. The native popup on Windows closes or freezes
+   whenever the page touches the DOM, so the real <select> stays hidden as the source of truth and fires 'change' as before. ---------- */
+const RSEL=new Set();let rsOpen=null;
+function rsClose(){if(rsOpen){rsOpen.list.remove();rsOpen.btn.classList.remove('open');rsOpen=null}}
+function rsEnhance(sel){if(sel._rs||sel.multiple||sel.closest('.noRs'))return;
+ const btn=document.createElement('button');btn.type='button';btn.className='rsel';sel._rs=btn;sel.classList.add('rsHid');sel.after(btn);RSEL.add(sel);
+ btn.addEventListener('mousedown',e=>e.preventDefault());
+ btn.addEventListener('click',e=>{e.stopPropagation();e.preventDefault();if(rsOpen&&rsOpen.sel===sel){if(performance.now()-rsOpen.t>250)rsClose();return}rsClose();if(sel.disabled)return;
+  const list=document.createElement('div');list.className='rsList';
+  list.innerHTML=[...sel.options].map((o,i)=>'<div class="rsOpt'+(i===sel.selectedIndex?' on':'')+(o.disabled?' dis':'')+'" data-i="'+i+'">'+RA.util.esc(o.textContent)+'</div>').join('');
+  document.body.appendChild(list);const r=btn.getBoundingClientRect();list.style.minWidth=r.width+'px';
+  const below=innerHeight-r.bottom;list.style.left=Math.min(r.left,innerWidth-list.offsetWidth-6)+'px';
+  if(below<list.offsetHeight+8&&r.top>below){list.style.bottom=(innerHeight-r.top+2)+'px'}else list.style.top=(r.bottom+2)+'px';
+  list.addEventListener('mousedown',e=>e.preventDefault());
+  list.addEventListener('click',e=>{e.stopPropagation();const o=e.target.closest('.rsOpt');if(!o||o.classList.contains('dis'))return;
+   const i=+o.dataset.i;rsClose();if(sel.selectedIndex!==i){sel.selectedIndex=i;sel.dispatchEvent(new Event('input',{bubbles:true}));sel.dispatchEvent(new Event('change',{bubbles:true}))}rsSync()});
+  rsOpen={sel,btn,list,t:performance.now()};btn.classList.add('open');try{RA.audio.ensure&&blip(700)}catch(_){}});
+ rsSync()}
+function rsSync(){for(const sel of RSEL){const b=sel._rs;if(!sel.isConnected){b.remove();RSEL.delete(sel);continue}
+ const o=sel.options[sel.selectedIndex],t=o?o.textContent:'';if(b.textContent!==t)b.textContent=t;if(b.disabled!==sel.disabled)b.disabled=sel.disabled;
+ const h=sel.hidden||sel.style.display==='none';if(b.hidden!==h)b.hidden=h;if(b.title!==(sel.title||''))b.title=sel.title||''}
+ if(rsOpen&&!rsOpen.btn.isConnected)rsClose()}
+addEventListener('click',e=>{if(rsOpen&&(e.target===rsOpen.sel||rsOpen.btn.contains(e.target)||rsOpen.list.contains(e.target)))return;rsClose()});addEventListener('keydown',e=>{if(e.key==='Escape'&&rsOpen){rsClose();e.stopPropagation()}},true);
+addEventListener('resize',rsClose);
+new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.nodeType===1){if(n.tagName==='SELECT')rsEnhance(n);else n.querySelectorAll&&n.querySelectorAll('select').forEach(rsEnhance)}})
+ .observe(document.documentElement,{childList:true,subtree:true});
+document.querySelectorAll('select').forEach(rsEnhance);setInterval(rsSync,120);
+RA.util.rsSync=rsSync;
 
 /* ---------- multicart menu ---------- */
 const GAMES=[];let sel=0,cartOn=true,cur=null,soonT=0,padPrev={};

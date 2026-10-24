@@ -385,6 +385,19 @@ select option{background:#10121a;color:#eef4ff}
 .slot{grid-template-columns:auto minmax(0,1.2fr) minmax(0,1fr)}
 .ptitle,.panel .hd,.panel>.title,.kicker{font-family:"Russo One",sans-serif!important;color:var(--rl)!important;font-size:13px!important;letter-spacing:.14em;text-shadow:0 0 8px rgba(56,232,255,.5)}
 .ph{font-family:"Russo One",sans-serif!important;color:var(--rl)!important;font-size:14px!important;letter-spacing:.14em;text-shadow:0 0 8px rgba(56,232,255,.5)}
+
+/* custom dropdowns (engine rsEnhance) */
+select.rsHid{position:absolute!important;opacity:0!important;pointer-events:none!important;width:1px!important;height:1px!important;min-width:0!important;padding:0!important;border:0!important;margin:0!important}
+.rsel{font-family:var(--font);font-weight:700;font-size:15px;color:#eef4ff;text-align:left;cursor:pointer;min-width:60px;letter-spacing:.02em;
+ background:linear-gradient(45deg,transparent 50%,var(--rl) 50%) right 14px center/6px 6px no-repeat,linear-gradient(-45deg,transparent 50%,var(--rl) 50%) right 8px center/6px 6px no-repeat,linear-gradient(180deg,#232733,#0b0d14);
+ border:1px solid #6c7486;border-radius:3px;padding:6px 26px 6px 10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 0 1px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rsel:hover,.rsel.open{border-color:var(--rl);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 0 1px #000,0 0 10px rgba(56,232,255,.35)}
+.rsel:disabled{opacity:.5;cursor:default}
+.slot .rsel{width:100%;font-size:14px;min-height:34px}
+.rsList{position:fixed;z-index:9999;max-height:50vh;overflow:auto;background:linear-gradient(180deg,#1a1d28,#07080d);border:1px solid var(--rl);border-radius:3px;box-shadow:0 0 0 1px #000,0 0 16px rgba(56,232,255,.35),0 10px 24px rgba(0,0,0,.7);padding:3px}
+.rsOpt{font-family:var(--font);font-weight:700;font-size:14px;color:#dfe6f6;padding:6px 12px;border-radius:2px;cursor:pointer;white-space:nowrap}
+.rsOpt:hover{background:linear-gradient(90deg,rgba(56,232,255,.3),rgba(56,232,255,.05));color:#fff}
+.rsOpt.on{color:var(--rl)}.rsOpt.dis{opacity:.4;cursor:default}
 </style>
 <style>
 /* Worms only: kill feed, spectator bar, weapon bar and weapon list. Everything else comes from engine/ra.css. */
@@ -523,7 +536,7 @@ body.playing .bc .top{bottom:auto;top:calc(8px + env(safe-area-inset-top,0px))}
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v44';
+RA.VERSION='v45';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -1099,6 +1112,35 @@ function achOpen(){let m=$('achModal');if(!m){m=document.createElement('div');m.
   '<div class="achTitles"><b>YOUR TITLE</b> '+(titles.length?titles.map(t=>'<button type="button" data-title="'+RA.util.esc(t)+'"'+(t===cur?' class="on"':'')+'>'+RA.util.esc(t)+'</button>').join(''):'<span>Unlock titles by earning achievements.</span>')+'</div>'+sec+'</div>';
  m.hidden=false}
 document.addEventListener('click',e=>{if(e.target&&e.target.id==='achBtn')achOpen()});
+
+/* ---------- custom dropdowns: every <select> gets a RELOADED-style picker. The native popup on Windows closes or freezes
+   whenever the page touches the DOM, so the real <select> stays hidden as the source of truth and fires 'change' as before. ---------- */
+const RSEL=new Set();let rsOpen=null;
+function rsClose(){if(rsOpen){rsOpen.list.remove();rsOpen.btn.classList.remove('open');rsOpen=null}}
+function rsEnhance(sel){if(sel._rs||sel.multiple||sel.closest('.noRs'))return;
+ const btn=document.createElement('button');btn.type='button';btn.className='rsel';sel._rs=btn;sel.classList.add('rsHid');sel.after(btn);RSEL.add(sel);
+ btn.addEventListener('mousedown',e=>e.preventDefault());
+ btn.addEventListener('click',e=>{e.stopPropagation();e.preventDefault();if(rsOpen&&rsOpen.sel===sel){if(performance.now()-rsOpen.t>250)rsClose();return}rsClose();if(sel.disabled)return;
+  const list=document.createElement('div');list.className='rsList';
+  list.innerHTML=[...sel.options].map((o,i)=>'<div class="rsOpt'+(i===sel.selectedIndex?' on':'')+(o.disabled?' dis':'')+'" data-i="'+i+'">'+RA.util.esc(o.textContent)+'</div>').join('');
+  document.body.appendChild(list);const r=btn.getBoundingClientRect();list.style.minWidth=r.width+'px';
+  const below=innerHeight-r.bottom;list.style.left=Math.min(r.left,innerWidth-list.offsetWidth-6)+'px';
+  if(below<list.offsetHeight+8&&r.top>below){list.style.bottom=(innerHeight-r.top+2)+'px'}else list.style.top=(r.bottom+2)+'px';
+  list.addEventListener('mousedown',e=>e.preventDefault());
+  list.addEventListener('click',e=>{e.stopPropagation();const o=e.target.closest('.rsOpt');if(!o||o.classList.contains('dis'))return;
+   const i=+o.dataset.i;rsClose();if(sel.selectedIndex!==i){sel.selectedIndex=i;sel.dispatchEvent(new Event('input',{bubbles:true}));sel.dispatchEvent(new Event('change',{bubbles:true}))}rsSync()});
+  rsOpen={sel,btn,list,t:performance.now()};btn.classList.add('open');try{RA.audio.ensure&&blip(700)}catch(_){}});
+ rsSync()}
+function rsSync(){for(const sel of RSEL){const b=sel._rs;if(!sel.isConnected){b.remove();RSEL.delete(sel);continue}
+ const o=sel.options[sel.selectedIndex],t=o?o.textContent:'';if(b.textContent!==t)b.textContent=t;if(b.disabled!==sel.disabled)b.disabled=sel.disabled;
+ const h=sel.hidden||sel.style.display==='none';if(b.hidden!==h)b.hidden=h;if(b.title!==(sel.title||''))b.title=sel.title||''}
+ if(rsOpen&&!rsOpen.btn.isConnected)rsClose()}
+addEventListener('click',e=>{if(rsOpen&&(e.target===rsOpen.sel||rsOpen.btn.contains(e.target)||rsOpen.list.contains(e.target)))return;rsClose()});addEventListener('keydown',e=>{if(e.key==='Escape'&&rsOpen){rsClose();e.stopPropagation()}},true);
+addEventListener('resize',rsClose);
+new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.nodeType===1){if(n.tagName==='SELECT')rsEnhance(n);else n.querySelectorAll&&n.querySelectorAll('select').forEach(rsEnhance)}})
+ .observe(document.documentElement,{childList:true,subtree:true});
+document.querySelectorAll('select').forEach(rsEnhance);setInterval(rsSync,120);
+RA.util.rsSync=rsSync;
 
 /* ---------- multicart menu ---------- */
 const GAMES=[];let sel=0,cartOn=true,cur=null,soonT=0,padPrev={};
@@ -2903,7 +2945,7 @@ const KEYS={
  k3:{ArrowLeft:'left',ArrowRight:'right',ArrowDown:'down',ArrowUp:'rot',Period:'drop',Slash:'tgt',Comma:'item'},
  k4:{Numpad4:'left',Numpad6:'right',Numpad5:'down',Numpad8:'rot',Numpad0:'drop',Numpad1:'tgt',Numpad3:'item'}};
 const HOWTO=touchDev?'Touch: slide on the pad to move, down falls faster, up or DROP drops the column, TURN rotates it, TARGET picks who your rocks hit, ITEM fires your power-up.'
- :'Mouse + keys: move the mouse to slide the column, click or W to rotate, right-click or Space to drop, S falls faster, E picks who your rocks hit (random, attackers, leader, weakest), Q or F fires your power-up. A/D move too. Gamepad: stick moves, A/B rotate, up or X drops, Y targets, RB fires the power-up, Back chat, Start menu.';
+ :'Keys + mouse: A/D slide the column, click or W to rotate, right-click or Space to drop, S falls faster, E picks who your rocks hit (random, attackers, leader, weakest), Q or F fires your power-up. Clearing jewels and chains sends grey rock rows to the board you target; rocks sent to you show as INCOMING above your well and rise from the bottom. Gamepad: stick moves, A/B rotate, up or X drops, Y targets, RB fires the power-up, Back chat, Start menu.';
 let saved=null;try{saved=JSON.parse(localStorage.getItem('mj-setup'))}catch(e){}
 // your Magic Jewelry save file; the old device-only best score moves into it
 const SAVE=RA.save('jewels');let best=0;try{best=+localStorage.getItem('mj-best')||0}catch(e){}
@@ -3076,7 +3118,7 @@ const SY=RA.sync({owns:i=>!!boards[i]&&owned(boards[i]),host:()=>hostOnline(),on
 const hit=(o,k,v,by)=>SY.hit(o.i,k,k==='g'?Math.max(0,Math.min(30,v|0)):Math.max(0,Math.min(15,v|0)),by);
 function applyHit(o,k,v,by){if(!o.alive)return;
  if(k==='g'){let rows=v;const blk=Math.min(rows,o.fx.shield);if(blk){o.fx.shield-=blk;rows-=blk;say(o,'BLOCKED','#3cbcfc',70)}
-  if(rows){o.garb+=rows;o.lastBy=by;if(rows>=3)say(o,rows+' ROCKS','#d82800',70)}return}
+  if(rows){o.garb+=rows;o.lastBy=by;const fb=boards[by];say(o,rows+(rows>1?' ROCKS':' ROCK')+(fb&&fb!==o?' FROM '+fb.name.slice(0,8):''),'#ff5030',70)}return}
  const t=v,P=POW[t];if(!P)return;
  if(o.fx.shield>0){o.fx.shield=Math.max(0,o.fx.shield-2);say(o,'BLOCKED','#3cbcfc',60);return}
  if(t===4)o.fx.fog=600;else if(t===5)o.fx.speed=480;else if(t===6)o.fx.rev=480;else if(t===8)o.fx.flip=480;else if(t===9)o.fx.disco=480;
@@ -3123,7 +3165,7 @@ function control(b,inp){const pr=b.prev;b.prev=inp;const pc=b.pc;
 const BITS=['left','right','down','rot','drop','tgt','item'];
 const toBits=o=>BITS.reduce((v,k,i)=>v|(o[k]?1<<i:0),0),fromBits=v=>{const o={};BITS.forEach((k,i)=>{if(v&(1<<i))o[k]=true});return o};
 let mLast=-1;
-function mouseCol(i){if(touchDev||!mouse.on||!lay||mouse.fx===mLast)return null;const L=lay.at[i];if(!L)return null;mLast=mouse.fx;
+function mouseCol(i){if(true||touchDev||!mouse.on||!lay||mouse.fx===mLast)return null;const L=lay.at[i];if(!L)return null;mLast=mouse.fx;
  const lx=(mouse.fx*SCR.w-lay.ox)/lay.z-L.x-2;return Math.max(0,Math.min(BW-1,Math.floor(lx/CS)))}
 function padIn(n){const p=RA.input.pad(n);return{left:p.left,right:p.right,down:p.down,rot:p.a||p.b,drop:p.up||p.x,tgt:p.y||p.lb,item:p.rb||p.rt}}
 const touchIn=()=>({left:touchK.left,right:touchK.right,down:touchK.down,rot:touchK.rot,drop:touchK.drop||touchK.up,tgt:touchK.tgt,item:touchK.item});
@@ -3329,6 +3371,7 @@ function drawBoard0(b,L){
  // active effects, shown on the well
   const fxs=[b.fx.flip?['FLIP','#3cbcfc']:null,b.fx.disco?['DISCO','#f878f8']:null,b.fx.shield?['SHIELD '+b.fx.shield,'#3cbcfc']:null,b.fx.slow?['SLOW','#58f898']:null,b.fx.speed?['FAST!','#f8b800']:null,b.fx.rev?['REVERSE','#f878f8']:null,b.fx.fog?['FOG','#fcfcfc']:null].filter(Boolean);
  fxs.forEach((f,k)=>txt(ctx,f[0],X+BW*CS/2,Y+3+k*7,f[1]));
+ if(b.alive&&b.garb>0&&!demo){const fb=boards[b.lastBy];txt(ctx,'▼ '+b.garb+' INCOMING'+(fb&&fb!==b?' · '+fb.name.slice(0,7):''),X+BW*CS/2,Y-8,(tick>>3)&1?'#ff5030':'#ffd040')}
  if(b.fx.shield&&b.alive){ctx.fillStyle='#3cbcfc';ctx.fillRect(X,Y,BW*CS,1);ctx.fillRect(X,Y+BH*CS-1,BW*CS,1);ctx.fillRect(X,Y,1,BH*CS);ctx.fillRect(X+BW*CS-1,Y,1,BH*CS)}
  if(b.ko){txt(ctx,'KO',NX+CS/2,Y+BH*CS-40,'#f8b800');RA.gfx.num(ctx,b.ko,NX+CS/2,Y+BH*CS-33,'#fcfcfc')}
  txt(ctx,'LV',NX+CS/2,Y+BH*CS-22,'#a8a8a8');RA.gfx.num(ctx,b.lvl,NX+CS/2,Y+BH*CS-15,'#fcfcfc');
@@ -3363,7 +3406,7 @@ function step(){tick++;
   stepFx();if(boards.filter(b=>b.alive).length===2&&boards.length>2)playTrack(3);return}
  if(state!=='play'){stepFx();return}
  matchT++;
- for(const b of boards){if(b.ctrl==='net')readGuest(b);else stepBoard(b)}
+ for(const b of boards){if(b.ctrl==='net'){readGuest(b);if(!b.alive)b.t++}else stepBoard(b)}
  stepFx();
  const alive=boards.filter(b=>b.alive);
  if(!demo&&(boards.length>2&&alive.length===2||boards.length===1&&boards[0].lvl>=8))playTrack(3);
@@ -3418,7 +3461,7 @@ $('mjSetupBtn').addEventListener('click',()=>{if(R.online)R.leave();else toLobby
 $('mjBack').addEventListener('click',()=>{if(R.online)R.leave();RA.menu.show()});
 R.init();
 
-RA.legend(root,{kb:[['MOUSE A D','move'],['LMB W','rotate'],['RMB SPACE','drop'],['S','fall faster'],['E','target'],['Q F','power-up'],['C','chat'],['ESC','menu']],
+RA.legend(root,{kb:[['A D','move'],['LMB W','rotate'],['RMB SPACE','drop'],['S','fall faster'],['E','target'],['Q F','power-up'],['C','chat'],['ESC','menu']],
  pad:[['DP','move'],['A B','rotate'],['X','drop'],['Y LB','target'],['RB RT','power-up'],['BACK','chat'],['START','menu']]});
 RA.register({id:'jewels',name:'MAGIC JEWELRY',kind:'Puzzle',players:'1-20 players',ready:true,el:root,
  desc:'Falling columns of three jewels, built for online rooms. Line up three of a kind, pick who your rocks hit, steal KO badges, last board standing wins.',

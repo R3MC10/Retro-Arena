@@ -149,7 +149,7 @@ const KEYS={
  k3:{ArrowLeft:'left',ArrowRight:'right',ArrowDown:'down',ArrowUp:'rot',Period:'drop',Slash:'tgt',Comma:'item'},
  k4:{Numpad4:'left',Numpad6:'right',Numpad5:'down',Numpad8:'rot',Numpad0:'drop',Numpad1:'tgt',Numpad3:'item'}};
 const HOWTO=touchDev?'Touch: slide on the pad to move, down falls faster, up or DROP drops the column, TURN rotates it, TARGET picks who your rocks hit, ITEM fires your power-up.'
- :'Mouse + keys: move the mouse to slide the column, click or W to rotate, right-click or Space to drop, S falls faster, E picks who your rocks hit (random, attackers, leader, weakest), Q or F fires your power-up. A/D move too. Gamepad: stick moves, A/B rotate, up or X drops, Y targets, RB fires the power-up, Back chat, Start menu.';
+ :'Keys + mouse: A/D slide the column, click or W to rotate, right-click or Space to drop, S falls faster, E picks who your rocks hit (random, attackers, leader, weakest), Q or F fires your power-up. Clearing jewels and chains sends grey rock rows to the board you target; rocks sent to you show as INCOMING above your well and rise from the bottom. Gamepad: stick moves, A/B rotate, up or X drops, Y targets, RB fires the power-up, Back chat, Start menu.';
 let saved=null;try{saved=JSON.parse(localStorage.getItem('mj-setup'))}catch(e){}
 // your Magic Jewelry save file; the old device-only best score moves into it
 const SAVE=RA.save('jewels');let best=0;try{best=+localStorage.getItem('mj-best')||0}catch(e){}
@@ -322,7 +322,7 @@ const SY=RA.sync({owns:i=>!!boards[i]&&owned(boards[i]),host:()=>hostOnline(),on
 const hit=(o,k,v,by)=>SY.hit(o.i,k,k==='g'?Math.max(0,Math.min(30,v|0)):Math.max(0,Math.min(15,v|0)),by);
 function applyHit(o,k,v,by){if(!o.alive)return;
  if(k==='g'){let rows=v;const blk=Math.min(rows,o.fx.shield);if(blk){o.fx.shield-=blk;rows-=blk;say(o,'BLOCKED','#3cbcfc',70)}
-  if(rows){o.garb+=rows;o.lastBy=by;if(rows>=3)say(o,rows+' ROCKS','#d82800',70)}return}
+  if(rows){o.garb+=rows;o.lastBy=by;const fb=boards[by];say(o,rows+(rows>1?' ROCKS':' ROCK')+(fb&&fb!==o?' FROM '+fb.name.slice(0,8):''),'#ff5030',70)}return}
  const t=v,P=POW[t];if(!P)return;
  if(o.fx.shield>0){o.fx.shield=Math.max(0,o.fx.shield-2);say(o,'BLOCKED','#3cbcfc',60);return}
  if(t===4)o.fx.fog=600;else if(t===5)o.fx.speed=480;else if(t===6)o.fx.rev=480;else if(t===8)o.fx.flip=480;else if(t===9)o.fx.disco=480;
@@ -369,7 +369,7 @@ function control(b,inp){const pr=b.prev;b.prev=inp;const pc=b.pc;
 const BITS=['left','right','down','rot','drop','tgt','item'];
 const toBits=o=>BITS.reduce((v,k,i)=>v|(o[k]?1<<i:0),0),fromBits=v=>{const o={};BITS.forEach((k,i)=>{if(v&(1<<i))o[k]=true});return o};
 let mLast=-1;
-function mouseCol(i){if(touchDev||!mouse.on||!lay||mouse.fx===mLast)return null;const L=lay.at[i];if(!L)return null;mLast=mouse.fx;
+function mouseCol(i){if(true||touchDev||!mouse.on||!lay||mouse.fx===mLast)return null;const L=lay.at[i];if(!L)return null;mLast=mouse.fx;
  const lx=(mouse.fx*SCR.w-lay.ox)/lay.z-L.x-2;return Math.max(0,Math.min(BW-1,Math.floor(lx/CS)))}
 function padIn(n){const p=RA.input.pad(n);return{left:p.left,right:p.right,down:p.down,rot:p.a||p.b,drop:p.up||p.x,tgt:p.y||p.lb,item:p.rb||p.rt}}
 const touchIn=()=>({left:touchK.left,right:touchK.right,down:touchK.down,rot:touchK.rot,drop:touchK.drop||touchK.up,tgt:touchK.tgt,item:touchK.item});
@@ -575,6 +575,7 @@ function drawBoard0(b,L){
  // active effects, shown on the well
   const fxs=[b.fx.flip?['FLIP','#3cbcfc']:null,b.fx.disco?['DISCO','#f878f8']:null,b.fx.shield?['SHIELD '+b.fx.shield,'#3cbcfc']:null,b.fx.slow?['SLOW','#58f898']:null,b.fx.speed?['FAST!','#f8b800']:null,b.fx.rev?['REVERSE','#f878f8']:null,b.fx.fog?['FOG','#fcfcfc']:null].filter(Boolean);
  fxs.forEach((f,k)=>txt(ctx,f[0],X+BW*CS/2,Y+3+k*7,f[1]));
+ if(b.alive&&b.garb>0&&!demo){const fb=boards[b.lastBy];txt(ctx,'▼ '+b.garb+' INCOMING'+(fb&&fb!==b?' · '+fb.name.slice(0,7):''),X+BW*CS/2,Y-8,(tick>>3)&1?'#ff5030':'#ffd040')}
  if(b.fx.shield&&b.alive){ctx.fillStyle='#3cbcfc';ctx.fillRect(X,Y,BW*CS,1);ctx.fillRect(X,Y+BH*CS-1,BW*CS,1);ctx.fillRect(X,Y,1,BH*CS);ctx.fillRect(X+BW*CS-1,Y,1,BH*CS)}
  if(b.ko){txt(ctx,'KO',NX+CS/2,Y+BH*CS-40,'#f8b800');RA.gfx.num(ctx,b.ko,NX+CS/2,Y+BH*CS-33,'#fcfcfc')}
  txt(ctx,'LV',NX+CS/2,Y+BH*CS-22,'#a8a8a8');RA.gfx.num(ctx,b.lvl,NX+CS/2,Y+BH*CS-15,'#fcfcfc');
@@ -609,7 +610,7 @@ function step(){tick++;
   stepFx();if(boards.filter(b=>b.alive).length===2&&boards.length>2)playTrack(3);return}
  if(state!=='play'){stepFx();return}
  matchT++;
- for(const b of boards){if(b.ctrl==='net')readGuest(b);else stepBoard(b)}
+ for(const b of boards){if(b.ctrl==='net'){readGuest(b);if(!b.alive)b.t++}else stepBoard(b)}
  stepFx();
  const alive=boards.filter(b=>b.alive);
  if(!demo&&(boards.length>2&&alive.length===2||boards.length===1&&boards[0].lvl>=8))playTrack(3);
@@ -664,7 +665,7 @@ $('mjSetupBtn').addEventListener('click',()=>{if(R.online)R.leave();else toLobby
 $('mjBack').addEventListener('click',()=>{if(R.online)R.leave();RA.menu.show()});
 R.init();
 
-RA.legend(root,{kb:[['MOUSE A D','move'],['LMB W','rotate'],['RMB SPACE','drop'],['S','fall faster'],['E','target'],['Q F','power-up'],['C','chat'],['ESC','menu']],
+RA.legend(root,{kb:[['A D','move'],['LMB W','rotate'],['RMB SPACE','drop'],['S','fall faster'],['E','target'],['Q F','power-up'],['C','chat'],['ESC','menu']],
  pad:[['DP','move'],['A B','rotate'],['X','drop'],['Y LB','target'],['RB RT','power-up'],['BACK','chat'],['START','menu']]});
 RA.register({id:'jewels',name:'MAGIC JEWELRY',kind:'Puzzle',players:'1-20 players',ready:true,el:root,
  desc:'Falling columns of three jewels, built for online rooms. Line up three of a kind, pick who your rocks hit, steal KO badges, last board standing wins.',
