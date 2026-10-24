@@ -260,9 +260,9 @@ function upload(i){const p=pl[seatP[i]];if(!p)return null;
 const flagsOf=p=>p.fl!=null&&ownerOf(p)==='net'?p.fl:(p.fx.boots>0?1:0)|(p.fx.fire?2:0)|(p.fx.banana?4:0)|(p.fx.frz>0?8:0)|(p.fx.mag>0?16:0)|(p.fx.tiny>0?32:0);
 function snap(){return{p:pl.map(p=>[Math.round(p.x),Math.round(p.z),Math.round(p.d*100),Math.round(p.run*10),({'':0,slide:1,down:2,getup:3})[p.st]|0,flagsOf(p),p.goals,p.ch|0]),
  b:[ball.h,Math.round(ball.x*10),Math.round(ball.z*10),Math.round(ball.y*10),Math.round(ball.vx*100),Math.round(ball.vz*100),Math.round(ball.vy*100),ball.fire|0,ball.last],
- s:score,ko,kt:koT,ce:cel,gg:golden?1:0,w:wall,gb:gkBig.map(v=>v>0?1:0),it:items.map(it=>[it.id,it.k,Math.round(it.x),Math.round(it.z)]),
+ s:score,ko,kt:koT,ce:cel,gg:golden?1:0,wl:wall,gb:gkBig.map(v=>v>0?1:0),it:items.map(it=>[it.id,it.k,Math.round(it.x),Math.round(it.z)]),
  h:pl.filter(p=>ownerOf(p)==='net').map(p=>[p.n,p.cack,p.kack,p.ev])}}
-function apply(g){const me=K.myIdx>=0?pl[seatP[K.myIdx]]:null;score=g.s||score;koT=g.kt|0;cel=g.ce|0;golden=!!g.gg;wall=g.w||wall;gkBig=(g.gb||[0,0]).map(v=>v?1:0);
+function apply(g){const me=K.myIdx>=0?pl[seatP[K.myIdx]]:null;score=g.s||score;koT=g.kt|0;cel=g.ce|0;golden=!!g.gg;wall=g.wl||wall;gkBig=(g.gb||[0,0]).map(v=>v?1:0);
  (g.p||[]).forEach((a,n)=>{const p=pl[n];if(!p)return;p.goals=a[6]|0;if(p===me)return;p.tx=a[0];p.tz=a[1];p.d=a[2]/100;p.run=a[3]/10;p.st=['','slide','down','getup'][a[4]|0];p.fl=a[5]|0;p.ch=a[7]|0;if(p.gx==null){p.x=p.tx;p.z=p.tz;p.gx=1}});
  const B=g.b||[];ball.h=B[0]|0;ball.last=B[8]|0;const nb={x:B[1]/10,z:B[2]/10,y:B[3]/10,vx:B[4]/100,vz:B[5]/100,vy:B[6]/100};ball.fire=B[7]|0;
  if(ball.h<0){if(Math.hypot(nb.x-ball.x,nb.z-ball.z)>24||ball.h!==ball.ph)Object.assign(ball,nb);else{ball.tx=nb.x;ball.tz=nb.z;ball.vx=nb.vx;ball.vz=nb.vz;ball.vy=nb.vy;ball.y+=(nb.y-ball.y)*.5}}else Object.assign(ball,nb);ball.ph=ball.h;

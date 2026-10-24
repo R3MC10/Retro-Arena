@@ -90,15 +90,15 @@ function fxStep(){for(const p of parts){p.x+=p.vx;p.y+=p.vy;p.t--}parts=parts.fi
 // guest: fly my own ship here, send x
 function local(i){const s=ships[i];if(!s)return;for(const k in s.fx)if(s.fx[k]>0)s.fx[k]--;moveShip(s,K.inp(i))}
 function upload(i){const s=ships[i];return s?{x:Math.round(s.x*10)/10,b:s.bank|0}:null}
-function snap(){return{w:wave,fw:fW,fr:freeze,s:ships.map(s=>[Math.round(s.x),(s.alive?1:0)|(s.inv>0?2:0)|(s.out?4:0)|(s.fx.shield>0?8:0)|(s.fx.wing>0?16:0)|(s.fx.jam>0?32:0)|(s.fx.inv>0?64:0)|(s.fx.twin>0?128:0)|(s.fx.rapid>0?256:0),s.score,s.lives,s.kills,s.bank|0]),
- a:aliens.map(a=>[a.id,Math.round(a.x),Math.round(a.y),a.k,a.st==='form'?0:1,a.flash?1:0]),b:shots.map(b=>[Math.round(b.x),Math.round(b.y)]),e:bombs.map(b=>[Math.round(b.x),Math.round(b.y)]),d:drops.map(d=>[Math.round(d.x),Math.round(d.y),d.k]),
+function snap(){return{wv:wave,fw:fW,fr:freeze,s:ships.map(s=>[Math.round(s.x),(s.alive?1:0)|(s.inv>0?2:0)|(s.out?4:0)|(s.fx.shield>0?8:0)|(s.fx.wing>0?16:0)|(s.fx.jam>0?32:0)|(s.fx.inv>0?64:0)|(s.fx.twin>0?128:0)|(s.fx.rapid>0?256:0),s.score,s.lives,s.kills,s.bank|0]),
+ a:aliens.map(a=>[a.id,Math.round(a.x),Math.round(a.y),a.k,a.st==='form'?0:1,a.flash?1:0]),b:shots.map(b=>[Math.round(b.x),Math.round(b.y)]),eb:bombs.map(b=>[Math.round(b.x),Math.round(b.y)]),d:drops.map(d=>[Math.round(d.x),Math.round(d.y),d.k]),
  bo:boss?[Math.round(boss.x),Math.round(boss.y),boss.hp,boss.max,boss.flash?1:0]:0}}
-function apply(g){wave=g.w|0;freeze=g.fr|0;if(g.fw&&g.fw!==fW)fW=g.fw;
+function apply(g){wave=g.wv|0;freeze=g.fr|0;if(g.fw&&g.fw!==fW)fW=g.fw;
  (g.s||[]).forEach((a,i)=>{const s=ships[i];if(!s)return;const f=a[1]|0;s.alive=!!(f&1);s.inv=f&2?1:0;s.out=!!(f&4);
   const fx={shield:f&8,wing:f&16,jam:f&32,inv:f&64,twin:f&128,rapid:f&256};if(i===K.myIdx){for(const k in fx)s.fx[k]=fx[k]?Math.max(s.fx[k]|0,30):0}else{s.fx=fx;s.tx=a[0];s.bank=a[5]|0;if(s.x==null)s.x=a[0]}
   s.score=a[2]|0;s.lives=a[3]|0;s.kills=a[4]|0});
  const old=new Map(aliens.map(a=>[a.id,a]));aliens=(g.a||[]).map(r=>{const o=old.get(r[0])||{x:r[1],y:r[2]};return{id:r[0],x:o.x,y:o.y,tx:r[1],ty:r[2],k:r[3],st:r[4]?'dive':'form',flash:r[5]}});
- shots=(g.b||[]).map(r=>({x:r[0],y:r[1]}));bombs=(g.e||[]).map(r=>({x:r[0],y:r[1]}));drops=(g.d||[]).map(r=>({x:r[0],y:r[1],k:r[2]}));
+ shots=(g.b||[]).map(r=>({x:r[0],y:r[1]}));bombs=(g.eb||[]).map(r=>({x:r[0],y:r[1]}));drops=(g.d||[]).map(r=>({x:r[0],y:r[1],k:r[2]}));
  boss=g.bo?{x:g.bo[0],y:g.bo[1],hp:g.bo[2],max:g.bo[3],flash:g.bo[4]}:null}
 function follow(){for(const a of aliens){if(a.tx==null)continue;if(Math.abs(a.tx-a.x)>40||Math.abs(a.ty-a.y)>40){a.x=a.tx;a.y=a.ty}a.x+=(a.tx-a.x)*.4;a.y+=(a.ty-a.y)*.4}
  for(const s of ships)if(s.i!==K.myIdx&&s.tx!=null)s.x+=(s.tx-s.x)*.4;fxStep()}

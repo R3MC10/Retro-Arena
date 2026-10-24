@@ -85,11 +85,11 @@ function fxStep(){for(const q of parts){q.x+=q.vx;q.y+=q.vy;q.vx*=.96;q.vy*=.96;
 function local(i){const p=planes[i];if(!p)return;for(const k in p.fx)if(p.fx[k]>0&&k!=='armor')p.fx[k]--;if(p.cd>0)p.cd--;if(p.bombCd>0)p.bombCd--;const inp=K.inp(i);fly(p,inp);gunsFire(p,inp);stepMyShots(p);
  if(inp.alt&&p.bombCd<=0&&p.alive){p.bombCd=60;p.bm=(p.bm|0)+1}}
 function upload(i){const p=planes[i];if(!p)return null;return{x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,a:Math.round(p.a*100)/100,s:Math.round(p.sp*10)/10,b:p.bank|0,sh:p.myShots.slice(-8).map(s=>[Math.round(s.x),Math.round(s.y)]),hl:p.hitLog.slice(-8),bm:p.bm|0}}
-function snap(){return{w:wave,p:planes.map(p=>[Math.round(p.x),Math.round(p.y),Math.round(p.a*100),p.hp,(p.alive?1:0)|(p.inv>0?2:0)|(p.out?4:0)|(p.fx.twin>0?8:0)|(p.fx.smoke>0?16:0)|(p.fx.oil>0?32:0)|(p.fx.stall>0?64:0)|(p.fx.wind>0?128:0)|(p.fx.armor>0?256:0)|(p.fx.burn>0?512:0),p.kills,p.score,p.lives,p.bank|0,
+function snap(){return{wv:wave,p:planes.map(p=>[Math.round(p.x),Math.round(p.y),Math.round(p.a*100),p.hp,(p.alive?1:0)|(p.inv>0?2:0)|(p.out?4:0)|(p.fx.twin>0?8:0)|(p.fx.smoke>0?16:0)|(p.fx.oil>0?32:0)|(p.fx.stall>0?64:0)|(p.fx.wind>0?128:0)|(p.fx.armor>0?256:0)|(p.fx.burn>0?512:0),p.kills,p.score,p.lives,p.bank|0,
   (p.netShots||p.myShots.map(s=>[Math.round(s.x),Math.round(s.y)])).slice(-6)]),
  f:foes.map(f=>[f.id,Math.round(f.x),Math.round(f.y),Math.round(f.a*100),f.baron?1:0]),g:guns.filter(g=>!g.dead).map(g=>[g.id,Math.round(g.x),Math.round(g.y)]),s:shots.slice(-40).map(s=>[Math.round(s.x),Math.round(s.y)]),
  c:crates.map(c=>[c.id,Math.round(c.x),Math.round(c.y),c.k]),z:zep?[Math.round(zep.x),Math.round(zep.y),zep.hp,zep.max]:0,bo:bombs.map(b=>[Math.round(b.x),Math.round(b.y),b.t])}}
-function apply(g){wave=g.w|0;(g.p||[]).forEach((a,i)=>{const p=planes[i];if(!p)return;const f=a[4]|0,was=p.alive;p.alive=!!(f&1);p.inv=f&2?1:0;p.out=!!(f&4);p.hp=a[3]|0;p.kills=a[5]|0;p.score=a[6]|0;p.lives=a[7]|0;
+function apply(g){wave=g.wv|0;(g.p||[]).forEach((a,i)=>{const p=planes[i];if(!p)return;const f=a[4]|0,was=p.alive;p.alive=!!(f&1);p.inv=f&2?1:0;p.out=!!(f&4);p.hp=a[3]|0;p.kills=a[5]|0;p.score=a[6]|0;p.lives=a[7]|0;
   const fx={twin:f&8,smoke:f&16,oil:f&32,stall:f&64,wind:f&128,armor:f&256,burn:f&512};
   if(i===K.myIdx){for(const k in fx)if(fx[k]&&!(p.fx[k]>0))p.fx[k]=k==='armor'?1:300;else if(!fx[k]&&k!=='armor')p.fx[k]=Math.min(p.fx[k]|0,p.fx[k]>0?p.fx[k]:0);if(!was&&p.alive){p.x=a[0];p.y=a[1];p.a=a[2]/100}return}
   p.fx=fx;p.tx=a[0];p.ty=a[1];p.ta=a[2]/100;p.bank=a[8]|0;p.osh=a[9]||[];if(p.x==null||!was){p.x=a[0];p.y=a[1];p.a=p.ta}});

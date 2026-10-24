@@ -148,7 +148,10 @@ RA.kit=o=>{
   showS();q('Info').textContent=R.online?'Room '+R.code:'';setTab(onlineTab||R.online);if(R.online)R.render();
   NET.myIdx=-1;K.myIdx=-1;startDemo();setMode(selMode);RA.music.play(id,0);lastTrack=0}
  // ---- snapshots
- function snapshot(){const g=Object.assign({ph:K.state==='over'?'over':'play',id:NET.id,r:NET.r,md:K.mode,bs:S,sd:K.seed,n:K.seats.length,t:K.tick,mt:lastTrack},o.snap());
+ // keys the kit puts in every snapshot: a game's snap() must not use them
+ const RES=['ph','id','r','md','bs','sd','n','t','mt','w','rk','e'];let warned=false;
+ function snapshot(){const gs=o.snap();if(!warned)for(const k in gs)if(RES.includes(k)){warned=true;console.warn(id+': snap() key "'+k+'" clashes with the kit')}
+  const g=Object.assign(gs,{ph:K.state==='over'?'over':'play',id:NET.id,r:NET.r,md:K.mode,bs:S,sd:K.seed,n:K.seats.length,t:K.tick,mt:lastTrack});
   if(K.state==='over'){g.w=K.winner;g.rk=ranksCache}g.e=NET.ev.slice();
   while(JSON.stringify(g).length>3800&&g.e.length)g.e.shift();return g}
  function applySnap(g){if(!g)return;if(g.bs)S=cleanS(g.bs);

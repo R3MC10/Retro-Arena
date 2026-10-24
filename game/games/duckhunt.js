@@ -79,11 +79,11 @@ function local(i){const h=hunters[i];if(!h)return;for(const k in h.fx)if(h.fx[k]
  if(inp.tap&&!(K.mode===1&&duckIdx===i)){const sh=shoot(h,h.cx,h.cy);if(sh){h.shotLog.push(sh);if(h.shotLog.length>6)h.shotLog.shift();K.fx('z',sh[2],sh[3],i)}}
  const d=ducks.find(o=>o.pilot===i&&o.st==='fly');if(d){d.own=1;flyDuck(d,inp)}}
 function upload(i){const h=hunters[i];if(!h)return null;const d=ducks.find(o=>o.pilot===i&&o.st==='fly');const r={cx:Math.round(h.cx),cy:Math.round(h.cy),sh:h.shells,sl:h.shotLog.slice(-6)};if(d){r.dx=Math.round(d.x);r.dy=Math.round(d.y);r.dvx=d.vx}return r}
-function snap(){return{w:wave,ph:phase,di:duckIdx,sl:slow,dg:[dog.st==='up'?1:0,dog.n|0,dog.laugh?1:0,dog.who|0,dog.t|0],
+function snap(){return{wv:wave,dp:phase,di:duckIdx,sl:slow,dg:[dog.st==='up'?1:0,dog.n|0,dog.laugh?1:0,dog.who|0,dog.t|0],
  h:hunters.map(h=>[Math.round(h.cx),Math.round(h.cy),h.shells,h.score,h.hits,(h.fx.gold>0?1:0)|(h.fx.shotgun>0?2:0)|(h.fx.decoy>0?4:0)|(h.fx.flash>0?8:0)|(h.fx.dog>0?16:0)]),
  d:ducks.map(d=>[d.id,Math.round(d.x),Math.round(d.y),Math.round(d.z*100),d.k,['fly','hit','fall','away','down'].indexOf(d.st),d.vx<0?1:0,d.gold?1:0,d.pilot,d.own,d.by==null?-1:d.by]),
  b:balloons.map(b=>[b.id,Math.round(b.x),Math.round(b.y),b.k])}}
-function apply(g){wave=g.w|0;phase=g.ph||'fly';duckIdx=g.di|0;slow=g.sl|0;const dg=g.dg||[];dog.st=dg[0]?'up':'hide';dog.n=dg[1]|0;dog.laugh=!!dg[2];dog.who=dg[3]|0;dog.t=dg[4]|0;
+function apply(g){wave=g.wv|0;phase=g.dp||'fly';duckIdx=g.di|0;slow=g.sl|0;const dg=g.dg||[];dog.st=dg[0]?'up':'hide';dog.n=dg[1]|0;dog.laugh=!!dg[2];dog.who=dg[3]|0;dog.t=dg[4]|0;
  (g.h||[]).forEach((a,i)=>{const h=hunters[i];if(!h)return;if(i!==K.myIdx){h.tx=a[0];h.ty=a[1];h.shells=a[2]}else if(a[2]>h.shells&&phase==='fly'&&h.wave!==wave){h.shells=a[2];h.wave=wave}
   h.score=a[3]|0;h.hits=a[4]|0;const f=a[5]|0,fx={gold:f&1,shotgun:f&2,decoy:f&4,flash:f&8,dog:f&16};for(const k in fx)if(i!==K.myIdx||fx[k])h.fx[k]=fx[k]?Math.max(h.fx[k]|0,20):0});
  const old=new Map(ducks.map(d=>[d.id,d]));ducks=(g.d||[]).map(a=>{const o=old.get(a[0]);const mine=a[8]===K.myIdx&&o&&a[5]===0;

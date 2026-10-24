@@ -130,7 +130,7 @@ function bot(i){const p=pacs[i];if(!p||!p.alive)return{};const tx=((Math.floor(p
 function snap(){let s='';for(let i=0;i<W*H;i+=2){s+=(dots[i]|((dots[i+1]||0)<<2)).toString(16)}
  return{W,H,lv:level,fr:fright,ps:pause,d:s,
   p:pacs.map(p=>[Math.round(p.x*2),Math.round(p.y*2),p.dir,(p.alive?1:0)|(p.inv>0?2:0)|(p.speedT>0?4:0)|(p.repel>0?8:0)|(p.frozen>0?16:0)|(p.swap>0?32:0)|(p.power>0?64:0)|(p.out?128:0),p.score,p.lives,p.kills]),
-  g:ghosts.map(g=>[Math.round(g.x*2),Math.round(g.y*2),g.dir,g.t,['house','leave','chase','eyes'].indexOf(g.mode),g.eaten?1:0,g.extra?1:0]),f:fruit?[Math.round(fruit.x),Math.round(fruit.y),fruit.k]:0,sd:K.seed}}
+  g:ghosts.map(g=>[Math.round(g.x*2),Math.round(g.y*2),g.dir,g.t,['house','leave','chase','eyes'].indexOf(g.mode),g.eaten?1:0,g.extra?1:0]),f:fruit?[Math.round(fruit.x),Math.round(fruit.y),fruit.k]:0}}
 let mazeKey='';
 function apply(g){level=g.lv|0;fright=g.fr|0;pause=g.ps|0;const key=g.W+'x'+g.H+':'+level;if(key!==mazeKey){mazeKey=key;buildMaze(pacs.length,K.seed+(level>1?level*101:0))}
  const s=String(g.d||'');for(let q=0;q<s.length;q++){const v=parseInt(s[q],16);if(q*2<W*H)dots[q*2]=v&3;if(q*2+1<W*H)dots[q*2+1]=(v>>2)&3}
