@@ -86,6 +86,9 @@ Serve: `cd game && python3 -m http.server 8765`. Tools in `game/tools/test` (see
    Watch CPUs over a whole match (log position + speed every few seconds): CPUs parked against a wall or pillar mean
    the brain needs look-ahead obstacle steering and a back-out-when-stuck rule.
    CPUs must never be faster than a clean human on Normal: rubber-band from the back, ease off when far ahead of every human.
+   Team games: a lone human must always be in the play - auto-switch to the team mate nearest the ball (Pixel Kick).
+   Rare moments (keeper dives, goals, crashes) won't show up in random frames: stage them - the frames.js input
+   function can set game state at step n (put the ball on a shot path, then grab the next 40 steps).
 3. `node sim.js <id> <mode> 8` and with 20 players - every mode ends properly, results make sense, snapshot under 3 KB,
    frame time reasonable.
 4. `node shots.js <id> <n> <name> 300,900 [mode] [settings]` - real-play screenshots of every track / level / mode.
