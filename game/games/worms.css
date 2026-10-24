@@ -40,3 +40,31 @@ body.touchplay .wpanel{top:calc(60px + env(safe-area-inset-top,0px));bottom:auto
 .wpEdit{font-size:11px}
 /* control legend sits under the player bars, clear of the weapon bar */
 .ra-legend.wl{top:56px;bottom:auto}
+
+/* v43 Armageddon weapon panel: F-key rows of icon cells */
+.wpanel{display:flex;flex-direction:column;gap:3px;width:auto;max-width:calc(100% - 20px);left:auto;right:12px;margin:0;bottom:calc(70px + env(safe-area-inset-bottom,0px));padding:6px;
+ background:linear-gradient(180deg,rgba(20,22,30,.94),rgba(4,5,10,.96));border:1px solid #6c7486;border-radius:3px;box-shadow:0 0 0 1px #000,0 0 18px rgba(56,232,255,.15)}
+.wpanel h3{font-family:"Russo One",sans-serif;font-size:12px;color:var(--rl,#38e8ff);letter-spacing:.08em;margin:0 0 3px;min-width:0}
+.wpanel h3 small{font-family:var(--font);font-size:9px;color:#8a94aa}
+.wrow{display:flex;gap:2px;align-items:center}
+.wrow .fk{width:22px;font-family:"Russo One",sans-serif;font-size:10px;color:#8a94aa;text-align:center}
+.wpanel .wc{position:relative;width:34px;height:34px;min-height:0;padding:0;display:grid;place-items:center;background:linear-gradient(180deg,#2e3240,#12141c);border:1px solid #3c4252;border-radius:2px;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+.wpanel .wc img{width:30px;height:30px;image-rendering:pixelated;pointer-events:none}
+.wpanel .wc b{position:absolute;right:1px;bottom:0;font-size:9px;color:#fff;text-shadow:0 0 2px #000,0 0 2px #000}
+.wpanel .wc:hover{border-color:var(--rl,#38e8ff);box-shadow:0 0 8px rgba(56,232,255,.5)}
+.wpanel .wc.on{border-color:#ffd23c;box-shadow:inset 0 0 0 1px #ffd23c,0 0 8px rgba(255,210,60,.5)}
+.wpanel .wc:disabled{opacity:.28}
+.wpanel i.wc{display:none}
+
+/* v43 Armageddon HUD: team bars bottom-left, wind bar, name tags */
+body.playing .wrap:has(.wormsG) .players{top:auto;bottom:10px;left:10px;right:auto;width:auto;display:flex;flex-direction:column-reverse;flex-wrap:wrap;max-height:42vh;gap:2px 10px;align-content:flex-start;text-shadow:none}
+.wrap:has(.wormsG) .pl{flex-direction:row;align-items:center;gap:4px;font-size:12px}
+.wrap:has(.wormsG) .pl .tag{min-width:64px;max-width:96px;padding:0 5px;font-family:"Russo One",sans-serif;font-size:11px;line-height:15px;background:#000;border:1px solid #d8dce8;border-radius:2px;box-shadow:0 0 0 1px #000}
+.wrap:has(.wormsG) .pl i{width:110px;height:11px;border:1px solid #d8dce8;border-radius:1px;background:#000;box-shadow:0 0 0 1px #000}
+.wrap:has(.wormsG) .pl i span{box-shadow:inset 0 2px 0 rgba(255,255,255,.45),inset 0 -2px 0 rgba(0,0,0,.35);transition:width .3s}
+.wrap:has(.wormsG) .pl small{font-size:10px;color:#ff6070;text-shadow:0 1px 0 #000}
+body.playing.many .wrap:has(.wormsG) .pl small{display:inline}
+.windbar{display:inline-flex;vertical-align:middle;width:120px;height:12px;margin-left:6px;background:#000;border:1px solid #d8dce8;box-shadow:0 0 0 1px #000;position:relative}
+.windbar::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:#d8dce8}
+.windbar .wl,.windbar .wr{position:absolute;top:1px;bottom:1px;background:repeating-linear-gradient(90deg,#ff3020 0 4px,#a01008 4px 6px)}
+.windbar .wl{right:50%}.windbar .wr{left:50%;background:repeating-linear-gradient(90deg,#3080ff 0 4px,#1040a0 4px 6px)}
