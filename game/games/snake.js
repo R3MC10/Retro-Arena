@@ -55,7 +55,7 @@ function steer(s,inp){let d=-1;if(inp.up)d=0;else if(inp.right)d=1;else if(inp.d
  // every new press is queued (up to 3) so a quick double turn is never lost or turned into a U-turn into yourself
  const q=s.q||(s.q=[]);if(d>=0&&d!==s.lastD){const last=q.length?q[q.length-1]:s.dir;if(d!==last&&d!==(last+2)%4&&q.length<3)q.push(d)}s.lastD=d}
 function stepSnake(s){const inp=K.inp(s.i);steer(s,inp);
- const boost=K.S.boost==='on'&&inp.fire&&s.body.length>5;const iv=boost?3:Math.max(4,7-Math.floor(K.tick/3600));
+ const boost=K.S.boost==='on'&&inp.fire&&s.body.length>5;const iv=boost?3:Math.max(4,7-Math.floor(K.tick/3600));s.iv=iv;
  if(s.stun>0){s.stun--;return}if(++s.mt<iv)return;s.mt=0;
  if(boost&&++s.boostT%5===0){const t=s.body.pop();s.prev.pop();if(t)addFood(1,t[0],t[1])}
  if(s.q&&s.q.length)s.dir=s.q.shift();const h=s.body[0],nx=h[0]+DX[s.dir],ny=h[1]+DY[s.dir];s.prev=s.body.map(b=>b.slice());
@@ -115,9 +115,9 @@ const cam={x:0,y:0,z:1};
 function camFor(Wv,Hv){const fs=K.focus().map(i=>snakes[i]).filter(s=>s&&s.alive&&s.body.length);const ww=W*C,hh=H*C;
  let tx=ww/2,ty=hh/2,z=Math.min(Wv/ww,Hv/(hh+20));
  const hold=!fs.length&&!K.demo&&K.focus().length===1&&cam.lt;if(hold){tx=cam.lt[0];ty=cam.lt[1];z=Math.max(z,Math.min(2.2,Hv/(22*C)))}
- if(fs.length===1&&!K.demo){const p=fs[0].body[0];cam.lt=[p[0]*C,p[1]*C];tx=p[0]*C;ty=p[1]*C;z=Math.max(z,Math.min(2.2,Hv/(22*C)))}
+ if(fs.length===1&&!K.demo){const sn=fs[0],b=sn.body[0],a=sn.prev[0]||b,f=Math.min(1,(sn.mt|0)/(sn.iv||7)),p=[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f];cam.lt=[p[0]*C,p[1]*C];tx=p[0]*C;ty=p[1]*C;z=Math.max(z,Math.min(2.2,Hv/(22*C)))}
  cam.z+=(z-cam.z)*.1;const vw=Wv/cam.z,vh=Hv/cam.z,cl=(v,size,view)=>size<=view?(size-view)/2:Math.max(0,Math.min(size-view,v));
- cam.x+=(cl(tx-vw/2,ww,vw)-cam.x)*.15;cam.y+=(cl(ty-vh/2,hh,vh)-cam.y)*.15}
+ cam.x+=(cl(tx-vw/2,ww,vw)-cam.x)*.12;cam.y+=(cl(ty-vh/2,hh,vh)-cam.y)*.12}
 function aim(i,fx,fy){const s=snakes[i];if(!s||!s.alive)return null;const h=s.body[0],wx=cam.x+fx*K.W/cam.z,wy=cam.y+fy*K.H/cam.z;
  const dx=wx-(h[0]*C+6),dy=wy-(h[1]*C+6);if(Math.hypot(dx,dy)<C*1.2)return null;return Math.atan2(dy,dx)}
 let floorC=null,floorSig='';
