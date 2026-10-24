@@ -180,7 +180,7 @@ function makeBoard(i,ctrl,name,peer){return{i,ctrl,name,peer:peer||'',col:COLORS
  tm:ctrl==='cpu'?Math.floor(Math.random()*4):0,tg:-1,ko:0,lastBy:-1,lr:0,ld:0,lt:0,li:0,lmc:-2,item:0,itemT:0,fx:{fog:0,speed:0,rev:0,slow:0,shield:0}}}
 const CPU=[{react:14,noise:60,drop:0},{react:7,noise:18,drop:.3},{react:3,noise:3,drop:.8}];
 function startMatch(list,isDemo){
- demo=!!isDemo;boards=list.map((d,i)=>makeBoard(i,d.ctrl,d.name,d.peer));tick=0;matchT=0;parts=[];texts=[];lastTrack=-1;NET.ev=[];NET.winner=-1;
+ demo=!!isDemo;if(hostOnline())SY.reset();boards=list.map((d,i)=>makeBoard(i,d.ctrl,d.name,d.peer));tick=0;matchT=0;parts=[];texts=[];lastTrack=-1;NET.ev=[];NET.winner=-1;
  const cl=CPU[+$('mjCpu').value]||CPU[1];for(const b of boards){b.cpu=isDemo?CPU[1]:cl;b.tg=pickTarget(b)}
  state='play';layout();
 }
@@ -190,7 +190,7 @@ function enterPlay(tp){
  root.querySelector('.pad').hidden=!tp;$('mjTitle').hidden=true;$('mjOver').hidden=true;$('mjSetup').hidden=true;$('mjOnlinePanel').hidden=true;$('mjTabs').hidden=true;$('mjBack').hidden=true;
  RA.hud.disarm();layout();playTrack(1+((NET.matchId>>>0)%2||Math.floor(Math.random()*2)))}
 function startLocal(){saveSetup();audio();const n=nSel(),list=[];
- for(let i=0;i<n;i++)list.push({ctrl:$('mjc'+i).value,name:COLORS[i][0]});
+ const SEATN=RA.player.seats([...Array(n)].map((_,i)=>$('mjc'+i).value));for(let i=0;i<n;i++)list.push({ctrl:$('mjc'+i).value,name:SEATN[i]});
  NET.myIdx=-1;startMatch(list,false);enterPlay(boards.some(b=>b.ctrl==='touch'))}
 function startOnline(list){audio();NET.matchId=(Math.random()*1e9)|0;NET.mroster=list.map(x=>x.peer);
  let cpu=0;const seats=list.map((x,i)=>x.cpu?{ctrl:'cpu',name:'CPU '+(++cpu)}:{ctrl:x.me?'me':'net',peer:x.peer,name:R.name(R.peer(x.peer),i)});
@@ -277,10 +277,8 @@ function useItem(b){const t=b.item;if(!t)return;b.item=0;const P=POW[t];
 /* Online, every player runs their own board here with no delay. A hit on a board this device does not run
    travels instead: a guest sends it to the host, the host passes it on to the board's owner in the snapshot. */
 const owned=b=>isClient()?b.i===NET.myIdx:b.ctrl!=='net';
-function hit(o,k,v,by){
- if(owned(o)){applyHit(o,k,v,by);return}
- if(hostOnline()){o.inc=o.inc||[];o.incS=(o.incS|0)+1;o.inc.push([o.incS,k,v|0,by|0]);if(o.inc.length>12)o.inc.shift()}
- else if(isClient()){NET.out.push([++NET.os,o.i,k,v|0]);if(NET.out.length>12)NET.out.shift()}}
+const SY=RA.sync({owns:i=>!!boards[i]&&owned(boards[i]),host:()=>hostOnline(),onHit:(i,k,v,by)=>boards[i]&&applyHit(boards[i],k,v|0,by)});
+const hit=(o,k,v,by)=>SY.hit(o.i,k,k==='g'?Math.max(0,Math.min(30,v|0)):Math.max(0,Math.min(7,v|0)),by);
 function applyHit(o,k,v,by){if(!o.alive)return;
  if(k==='g'){let rows=v;const blk=Math.min(rows,o.fx.shield);if(blk){o.fx.shield-=blk;rows-=blk;say(o,'BLOCKED','#3cbcfc',70)}
   if(rows){o.garb+=rows;o.lastBy=by;if(rows>=3)say(o,rows+' ROCKS','#d82800',70)}return}
@@ -400,18 +398,15 @@ function decB(b,a,i){const old=b.mark,og=b.g.slice();
  else{if(old)for(let q=0;q<BW*BH;q++)if(old[q])burst(i,q%BW,(q/BW)|0,og[q]);b.mark=null}}
 function snapshot(){
  const g={ph:state==='over'?'over':'play',id:NET.matchId,r:NET.mroster,w:NET.winner,t:(matchT/60)|0,
-  b:boards.map(b=>{const a=encB(b);if(b.inc&&b.inc.length)a.push(b.inc);return a}),e:NET.ev.slice()};
+  b:boards.map(encB),hx:SY.pack(),e:NET.ev.slice()};
  while(JSON.stringify(g).length>3700&&g.e.length)g.e.shift();
  return g}
 // host: a guest's board comes from the guest, its hits on other boards are passed on
 function readGuest(b){const p=R.input(b.peer);if(!p){if(b.alive)topout(b);return}
- if(Array.isArray(p.s)&&(p.m|0)===(NET.matchId|0)){const was=b.alive;decB(b,p.s,b.i);b.lastBy=p.s[17]|0;
-  if(was&&!b.alive){b.alive=true;topout(b)}}
- if(Array.isArray(p.o))for(const e of p.o){if(!Array.isArray(e)||(e[0]|0)<=(b.oSeen|0))continue;b.oSeen=e[0]|0;
-  const o=boards[e[1]|0];if(o&&o!==b&&(e[2]==='g'||e[2]==='i'))hit(o,e[2],Math.max(0,Math.min(e[2]==='g'?30:7,e[3]|0)),b.i)}}
+ const u=SY.read(p,NET.matchId,b.i);
+ if(u&&Array.isArray(u.s)){const was=b.alive;decB(b,u.s,b.i);b.lastBy=u.s[17]|0;if(was&&!b.alive){b.alive=true;topout(b)}}}
 // guest: send my own board (and my hits on others) every frame; the host keeps the latest
-function clientSend(now){const b=boards[NET.myIdx];if(!b)return;
- R.send({m:NET.matchId,s:[...encB(b),b.lastBy|0],o:NET.out},now)}
+function clientSend(now){const b=boards[NET.myIdx];if(b)SY.upload(R.room,now,[...encB(b),b.lastBy|0],NET.matchId)}
 function applySnap(g){
  if(!g)return;
  if(g.ph==='lobby'){if(!demo)toLobby();return}
@@ -419,16 +414,16 @@ function applySnap(g){
  const me=R.room&&R.room.peers().find(pe=>pe.sameTab),n=Math.min(MAXP,g.b.length);
  if(g.id!==NET.matchId||boards.length!==n||demo){
   NET.matchId=g.id;NET.seen=0;for(const e of g.e||[])NET.seen=Math.max(NET.seen,e[0]|0);
-  NET.myIdx=me?g.r.indexOf(me.peer):-1;demo=false;NET.out=[];NET.os=0;NET.incSeen=0;
+  NET.myIdx=me?g.r.indexOf(me.peer):-1;demo=false;SY.reset();
   boards=g.b.slice(0,n).map((a,i)=>makeBoard(i,i===NET.myIdx?'me':'net','',g.r[i]));parts=[];texts=[];lastTrack=-1;state='play';tick=0;
   const mb=boards[NET.myIdx];if(mb&&Array.isArray(g.b[NET.myIdx]))mb.next=[0,1,2].map(k=>decCell(String(g.b[NET.myIdx][4]||'111').charCodeAt(k))||1);
   layout();enterPlay(touchDev&&NET.myIdx>=0)}
+ SY.unpack(g.hx);
  const all=R.room?R.room.peers():[];
  g.b.slice(0,n).forEach((a,i)=>{const b=boards[i];if(!b||!Array.isArray(a))return;
-  if(i===NET.myIdx){b.ko=a[11]|0;   // my own board runs here; only KO badges and hits on me come from the host
-   if(Array.isArray(a[17]))for(const e of a[17]){if(!Array.isArray(e)||(e[0]|0)<=NET.incSeen)continue;NET.incSeen=e[0]|0;applyHit(b,e[1],e[2]|0,e[3]|0)}}
+  if(i===NET.myIdx)b.ko=a[11]|0;   // my own board runs here; only KO badges (and hits, below) come from the host
   else{const was=b.alive;decB(b,a,i);b.ko=a[11]|0;if(was&&!b.alive){b.t=0;b.shake=14}b.syncT=tick}
-  const id=g.r[i];b.name=id?(id===(me&&me.peer)?'YOU':R.name(all.find(p=>p.peer===id),i)):'CPU'});
+  const id=g.r[i];b.isMe=!!id&&id===(me&&me.peer);b.name=id?(id===(me&&me.peer)?(RA.player.name||'YOU'):R.name(all.find(p=>p.peer===id),i)):'CPU'});
  for(const e of g.e||[]){if((e[0]|0)<=NET.seen)continue;NET.seen=e[0]|0;const k=e[1],bi=e[2]|0,a=e[3];
   if(k==='s'&&Array.isArray(a)&&a[2]&&bi!==NET.myIdx)sfx(String(a[0]),a[1]|0);
   else if(k==='x'&&Array.isArray(a)&&boards[bi]&&bi!==NET.myIdx)texts.push({b:bi,x:BW*CS/2,y:a[2]|0,s:String(a[0]).slice(0,12),t:60,col:/^#[0-9a-f]{6}$/i.test(a[1])?a[1]:'#fcfcfc'});
@@ -575,7 +570,7 @@ function showOver(w){state='over';
  if(solo&&b0.score>best){best=b0.score;try{localStorage.setItem('mj-best',best)}catch(e){}}
  const me=boards[NET.myIdx]||(!isClient()&&boards.find(b=>b.ctrl!=='cpu'));
  if(me){const m={won:!solo&&w===me,bestScore:me.score|0,bestLevel:me.lvl|0,ko:me.ko|0};SAVE.record(m);ACH.check(m)}
- $('mjWin').textContent=solo?'SCORE '+b0.score:w?(w.name==='YOU'?'YOU WIN!':w.name.toUpperCase()+' WINS'):'DRAW';
+ $('mjWin').textContent=solo?'SCORE '+b0.score:w?(w.isMe?'YOU WIN!':w.name.toUpperCase()+' WINS'):'DRAW';
  const list=solo?boards:boards.slice().sort((a,b)=>(b.alive-a.alive)||(b.outAt-a.outAt)||(b.score-a.score));
  $('mjRanks').innerHTML=solo?'<li><span class="pos">★</span><span>Best score</span><em>'+best+'</em></li><li><span class="pos">LV</span><span>Level reached</span><em>'+b0.lvl+'</em></li>':
   list.slice(0,8).map((b,k)=>'<li style="animation-delay:'+k*60+'ms"><span class="pos">'+(k+1)+'</span><span style="color:'+b.col+'">'+esc(b.name)+'</span><em>'+(b.ko?b.ko+' KO · ':'')+b.score+'</em></li>').join('');

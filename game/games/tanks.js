@@ -369,7 +369,7 @@ function applySnap(g){
   enterPlay(touchDev&&NET.myIdx>=0)}
  const all=R.room?R.room.peers():[];
  g.c.slice(0,n).forEach((a,i)=>{const c=crews[i];if(!c||!Array.isArray(a))return;c.lives=a[0]|0;c.kills=a[1]|0;c.score=a[2]|0;c.out=!!a[3];
-  const id=g.r[i];c.name=id?(id===(me&&me.peer)?'YOU':R.name(all.find(p=>p.peer===id),i)):'CPU '+(g.r.slice(0,i+1).filter(x=>!x).length)});
+  const id=g.r[i];c.name=id?(id===(me&&me.peer)?(RA.player.name||'YOU'):R.name(all.find(p=>p.peer===id),i)):'CPU '+(g.r.slice(0,i+1).filter(x=>!x).length)});
  // tanks: keep the ones we know (so they glide), add new ones, drop the rest
  const seen=new Set();
  for(const a of g.k||[]){if(!Array.isArray(a))continue;const id=a[0]|0;seen.add(id);let t=tanks.find(o=>o.id===id);
@@ -488,7 +488,7 @@ function render(){
   else{ctx.fillStyle=p.col;ctx.fillRect(Math.round(p.x),Math.round(p.y-p.z-4),p.t>12?2:1,p.t>12?2:1)}}
  // names over crews; an arrow over yours
  for(const c of crews){const t=c.tank;if(!t||t.spawnT>0)continue;const x=Math.round(t.dx!=null?t.dx:t.x),y=Math.round(t.dy!=null?t.dy:t.y);
-  const mine=focusCrews().includes(c)&&crews.length>1;RA.gfx.text(ctx,mine?'YOU':c.name.slice(0,6),x,y-20,c.col);if(mine&&(tick>>4)&1){ctx.fillStyle=c.col;ctx.fillRect(x-1,y-13,3,2)}}
+  const mine=focusCrews().includes(c)&&crews.length>1;RA.gfx.text(ctx,c.name.slice(0,8),x,y-20,c.col);if(mine&&(tick>>4)&1){ctx.fillStyle=c.col;ctx.fillRect(x-1,y-13,3,2)}}
  for(const t of texts)RA.gfx.text(ctx,t.s,Math.round(t.x),Math.round(t.y),t.col);
  ctx.setTransform(1,0,0,1,0,0);
  if(grenFlash>0){ctx.fillStyle='rgba(255,255,255,'+(grenFlash/20)+')';ctx.fillRect(0,0,VW,VH)}
@@ -502,7 +502,7 @@ function drawHud(){const txt=RA.gfx.text;
  const fs=focusCrews();let y=VH-14-Math.min(4,fs.length)*9;
  if(mode===0){txt(ctx,'ENEMIES '+coop.left+(tanks.some(t=>t.kind)?'+':''),VW/2,y,'#fcfcfc');const b=bases[0];if(b&&!b.alive)txt(ctx,'EAGLE DOWN',VW/2,VH/2-20,'#d82800')}
  else{const alive=crews.filter(c=>!c.out).length;txt(ctx,alive+' CREWS LEFT',VW/2,y,'#fcfcfc')}
- for(const c of fs.slice(0,4)){txt(ctx,(c.name==='YOU'?'YOU':c.name.slice(0,6))+' LIVES '+c.lives+'  KO '+c.kills,VW/2,(y+=9)+4,c.col)}
+ for(const c of fs.slice(0,4)){txt(ctx,c.name.slice(0,8)+' LIVES '+c.lives+'  KO '+c.kills,VW/2,(y+=9)+4,c.col)}
  // minimap
  const mw=Math.min(72,Math.round(VW*.16)),mh=Math.round(mw*GH/GW),mx=VW-mw-4,my=VH-mh-4,s=mw/(GW*TS);
  ctx.fillStyle='#000';ctx.fillRect(mx-1,my-1,mw+2,mh+2);ctx.fillStyle='#2c2c34';ctx.fillRect(mx,my,mw,mh);
@@ -564,7 +564,7 @@ const ACH=RA.achievements('tanks',[
  {id:'ko100',name:'Iron Fist',desc:'100 KOs in total',test:s=>s.kills>=100,unlock:'title:Iron Fist'}]);
 function showOver(){state='over';
  const w=NET.winner,me=crews[NET.myIdx]||(!isClient()&&crews.find(c=>c.ctrl!=='cpu'));
- if(me){const m={won:mode===0?w===99:w===me.i,kills:me.kills|0,bestScore:me.score|0,coop:mode===0};SAVE.record(m);ACH.check(m)}$('bcWin').textContent=mode===0?(w===99?'CITY SAVED!':'GAME OVER'):w>=0&&crews[w]?(crews[w].name==='YOU'?'YOU WIN!':crews[w].name.toUpperCase()+' WINS'):'DRAW';
+ if(me){const m={won:mode===0?w===99:w===me.i,kills:me.kills|0,bestScore:me.score|0,coop:mode===0};SAVE.record(m);ACH.check(m)}$('bcWin').textContent=mode===0?(w===99?'CITY SAVED!':'GAME OVER'):w>=0&&crews[w]?(crews[w]===me?'YOU WIN!':crews[w].name.toUpperCase()+' WINS'):'DRAW';
  const list=crews.slice().sort((a,b)=>mode===0?b.score-a.score:((!b.out)-(!a.out))||(b.outAt-a.outAt)||(b.kills-a.kills));
  $('bcRanks').innerHTML=list.slice(0,10).map((c,k)=>'<li style="animation-delay:'+k*60+'ms"><span class="pos">'+(k+1)+'</span><span style="color:'+c.col+'">'+esc(c.name)+'</span><em>'+c.kills+' KO · '+c.score+'</em></li>').join('');
  $('bcAgain').hidden=isClient();$('bcSetupBtn').hidden=isClient();$('bcOverNote').hidden=!isClient();
@@ -576,7 +576,7 @@ function enterPlay(tp){
  root.querySelector('.pad').hidden=!tp;for(const id of['bcTitle','bcOver','bcSetup','bcOnlinePanel','bcTabs','bcBack'])$(id).hidden=true;root.querySelector('.bcmode').hidden=true;
  RA.hud.disarm();cam.snap=true;playTrack(1+((NET.matchId>>>0)%2||Math.floor(Math.random()*2)))}
 function startLocal(){saveSetup();audio();const n=nSel(),list=[];
- for(let i=0;i<n;i++)list.push({ctrl:$('bcc'+i).value,name:COLORS[i][0]});
+ const SEATN=RA.player.seats([...Array(n)].map((_,i)=>$('bcc'+i).value));for(let i=0;i<n;i++)list.push({ctrl:$('bcc'+i).value,name:SEATN[i]});
  NET.myIdx=-1;overT=0;startMatch(list,false);enterPlay(crews.some(c=>c.ctrl==='touch'))}
 function startOnline(list){audio();NET.matchId=(Math.random()*1e9)|0;NET.mroster=list.map(x=>x.peer);overT=0;
  let cpu=0;const seats=list.map((x,i)=>x.cpu?{ctrl:'cpu',name:'CPU '+(++cpu)}:{ctrl:x.me?'me':'net',peer:x.peer,name:R.name(R.peer(x.peer),i)});
@@ -606,7 +606,7 @@ $('bcSetupBtn').addEventListener('click',()=>{if(R.online)R.leave();else toLobby
 $('bcBack').addEventListener('click',()=>{if(R.online)R.leave();RA.menu.show()});
 setMode(mode);R.init();
 
-RA.register({id:'tanks',name:'BATTLE CITY',kind:'Tank battle',players:'1-20 players',ready:false   // parked until its survey pass,el:root,
+RA.register({id:'tanks',name:'BATTLE CITY',kind:'Tank battle',players:'1-20 players',ready:false,el:root,
  desc:'Top-down tank battle in 2.5D. Turret follows your mouse. Co-op: guard one eagle against CPU waves. Versus: every crew has an eagle, last crew rolling wins.',
  icon:['..........','....kk....','...kggkkkk','...kggkkk.','.kkggggkk.','kggggggggk','kddddddddk','kdkdkdkdkk','.kkkkkkkk.','..........'],
  music:TRACKS,

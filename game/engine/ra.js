@@ -6,7 +6,7 @@
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v26';
+RA.VERSION='v27';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -309,6 +309,36 @@ RA.presets=(id,defaults)=>{const S=RA.save(id);
   set(n,obj){const p=all();p[n]=Object.assign({},obj);S.set({presets:p})},
   get last(){return S.data.preset||1},use(n){S.set({preset:n})}}};
 
+/* ---------- lag-free online play: every player runs their own character here, the host referees ----------
+   const S=RA.sync({owns:key=>bool, onHit:(key,kind,value,fromKey)=>{...}});
+   key = the seat index of a player / board / tank.  owns(key) is true for what THIS device simulates
+   (on the host: itself + CPUs, on a guest: only its own seat).
+   Guest each frame:   S.upload(room, now, state, matchId)  -> sends my own seat's state (+ hits I caused) in presence.
+   Host each step:     const u=S.read(peerPresence, matchId); u.s = that guest's latest state, u.hits handled for you.
+   Anyone:             S.hit(key, kind, value, fromKey) -> applied here if we own the target, otherwise routed to its owner.
+   Host snapshot:      g.hx=S.pack();   guest on snapshot: S.unpack(g.hx)  (hits for my seat arrive in onHit).
+   Remote things:      S.follow(obj, tx, ty) glides obj.x/.y toward the latest network position every frame.
+   S.reset() at every new match. */
+RA.sync=o=>{const S={out:[],os:0,inbox:{},seen:{},inSeen:{},lastT:0,lastK:'',
+ reset(){S.out=[];S.os=0;S.inbox={};S.seen={};S.inSeen={}},
+ hit(key,k,v,from){key|=0;
+  if(o.owns(key)){o.onHit(key,k,v,from);return}
+  if(o.host()){const q=S.inbox[key]=S.inbox[key]||{s:0,l:[]};q.l.push([++q.s,k,v,from|0]);if(q.l.length>16)q.l.shift()}
+  else{S.out.push([++S.os,key,k,v]);if(S.out.length>16)S.out.shift()}},
+ upload(room,now,state,mid,extra){if(!room)return;const pr=Object.assign({sy:{m:mid|0,s:state,o:S.out}},extra);
+  const k=JSON.stringify(pr);if(k===S.lastK&&now-S.lastT<500)return;if(now-S.lastT<33)return;
+  S.lastK=k;S.lastT=now;room.presence(pr).catch(()=>{})},
+ read(pr,mid,fromKey){const y=pr&&pr.sy;if(!y||(y.m|0)!==(mid|0))return null;
+  if(Array.isArray(y.o)){const seen=S.seen[fromKey]|0;let top=seen;
+   for(const e of y.o){if(!Array.isArray(e)||(e[0]|0)<=seen)continue;top=Math.max(top,e[0]|0);if((e[1]|0)!==(fromKey|0))S.hit(e[1]|0,String(e[2]),e[3],fromKey)}
+   S.seen[fromKey]=top}
+  return{s:y.s}},
+ pack(){const x={};for(const k in S.inbox)if(S.inbox[k].l.length)x[k]=S.inbox[k].l;return x},
+ unpack(x){if(!x)return;for(const k in x){if(!o.owns(+k)||!Array.isArray(x[k]))continue;
+  for(const e of x[k]){if(!Array.isArray(e)||(e[0]|0)<=(S.inSeen[k]|0))continue;S.inSeen[k]=e[0]|0;o.onHit(+k,String(e[1]),e[2],e[3]|0)}}},
+ follow(ob,tx,ty,snap){const dx=tx-ob.x,dy=ty-ob.y;if(Math.abs(dx)+Math.abs(dy)>(snap||40)){ob.x=tx;ob.y=ty}else{ob.x+=dx*.35;ob.y+=dy*.35}}};
+ return S};
+
 /* ---------- online rooms kit: lobby list, create / join by code, roster, host sync ----------
    const R=RA.rooms({game:'jewels', el:panelElement, colors:[[name,hex]...], max:20, minPlayers:2, note:'...',
                      onStart(list), onState(g), onLeave()})
@@ -332,7 +362,7 @@ RA.rooms=o=>{
   R.user.profiles([by]).then(ps=>{R.names[by]=(ps&&ps[by]&&ps[by].name)||'';renderRoster();if(o.onNames)o.onNames()}).catch(()=>{})}
  R.name=(pe,i)=>{let n='';if(pe&&pe.presence&&typeof pe.presence.nm==='string')n=pe.presence.nm.replace(/[^\w .\-]/g,'').slice(0,12);
   if(!n&&pe&&pe.by){wantName(pe.by);n=(R.names[pe.by]||'').split(' ')[0]}
-  if(!n)n=o.colors&&o.colors[i]?o.colors[i][0]:'Player '+(i+1);return n};
+  if(!n)n='P'+(i+1);return n};
  R.peer=id=>R.room?R.room.peers().find(pe=>pe.peer===id)||null:null;
  R.input=id=>{const pe=R.peer(id);return pe?pe.presence:null};
  R.hostPeer=()=>{if(!R.room)return null;const hs=R.room.peers().filter(pe=>pe.presence&&pe.presence.host===1&&pe.presence.g);return hs.sort((a,b)=>a.peer<b.peer?-1:1)[0]||null};
@@ -417,6 +447,8 @@ const PLAYER=RA.player=(()=>{const fns=[];let name='';
 const NICKROOMS=new Set();
 RA.player.room=r=>{if(r){NICKROOMS.add(r);if(PLAYER.name)r.presence({nm:PLAYER.name}).catch(()=>{})}return r};
 RA.player.unroom=r=>NICKROOMS.delete(r);
+// local seat labels: first human seat = your nickname, then P2.., CPU seats CPU n
+RA.player.seats=ctrls=>{let h=0,c=0;return ctrls.map(k=>k==='cpu'?'CPU '+(++c):(h++?'P'+(h):(PLAYER.name||'P1')))};
 
 /* ---------- side chat: one text chat for everyone on Retro Arena, open in the menu and in every game ----------
    C / the CHAT button opens it (Esc or ✕ closes). Messages go out on the shared lobby room's 'chat' topic,
