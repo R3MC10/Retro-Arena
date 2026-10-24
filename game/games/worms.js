@@ -117,8 +117,9 @@ function buildSky(){
  const range=(s,w,h,base,amp,top,bot,seed)=>{const g=s.createLinearGradient(0,h*(base-amp/h*2),0,h);g.addColorStop(0,top);g.addColorStop(1,bot);s.fillStyle=g;
   for(let x=0;x<w;x++){const y=Math.round(h*base+amp*Math.sin(x*.013+seed)+amp*.5*Math.sin(x*.041+seed*2)+amp*.2*Math.sin(x*.13));s.fillRect(x,y,1,h-y)}};
  layers=[
-  layer(.08,(s,w,h)=>{for(let i=0;i<Math.max(4,Math.round(w/90));i++){const cx=(i*97+30)%w,cy=10+(i*41)%Math.max(24,h*.3),n=4+i%3;
-   for(let k=0;k<n;k++){const x=cx+k*9-n*4,y=cy+(k%2?-3:0),r=7+(k*5)%5;s.fillStyle='rgba(120,110,150,.55)';RA.gfx.disc(s,x+1,y+2,r);s.fillStyle='rgba(255,236,220,.8)';RA.gfx.disc(s,x,y,r)}}}),
+  layer(.08,(s,w,h)=>{for(let i=0;i<Math.max(4,Math.round(w/90));i++){const cx=(i*97+30)%w,cy=10+(i*41)%Math.max(24,h*.3),n=4+i%3,b=[];
+   for(let k=0;k<n;k++)b.push({x:6+k*8+((k*7)%3),y:13+(k%2?-3:0)-(k>0&&k<n-1?3:0),r:6+(k*5)%4,col:T.cloud||'#fff4ec',spec:4,gloss:.15});
+   s.globalAlpha=.92;s.drawImage(RA.fx.model(n*8+12,26,b,{amb:.62}),cx-n*4-6,cy-13);s.globalAlpha=1}}),
   layer(.22,(s,w,h)=>range(s,w,h,.5,16,hc[0],hc[1],2)),
   layer(.4,(s,w,h)=>range(s,w,h,.6,12,hc[2],hc[3],5)),
   layer(.6,(s,w,h)=>{range(s,w,h,.68,9,hc[4],hc[5],1);
@@ -888,7 +889,7 @@ function drawWorm(u){
  if(an){const dx=an.x-u.x,dy=an.y-(u.y-5),n=Math.max(1,Math.ceil(Math.hypot(dx,dy)));
   for(let i=0;i<=n;i++){ctx.fillStyle=(i>>1)&1?'#d82800':'#fcfcfc';ctx.fillRect(Math.round(u.x+dx*i/n),Math.round(u.y-5+dy*i/n),1,1)}
   ctx.fillStyle='#000';ctx.fillRect(Math.round(an.x)-1,Math.round(an.y)-1,3,3)}
- if(u.chute)blit(ctx,CHUTE,x-4,y-17,CR_COLS);
+ if(u.chute){ctx.drawImage(CHUTEM,x-7,y-30);ctx.strokeStyle='rgba(30,30,30,.8)';ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(x-6,y-24);ctx.lineTo(x,y-14);ctx.lineTo(x+6,y-24);ctx.stroke()}
  if(u.jet>0){ctx.fillStyle='#000';ctx.fillRect(x-d*4-1,y-8,3,6);ctx.fillStyle='#bcbcbc';ctx.fillRect(x-d*4,y-7,1,4)}
  if(u.hide>0&&!humans().includes(u))return;
  if(u.hide>0)ctx.globalAlpha=.35;
@@ -935,7 +936,7 @@ const CHUTE=['..kkkkk..','.kwrwrwk.','kwrwrwrwk','k.......k','.k.....k.','..k...
 const CR_COLS={k:'#000',L:NES.dirtL,m:NES.dirt,d:NES.dirtD,y:'#fcfcfc',w:'#fcfcfc',r:'#d82800',g:'#bcbcbc'};
 const WAVE='..LLL...';
 // Projectiles as plain view data: kind 0 rocket, 1 grenade, 2 mega, 3 dynamite; f = fuse seconds shown.
-const projView=q=>({x:q.x,y:q.y,k:q.w.spr|0,f:q.fuse!=null&&q.w.fuse&&q.w!==DEF.bomblet?Math.ceil(q.fuse/60):0});
+const projView=q=>({x:q.x,y:q.y,k:q.w.spr|0,f:q.fuse!=null&&q.w.fuse&&q.w!==DEF.bomblet?Math.ceil(q.fuse/60):0,d:(q.dir||(q.vx<0?-1:1))<0?-1:1,a:Math.round(Math.atan2(q.vy||0,Math.abs(q.vx||0)+.001)*20)});
 const PC={k:'#000',w:'#fcfcfc',g:'#00a800',y:'#f8b800',r:'#d82800',s:'#7c7c7c',l:'#bcbcbc',p:'#6844fc',o:'#e45c10'};
 const SPR=[['kkkk','kwwk','kwwk','kkkk'],['.kk.','kggk','kggk','.kk.'],['kkk','kgk','kkk'],['..w.','.kk.','krrk','krrk','krrk','.kk.'],
  ['kk...','kyyk.','.kyyk','..kyk','...k.'],['..w..','.kyk.','kyyyk','kyyyk','.kkk.'],['kkk','ksk','kkk'],['.k.','kok','krk','.k.'],
@@ -945,17 +946,53 @@ const SPR=[['kkkk','kwwk','kwwk','kkkk'],['.kk.','kggk','kggk','.kk.'],['kkk','k
  ['.kkk.','ksssk','ksssk','.kyk.'],['k.kkkk.','kkwwkkk','kkkkkkw','.k.k.k.'],['kkkkk','kwwwk','kwkwk','kkkkk']];
 // walkers waddle: their leg row shifts every few frames
 const WALKS=new Set([8,9,14,18]);
+// gravestone: rounded grey stone with a cross
+const GRAVEM=RA.fx.model(8,11,[{x:4,y:4,r:3.3,col:'#9c9ca8'},{x:4,y:7,r:3.4,col:'#94949c'},{x:4,y:9,r:3.3,col:'#8c8c94'},{x:4,y:3.4,r:.7,z:3.2,col:'#e8e8f0',gloss:0},{x:4,y:4.8,r:.7,z:3.2,col:'#e8e8f0',gloss:0},{x:2.9,y:4,r:.6,z:3.2,col:'#e8e8f0',gloss:0},{x:5.1,y:4,r:.6,z:3.2,col:'#e8e8f0',gloss:0}]);
+const CHUTEM=RA.fx.model(15,8,[...Array.from({length:7},(_,i)=>({x:1.5+i*2,y:4.2-Math.sin(i/6*Math.PI)*2,r:2.4,col:i%2?'#f4f4f4':'#e03020',spec:10}))],{amb:.5});
 const GRAVE=['.kkk.','kllwk','kwwwk','kllwk','kllsk','kllsk','kkkkk'];
 // PS1 shots: shaded models for the round ones, crates as lit wooden boxes
-const M3=RA.fx.model,PMOD={
- 0:M3(9,5,[{x:2,y:2.5,r:1.8,col:'#8c94a8'},{x:4,y:2.5,r:2,col:'#9ca4b8'},{x:6.2,y:2.5,r:1.8,col:'#d83020',spec:20}]),
- 1:M3(6,6,[{x:3,y:3.2,r:2.6,col:'#3c8c30'},{x:3,y:.9,r:.9,z:1,col:'#c0c0c8'}]),
- 2:M3(6,6,[{x:3,y:3.2,r:2.5,col:'#1c5c24'},{x:2,y:2,r:.8,z:2,col:'#f8d020'}]),
- 5:M3(8,9,[{x:4,y:5,r:3.3,col:'#f0c020',spec:30,gloss:1},{x:4,y:1.5,r:1,z:1,col:'#f8f0a0'}]),
- 6:M3(5,5,[{x:2.5,y:2.5,r:2,col:'#6c6c74'}]),
- 10:M3(7,5,[{x:3.5,y:3.6,r:2.6,col:'#5c1010',spec:20},{x:3.5,y:1.2,r:.8,z:1,col:'#ff3020'}]),
- 12:M3(7,7,[{x:3.5,y:3.5,r:3,col:'#ff7020',spec:6,gloss:.9}]),
- 8:M3(10,8,[{x:3,y:4.5,r:2.6,col:'#f4f4f0'},{x:5.2,y:4,r:2.8,col:'#ffffff'},{x:4,y:2.8,r:2,col:'#f0f0ec'},{x:8,y:3.4,r:1.8,z:1,col:'#202020'}])};
+const M3=RA.fx.model,cyl=(x0,x1,y,r,col,n)=>Array.from({length:n||6},(_,i)=>({x:x0+(x1-x0)*i/((n||6)-1),y,r,col}));
+const PMOD={
+ // rocket: grey body, red nose, fins
+ 0:M3(11,7,[...cyl(2,7,3.5,1.6,'#a8b0c0'),{x:8.6,y:3.5,r:1.6,col:'#e03020',spec:24},{x:1.4,y:1.6,r:1.1,col:'#d83020'},{x:1.4,y:5.4,r:1.1,col:'#d83020'}]),
+ // grenade: green pineapple with a lever
+ 1:M3(7,8,[{x:3.5,y:4.6,r:2.9,col:'#4c8c2c',spec:16},{x:3.5,y:1.6,r:1.1,z:.5,col:'#b8bcc8'},{x:5,y:2.1,r:.7,z:1,col:'#d8dce8'}]),
+ // cluster bomb: dark grey with yellow band
+ 2:M3(7,7,[{x:3.5,y:3.6,r:2.8,col:'#3c4048',spec:16},{x:3.5,y:3.6,r:1.4,z:2,col:'#f8c020'}]),
+ // dynamite: red stick, white label, black fuse
+ 3:M3(6,11,[...cyl(3,3,3,1.9,'#d82818',1),{x:3,y:3.5,r:1.9,col:'#d82818'},{x:3,y:5,r:1.9,col:'#e0e0d8'},{x:3,y:6.5,r:1.9,col:'#d82818'},{x:3,y:8,r:1.9,col:'#d82818'},{x:3,y:1.2,r:.6,z:1,col:'#202020'}]),
+ // banana bomb: curved yellow banana with brown tips
+ 4:M3(10,7,[{x:1.6,y:2,r:1,col:'#6c4818'},{x:2.6,y:3.4,r:1.6,col:'#f8d830'},{x:4,y:4.4,r:1.8,col:'#fce040'},{x:5.6,y:4.6,r:1.8,col:'#fce040'},{x:7.1,y:3.8,r:1.6,col:'#f8d830'},{x:8.3,y:2.4,r:1,col:'#6c4818'}]),
+ // holy hand grenade: gold orb with a cross on top
+ 5:M3(9,11,[{x:4.5,y:6.5,r:3.6,col:'#f0c020',spec:30,gloss:1},{x:4.5,y:2.6,r:.8,z:1,col:'#f8e070'},{x:4.5,y:1.3,r:.8,z:1,col:'#f8e070'},{x:3.3,y:2,r:.8,z:1,col:'#f8e070'},{x:5.7,y:2,r:.8,z:1,col:'#f8e070'}]),
+ // mortar shell / shards
+ 6:M3(5,5,[{x:2.5,y:2.5,r:2,col:'#6c6c74',spec:20}]),
+ // petrol bomb: green bottle, burning rag
+ 7:M3(6,10,[{x:3,y:6.6,r:2.6,col:'#4c9c58',spec:30,gloss:.9},{x:3,y:3.6,r:1.1,col:'#3c8c48'},{x:3,y:2.3,r:1,col:'#3c8c48'},{x:3,y:1.1,r:1,z:1,col:'#f8a020',gloss:0}]),
+ // sheep: woolly white body, black face and legs
+ 8:M3(12,10,[{x:2,y:8.6,r:.9,col:'#202020'},{x:7,y:8.6,r:.9,col:'#202020'},{x:3.2,y:5,r:2.8,col:'#f4f4ee'},{x:5.6,y:4.4,r:3,col:'#ffffff'},{x:4.3,y:3,r:2.2,col:'#f0f0ea'},{x:9.2,y:3.8,r:1.9,z:1,col:'#282828'},{x:9.6,y:3.2,r:.5,z:3,col:'#ffffff'}]),
+ // old woman: grey bun, pink face, purple coat, handbag
+ 9:M3(9,13,[{x:4,y:9,r:3,col:'#7c4c9c'},{x:4,y:6,r:2.3,col:'#8c5cac'},{x:4.6,y:3.6,r:1.8,col:'#f4c0a0'},{x:3.6,y:1.8,r:1.5,col:'#c8c8d0'},{x:6.9,y:8.2,r:1.2,z:2,col:'#6c3c1c'}]),
+ // mine: dark dome with a blinking light
+ 10:M3(8,6,[{x:4,y:4.4,r:3,col:'#3c2828',spec:20},{x:4,y:1.6,r:.9,z:1,col:'#ff3020',gloss:1}]),
+ // concrete donkey: grey statue
+ 11:M3(14,13,[{x:4,y:6,r:3.2,col:'#a0a0a4'},{x:7.5,y:6,r:3.2,col:'#a8a8ac'},{x:11,y:3.6,r:2.2,col:'#b0b0b4'},{x:12.5,y:4.6,r:1.2,z:1,col:'#a0a0a4'},{x:10.4,y:1.2,r:.9,col:'#9c9ca0'},{x:3,y:10.6,r:1.2,col:'#8c8c90'},{x:8.6,y:10.6,r:1.2,col:'#8c8c90'}]),
+ // meteor: molten rock
+ 12:M3(8,8,[{x:4,y:4,r:3.3,col:'#ff6818',spec:6,gloss:.8},{x:3,y:3,r:1.3,z:2,col:'#ffd040',gloss:0}]),
+ // mad cow: brown and white, horns
+ 14:M3(13,10,[{x:2.4,y:8.6,r:.9,col:'#3c2c20'},{x:8,y:8.6,r:.9,col:'#3c2c20'},{x:3.5,y:5,r:2.8,col:'#f4f0e8'},{x:6.5,y:5,r:2.9,col:'#8c5428'},{x:10.3,y:3.6,r:2,z:1,col:'#f4f0e8'},{x:11.5,y:4.4,r:1,z:2,col:'#f8a0a0'},{x:9.6,y:1.4,r:.6,col:'#e8e0c0'}]),
+ // homing pigeon: grey bird, white wing
+ 15:M3(10,7,[{x:4,y:4,r:2.5,col:'#8c94a0'},{x:7,y:3,r:1.7,z:.5,col:'#9ca4b0'},{x:8.8,y:3.2,r:.7,z:1,col:'#f8b040'},{x:3.6,y:3.2,r:1.6,z:2,col:'#ffffff'},{x:1.2,y:4.6,r:1,col:'#7c8490'}]),
+ // ming vase: white porcelain, blue band
+ 16:M3(7,10,[{x:3.5,y:6.2,r:3,col:'#f0f0f8',spec:30,gloss:1},{x:3.5,y:6.2,r:1.6,z:2.2,col:'#2850c0'},{x:3.5,y:2.4,r:1.3,col:'#f0f0f8'},{x:3.5,y:1,r:1.5,col:'#2850c0'}]),
+ // mole: brown, pink nose and claws
+ 17:M3(9,7,[{x:4,y:4,r:2.8,col:'#6c4c34'},{x:7,y:3.8,r:1.3,z:1,col:'#7c5c44'},{x:8.2,y:3.8,r:.7,z:2,col:'#f890a0'},{x:5.4,y:6,r:.8,z:2,col:'#f8c0c8'}]),
+ // skunk: black, white stripe, big tail
+ 18:M3(12,9,[{x:2.4,y:3,r:2.4,col:'#202024'},{x:2.4,y:2.2,r:1.2,z:1.6,col:'#ffffff'},{x:5.6,y:5.4,r:2.6,col:'#26262a'},{x:5.6,y:4,r:1.2,z:2,col:'#ffffff'},{x:9.2,y:5.4,r:1.7,col:'#2a2a2e'},{x:10.4,y:5.6,r:.6,z:1.5,col:'#f890a0'},{x:4,y:8,r:.8,col:'#101010'},{x:7.4,y:8,r:.8,col:'#101010'}]),
+ // mail strike letter: white envelope, red stamp
+ 19:M3(9,6,[...cyl(1.5,7.5,3,2.4,'#f4f0e4',5),{x:6.8,y:2.2,r:.9,z:2,col:'#d82820',gloss:0}])};
+// walkers face their way and waddle, flying shots point along their path
+const WALKER=new Set([8,9,14,17,18]),SPIN=new Set([0,6,15,19]);
 const CRS={};
 function crateSprite(kind){if(CRS[kind])return CRS[kind];const k=document.createElement('canvas');k.width=k.height=10;const g=k.getContext('2d');
  const base=kind==='h'?[236,236,236]:kind==='p'?[150,80,210]:[176,118,60];
@@ -966,13 +1003,19 @@ function crateSprite(kind){if(CRS[kind])return CRS[kind];const k=document.create
  if(kind==='w'){g.fillStyle='#f8d040';g.fillRect(4,4,2,2)}
  g.strokeStyle='rgba(0,0,0,.8)';g.strokeRect(.5,.5,9,9);return CRS[kind]=k}
 const BAY=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
-function drawProj(k,x,y){
- if(PMOD[k]){const m=PMOD[k];ctx.drawImage(m,x-(m.width>>1),y-(m.height>>1));if(k===0&&(tick&2)){ctx.fillStyle='#ffc040';ctx.fillRect(x-5,y-1,2,2)}return}
+function drawProj(k,x,y,d,a){
+ if(k===13){for(let i=0;i<3;i++){const fx=x+Math.sin(tick*.3+i*2+x)*1.2,fy=y-i*1.4-((tick+i*3)%6)*.3;RA.fx.light(ctx,fx,fy,3-i*.6,i?'#ff8020':'#ffe060',.5)}ctx.fillStyle='#fff0a0';ctx.fillRect(x,y-1,1,1);return}
+ if(PMOD[k]){const m=PMOD[k],bob=WALKER.has(k)&&(tick>>3)&1?1:0;ctx.save();ctx.translate(x,y-bob);if(d<0)ctx.scale(-1,1);if(SPIN.has(k)&&a)ctx.rotate(a);
+  ctx.drawImage(m,-(m.width>>1),-(m.height>>1));
+  if(k===0){ctx.fillStyle=(tick&2)?'#ffd060':'#ff8020';ctx.fillRect(-(m.width>>1)-2,-1,2,2)}
+  if(k===3||k===7){if(tick&2){ctx.fillStyle='#fff8c0';ctx.fillRect(0,-(m.height>>1)-1,1,1)}RA.fx.light(ctx,0,-(m.height>>1),2.5,'#ffa030',.5)}
+  if(k===10&&(tick>>3)&1)RA.fx.light(ctx,0,-2,2.5,'#ff2010',.6);
+  ctx.restore();return}
  if(k===13){const c=['#f8b800','#e45c10','#d82800'];ctx.fillStyle=c[(x+tick>>2)%3];ctx.fillRect(x,y-1-((x+tick>>1)&1),1,2);ctx.fillStyle=c[(x+tick>>1)%3];ctx.fillRect(x+((tick>>2)&1?1:-1),y,1,1);return}
- let a=SPR[k]||SPR[0];
- if(WALKS.has(k)&&(tick>>3)&1){const l=a[a.length-1];a=a.slice(0,-1).concat(l.slice(-1)+l.slice(0,-1))}
- if(k===10&&(tick>>3)&1){blit(ctx,a.map(r=>r.replace('r','k')),x-2,y-1,PC);return}
- blit(ctx,a,x-(a[0].length>>1),y-(a.length>>1),PC);
+ let sa=SPR[k]||SPR[0];
+ if(WALKS.has(k)&&(tick>>3)&1){const l=sa[sa.length-1];sa=sa.slice(0,-1).concat(l.slice(-1)+l.slice(0,-1))}
+ if(k===10&&(tick>>3)&1){blit(ctx,sa.map(r=>r.replace('r','k')),x-2,y-1,PC);return}
+ blit(ctx,sa,x-(sa[0].length>>1),y-(sa.length>>1),PC);
 }
 // ----- camera, fog of war, spectating -----
 let V={pts:[],vw:[],fog:false,spec:false,t:null},specIdx=-1,lastPts=[];
@@ -1059,10 +1102,10 @@ function render(){
  for(const c of crates){const x=c.x-4,y=Math.round(c.y)-7;
   if(!c.landed)blit(ctx,CHUTE,x-1,y-7,CR_COLS);
   RA.fx.shadow(ctx,c.x,Math.round(c.y)+1,5,c.landed?.35:0);ctx.drawImage(crateSprite(c.party?'p':c.hp?'h':'w'),x-1,y-2);}
- for(const g of graves)blit(ctx,GRAVE,Math.round(g.x)-2,Math.round(g.y)-3,PC);
+ for(const g of graves){RA.fx.shadow(ctx,Math.round(g.x),Math.round(g.y)+4,4,.3);ctx.drawImage(GRAVEM,Math.round(g.x)-4,Math.round(g.y)-6)}
  for(const u of players)if(u.alive&&showWorm(u))drawWorm(u);
  for(const p of (isClient()?projs:projs.map(projView))){if(!seen(p.x,p.y))continue;const x=Math.round(p.x),y=Math.round(p.y);
-  drawProj(p.k,x,y);
+  drawProj(p.k,x,y,p.d||1,(p.a|0)/20);
   if(p.f)drawNum(p.f,x,y-10,'#fcfcfc')}
  for(const p of parts){
   if(p.ring){const r=p.r,t=p.t;
@@ -1272,7 +1315,7 @@ function snapshot(){
    WLIST.indexOf(p.wpn),(p.ammo||[]).map(a=>a<0?'i':Math.min(9,a)).join(''),p.kami>0?1:0,p.kills,p.inv>0?1:0,p.grounded?1:0,p.reveal>0?1:0,
    (p.rope||p.hook)?Math.round((p.rope||p.hook).x):-1,(p.rope||p.hook)?Math.round((p.rope||p.hook).y):-1,(p.chute?1:0)|(p.jet>0?2:0),p.life|0,p.hide>0?1:0,p.poison>0?1:0]),hx:SY.pack(),lg:NET.lowG|0,
   c:crates.map(c=>[c.x,Math.round(c.y),c.party?2:c.hp?1:0,c.landed?1:0]),f:NET.feed,
-  x:NET.xlog,pr:projs.slice(0,30).map(q=>{const v=projView(q);return[Math.round(v.x),Math.round(v.y),v.k,v.f]})};
+  x:NET.xlog,pr:projs.slice(0,30).map(q=>{const v=projView(q);return[Math.round(v.x),Math.round(v.y),v.k,v.f,v.d,v.a]})};
  while(JSON.stringify(g).length>3800&&g.pr.length)g.pr.pop();
  return g;
 }
@@ -1310,7 +1353,7 @@ function applySnap(g){
   p.nx=a[0]/2;p.ny=a[1]/2;if(fresh||mine){p.x=p.nx;p.y=p.ny;p.vx=0;p.vy=0}
   Object.assign(p,{dir:a[4]<0?-1:1,aim:a[5]/100,charging:a[7]>0,power:Math.max(0,(a[7]-1)/98),
    wpn:WLIST[a[8]]||'bazooka',grounded:a[13]!==0,rope:a[15]>=0&&a[16]!=null?{x:a[15],y:a[16]}:null,hook:null,chute:(a[17]|0)&1,jet:(a[17]|0)&2?1:0})});
- projs=(g.pr||[]).map(a=>({x:a[0],y:a[1],k:a[2]|0,f:a[3]|0}));
+ projs=(g.pr||[]).map(a=>({x:a[0],y:a[1],k:a[2]|0,f:a[3]|0,d:a[4]<0?-1:1,a:a[5]|0}));
  crates=(g.c||[]).map(a=>({x:a[0],y:a[1],hp:a[2]===1,party:a[2]===2,landed:!!a[3]}));
  G=(g.lg|0)>0?.05:G0;
  wind=(g.wd|0)/5;WATER=Math.max(40,Math.min(H-2,g.wt|0));NET.sd=g.sd|0;
@@ -1435,6 +1478,6 @@ RA.register({id:'worms',name:'WORMS',kind:'Artillery',players:'2-20 players',rea
  onEsc(){if(panelOn){openPanel(false);return true}},
  onQuit(){if(NET.mode==='online'){leaveRoom();return}
   players=[];projs=[];crates=[];setSize(2);genTerrain((Math.random()*1e9)|0);showMenu()}});
-window.__gb={wormSprite,solid:(x,y)=>solid(x,y),get projs(){return projs},explodeAt:(x,y)=>explode(x,y,20,25,null),get cam(){return cam},get VW(){return VW},get VH(){return VH},get state(){return state},get players(){return players},get crates(){return crates},fireW:(p)=>fire(p),partyCrate:(p,i)=>{PARTY[i][1](p)},PARTYN:()=>PARTY.length,WLIST,spawnCrate,get M(){return M},get theme(){return THEME.n},update,newLocalGame,snapshot,applySnap,NET,
+window.__gb={wormSprite,PMOD,GRAVEM,CHUTEM,solid:(x,y)=>solid(x,y),get projs(){return projs},explodeAt:(x,y)=>explode(x,y,20,25,null),get cam(){return cam},get VW(){return VW},get VH(){return VH},get state(){return state},get players(){return players},get crates(){return crates},fireW:(p)=>fire(p),partyCrate:(p,i)=>{PARTY[i][1](p)},PARTYN:()=>PARTY.length,WLIST,spawnCrate,get M(){return M},get theme(){return THEME.n},update,newLocalGame,snapshot,applySnap,NET,
  terrSum:()=>{let s=0;for(let i=0;i<terr.length;i++)if(terr[i])s=(s+i*7)%1000003;return s}};
 })();
