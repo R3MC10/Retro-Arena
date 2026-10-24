@@ -6,7 +6,7 @@
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v38';
+RA.VERSION='v39';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -219,8 +219,19 @@ const mouse={on:false,down:false,rel:false,fx:.5,fy:.5};      // cursor as a fra
 const touchAim={on:false,id:null,fx:.5,fy:.5};                  // finger on the game screen
 function pad(n){let gp=null;try{gp=navigator.getGamepads()[n]}catch(e){}
  if(!gp)return{};const a=gp.axes,b=i=>!!(gp.buttons[i]&&gp.buttons[i].pressed);
- return{left:a[0]<-.4||b(14),right:a[0]>.4||b(15),up:a[1]<-.4||b(12),down:a[1]>.4||b(13),a:b(0),b:b(1),x:b(2),y:b(3),lb:b(4),rb:b(5),lt:b(6),rt:b(7),start:b(9),
+ return{left:a[0]<-.4||b(14),right:a[0]>.4||b(15),up:a[1]<-.4||b(12),down:a[1]>.4||b(13),a:b(0),b:b(1),x:b(2),y:b(3),lb:b(4),rb:b(5),lt:b(6),rt:b(7),back:b(8),start:b(9),
   ax:a[0]||0,ay:a[1]||0,rx:a[2]||0,ry:a[3]||0}}
+// which device the player touched last ('kb' or 'pad'): legends show the matching buttons
+let lastDev='kb';const devFns=[];const setDev=d=>{if(d!==lastDev){lastDev=d;devFns.forEach(f=>{try{f(d)}catch(e){}})}};
+addEventListener('keydown',()=>setDev('kb'),true);addEventListener('mousedown',()=>setDev('kb'),true);
+/* On-screen control legend, PS1 style button glyphs, swaps between keyboard and gamepad as the player switches.
+   RA.legend(gameRootEl, {kb:[['A D','walk'],['LMB','fire']], pad:[['LS','move'],['A','jump']]}) ; tokens split by spaces become glyphs. */
+const GLY={A:'gA',B:'gB',X:'gX',Y:'gY',LB:'gS',RB:'gS',LT:'gS',RT:'gS',LS:'gT',RS:'gT',DP:'gT',START:'gS',BACK:'gS'};
+const glyph=(t,pad)=>{const e=RA.util.esc(t);return pad&&GLY[t]?'<span class="gl '+GLY[t]+'">'+(t==='DP'?'✚':e)+'</span>':'<kbd>'+e+'</kbd>'};
+RA.legend=(root,L)=>{const scr=root.querySelector('.screen')||root;let el=scr.querySelector('.ra-legend');
+ if(!el){el=document.createElement('div');el.className='ra-legend';scr.appendChild(el)}
+ const draw=d=>{const pad=d==='pad',rows=(pad?L.pad:L.kb)||[];el.innerHTML=rows.map(r=>'<span>'+r[0].split(' ').map(t=>glyph(t,pad)).join('')+'<em>'+RA.util.esc(r[1])+'</em></span>').join('')};
+ devFns.push(draw);draw(lastDev);return{el,show:v=>{el.hidden=!v}}};
 // Touch buttons: any element with data-k="name" becomes a held button touchK[name].
 function bindButtons(root){root.querySelectorAll('[data-k]').forEach(b=>{const k=b.dataset.k;
  const on=e=>{e.preventDefault();ensure();RA.util.buzz();touchK[k]=true;b.classList.add('down');try{b.setPointerCapture(e.pointerId)}catch(_){}};
@@ -616,7 +627,11 @@ const cm=$('cartMus');if(cm){cm.addEventListener('click',()=>music.toggle());cm.
  music.label();pick(0,false);showCart(true);requestAnimationFrame(loop);cardInit();chatInit();
  (function padLoop(){if(cartOn){const p=pad(0),pr=padPrev;
    if(p.up&&!pr.up)pick(sel-1,true);if(p.down&&!pr.down)pick(sel+1,true);
-   if((p.a&&!pr.a)||(p.b&&!pr.b)||(p.start&&!pr.start))launch(sel);padPrev=p}else padPrev={};
+   if((p.a&&!pr.a)||(p.b&&!pr.b)||(p.start&&!pr.start))launch(sel);padPrev=p}
+  else{const p=pad(0),pr=padPrev;  // in a game: Start = Esc (menu), Back = chat
+   if(p.start&&!pr.start)dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true}));
+   if(p.back&&!pr.back){try{chatShow(true)}catch(e){}}padPrev=p}
+  {const p=pad(0);if(Object.keys(p).some(k=>p[k]===true)||Math.hypot(p.ax||0,p.ay||0,p.rx||0,p.ry||0)>.5)setDev('pad')}
   requestAnimationFrame(padLoop)})();
 };
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;

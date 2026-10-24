@@ -102,7 +102,7 @@ const KEYS={
  k3:{ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',Slash:'fire',Period:'fire'},
  k4:{Numpad8:'up',Numpad5:'down',Numpad4:'left',Numpad6:'right',Numpad0:'fire'}};
 const HOWTO=touchDev?'Touch: the pad drives, FIRE shoots where you face, or tap the battlefield to shoot right there.'
- :'Mouse + keys: WASD drives, the turret follows the mouse, click (or Space) fires. Gamepad: left stick drives, right stick aims the turret, A / RB / RT fire.';
+ :'Mouse + keys: WASD drives, the turret follows the mouse, click (or Space) fires. Gamepad: left stick drives, right stick aims the turret, A / RB / RT fire, Back chat, Start menu.';
 let saved=null;try{saved=JSON.parse(localStorage.getItem('bc-setup'))}catch(e){}
 let selMode=saved&&saved.md===0?0:1,mode=1;            // selMode = what the setup shows, mode = the match being played
 $('bcSlots').innerHTML=COLORS.map((c,i)=>'<div class="slot" id="bcs'+i+'"><span class="chip" style="background:'+c[1]+'">'+(i+1)+'</span><select id="bcc'+i+'" aria-label="'+c[0]+' controls">'+CTRL.map(o=>'<option value="'+o[0]+'">'+o[1]+'</option>').join('')+'</select></div>').join('');
@@ -608,6 +608,8 @@ $('bcSetupBtn').addEventListener('click',()=>{if(R.online)R.leave();else toLobby
 $('bcBack').addEventListener('click',()=>{if(R.online)R.leave();RA.menu.show()});
 setMode(mode);R.init();
 
+RA.legend(root,{kb:[['W A S D','drive'],['MOUSE','aim turret'],['LMB SPACE','fire'],['C','chat'],['ESC','menu']],
+ pad:[['LS','drive'],['RS','aim turret'],['A RB RT','fire'],['BACK','chat'],['START','menu']]});
 RA.register({id:'tanks',name:'BATTLE CITY',kind:'Tank battle',players:'1-20 players',ready:false,el:root,
  desc:'Top-down tank battle in 2.5D. Turret follows your mouse. Co-op: guard one eagle against CPU waves. Versus: every crew has an eagle, last crew rolling wins.',
  icon:['..........','....kk....','...kggkkkk','...kggkkk.','.kkggggkk.','kggggggggk','kddddddddk','kdkdkdkdkk','.kkkkkkkk.','..........'],

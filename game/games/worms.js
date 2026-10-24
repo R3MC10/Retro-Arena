@@ -75,7 +75,7 @@ const root=RA.mount(`
         <button class="go" id="hstart">START</button>
       </div>
       <div class="row mset" id="msetO"></div>
-      <div class="ctlCard"><b>CONTROLS</b><p id="ctlTxt">A/D walk, Space jump (tap twice to backflip), W/S climb the rope and fly the jet pack. The mouse aims, left click fires (hold to charge). E/Q or the mouse wheel switch weapon, right-click or Tab opens the weapon list. Out of lives? Click the map to drop a crate. C opens chat, Esc for the menu. Gamepad: stick moves, A jump, B fire, Y/LB weapon.</p></div>
+      <div class="ctlCard"><b>CONTROLS</b><p id="ctlTxt">A/D walk, Space jump (tap twice to backflip), W/S climb the rope and fly the jet pack. The mouse aims, left click fires (hold to charge). E/Q or the mouse wheel switch weapon, right-click or Tab opens the weapon list. Out of lives? Click the map to drop a crate. C opens chat, Esc for the menu. Gamepad: left stick moves, right stick aims, A jump, B or RT fire, Y/LB weapon, Back chat, Start menu.</p></div>
       <p class="note" id="rwait">Waiting for the host to start…</p>
     </div>
   </section>
@@ -696,6 +696,8 @@ const usesMouse=p=>!!p&&(p.ctrl==='mk'||(NET.mode==='online'&&p.mine))&&!touchDe
 function focusP(){if(!players.length)return null;if(NET.mode==='online')return players.find(p=>p.mine)||null;
  const h=humans();return h.find(p=>p.ctrl==='mk')||h.find(p=>p.ctrl==='touch')||(h.length===1?h[0]:null)}
 function readPad(n){const p=RA.input.pad(n);return{left:p.left,right:p.right,up:p.up,down:p.down,jump:p.a,fire:p.b||p.x||p.rb||p.rt,next:p.y,prev:p.lb}}
+// right stick aims like the mouse (angle + facing)
+function padAim(n){const p=RA.input.pad(n);if(Math.hypot(p.rx||0,p.ry||0)<.5)return null;return{aim:Math.atan2(-p.ry,Math.abs(p.rx)),dir:p.rx<0?-1:1,d:null}}
 const readKeys=set=>RA.input.keys(KEYS[set]);
 // Everything this device can press, merged (online play).
 function myInput(){const o={},src=[readKeys('mk'),readKeys('k3'),touchK,readPad(0),uiK(),{fire:mouse.down}];
@@ -713,9 +715,9 @@ function readInput(p,fp){
  if(c==='me')o=myInput();
  else if(c==='touch')o={...touchK};
  else if(c==='mk'){o=readKeys('mk');if(mouse.down)o.fire=true}
- else if(c.startsWith('gp'))o=readPad(+c[2]);
+ else if(c.startsWith('gp')){o=readPad(+c[2]);const pa=padAim(+c[2]);if(pa)o.aimTo=pa}
  else o=readKeys(c);
- if(c==='me'||c==='touch'||c==='mk')o.aimTo=aimFor(p);
+ if(c==='me'||c==='touch'||c==='mk'){const pa=c!=='touch'&&padAim(0);o.aimTo=pa||aimFor(p)}
  if(p===fp){const u=uiK();if(u.next)o.next=true;if(u.prev)o.prev=true;if(pendSel!=null){o.select=pendSel;pendSel=null}}
  return o;
 }
@@ -1476,6 +1478,8 @@ function frame(now){
 initNet();
 $('toMenu').addEventListener('click',()=>{if(NET.room)leaveRoom();RA.menu.show()});
 
+RA.legend(root,{kb:[['A D','walk'],['SPACE','jump'],['W S','rope/jet'],['MOUSE','aim'],['LMB','fire (hold)'],['E Q','weapon'],['TAB','weapon list'],['C','chat'],['ESC','menu']],
+ pad:[['LS','move'],['RS','aim'],['A','jump'],['B RT','fire (hold)'],['Y LB','weapon'],['BACK','chat'],['START','menu']]}).el.classList.add('wl');
 RA.register({id:'worms',name:'WORMS',kind:'Artillery',players:'2-20 players',ready:true,el:root,
  desc:'Real-time artillery brawl. Everyone moves at once. Grab airdrops, last worm standing wins.',
  icon:['...kkkk...','..kppppk..','..kpwkpk..','..kppppk..','...kppk...','...kppk...','..kpppk...','.kppppk...','kpppppkk..','kkkkkkkk..'],

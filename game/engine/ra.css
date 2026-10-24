@@ -307,3 +307,15 @@ button{border-radius:6px;background:linear-gradient(180deg,#4a4f8a,#24275a);bord
 .achBox li .st{color:#f8b800;font-size:20px}.achBox li i{display:block;font-style:normal;color:#c8ccff;font-size:16px}.achBox li em{font-style:normal;font-size:14px;color:#f8d878;text-align:right}
 
 .achLocker{display:flex;flex-wrap:wrap;gap:6px 14px;margin:6px 0 4px;padding:6px 8px;border:1px solid #3a4a7a;background:rgba(10,14,40,.6)}.achLocker b{color:#f8d878;margin-right:6px}.achLocker span{display:flex;gap:4px;align-items:center}.achLocker i{font-style:normal;color:#9ab;font-size:.8em;margin-right:2px}.achLocker button{font:inherit;font-size:.85em;padding:2px 7px;background:#1a2250;color:#dde;border:1px solid #4a5a9a;cursor:pointer}.achLocker button.on{background:#c89a20;color:#000;border-color:#f8d878}
+
+/* on-screen control legend (keyboard keycaps / gamepad buttons) */
+.ra-legend{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;max-width:96%;padding:4px 10px;
+ background:linear-gradient(180deg,rgba(14,18,48,.78),rgba(4,6,20,.82));border:1px solid rgba(140,160,255,.35);border-radius:4px;font-size:11px;color:#d8dcf0;pointer-events:none;z-index:5;opacity:.88}
+.ra-legend span{display:flex;align-items:center;gap:2px;white-space:nowrap}.ra-legend em{font-style:normal;margin-left:4px;color:#aab4d8}
+.ra-legend kbd{display:inline-block;min-width:14px;padding:0 4px;font:inherit;font-size:10px;line-height:15px;text-align:center;color:#101018;
+ background:linear-gradient(180deg,#f4f4f8,#a8acbc);border:1px solid #5c6070;border-bottom-width:2px;border-radius:3px}
+.ra-legend .gl{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 3px;font-size:9px;font-weight:bold;color:#fff;border-radius:8px;
+ box-shadow:inset 0 -2px 0 rgba(0,0,0,.4),inset 0 2px 0 rgba(255,255,255,.35);text-shadow:0 1px 0 #000}
+.ra-legend .gA{background:#2e9e3e}.ra-legend .gB{background:#c8282c}.ra-legend .gX{background:#2c5ad0}.ra-legend .gY{background:#d8a818;color:#201800;text-shadow:none}
+.ra-legend .gS{background:#4c5064;border-radius:4px}.ra-legend .gT{background:#2a2c38;border:1px solid #8890a8}
+body:not(.playing) .ra-legend{display:none}

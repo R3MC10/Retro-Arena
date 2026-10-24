@@ -149,7 +149,7 @@ const KEYS={
  k3:{ArrowLeft:'left',ArrowRight:'right',ArrowDown:'down',ArrowUp:'rot',Period:'drop',Slash:'tgt',Comma:'item'},
  k4:{Numpad4:'left',Numpad6:'right',Numpad5:'down',Numpad8:'rot',Numpad0:'drop',Numpad1:'tgt',Numpad3:'item'}};
 const HOWTO=touchDev?'Touch: slide on the pad to move, down falls faster, up or DROP drops the column, TURN rotates it, TARGET picks who your rocks hit, ITEM fires your power-up.'
- :'Mouse + keys: move the mouse to slide the column, click or W to rotate, right-click or Space to drop, S falls faster, E picks who your rocks hit (random, attackers, leader, weakest), Q or F fires your power-up. A/D move too. Gamepad: stick moves, A/B rotate, up or X drops, Y targets, RB fires the power-up.';
+ :'Mouse + keys: move the mouse to slide the column, click or W to rotate, right-click or Space to drop, S falls faster, E picks who your rocks hit (random, attackers, leader, weakest), Q or F fires your power-up. A/D move too. Gamepad: stick moves, A/B rotate, up or X drops, Y targets, RB fires the power-up, Back chat, Start menu.';
 let saved=null;try{saved=JSON.parse(localStorage.getItem('mj-setup'))}catch(e){}
 // your Magic Jewelry save file; the old device-only best score moves into it
 const SAVE=RA.save('jewels');let best=0;try{best=+localStorage.getItem('mj-best')||0}catch(e){}
@@ -664,6 +664,8 @@ $('mjSetupBtn').addEventListener('click',()=>{if(R.online)R.leave();else toLobby
 $('mjBack').addEventListener('click',()=>{if(R.online)R.leave();RA.menu.show()});
 R.init();
 
+RA.legend(root,{kb:[['MOUSE A D','move'],['LMB W','rotate'],['RMB SPACE','drop'],['S','fall faster'],['E','target'],['Q F','power-up'],['C','chat'],['ESC','menu']],
+ pad:[['DP','move'],['A B','rotate'],['X','drop'],['Y LB','target'],['RB RT','power-up'],['BACK','chat'],['START','menu']]});
 RA.register({id:'jewels',name:'MAGIC JEWELRY',kind:'Puzzle',players:'1-20 players',ready:true,el:root,
  desc:'Falling columns of three jewels, built for online rooms. Line up three of a kind, pick who your rocks hit, steal KO badges, last board standing wins.',
  icon:['....kk....','...kcck...','...kcck...','...kkkk...','...krrk...','...krrk...','...kkkk...','...kyyk...','...kyyk...','....kk....'],

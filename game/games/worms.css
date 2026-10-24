@@ -38,3 +38,5 @@ body.touchplay .wpanel{top:calc(60px + env(safe-area-inset-top,0px));bottom:auto
 .wgrid label{display:flex;gap:8px;align-items:center;cursor:pointer}
 .wgrid input[type=checkbox]{width:16px;height:16px;min-width:0;padding:0;margin:0;accent-color:#f8b800}
 .wpEdit{font-size:11px}
+/* control legend sits under the player bars, clear of the weapon bar */
+.ra-legend.wl{top:56px;bottom:auto}
