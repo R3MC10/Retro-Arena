@@ -6,7 +6,7 @@
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v48';
+RA.VERSION='v49';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -436,7 +436,7 @@ RA.rooms=o=>{
   '<p class="note online" data-r="who"></p><div class="list" data-r="rooms"></div><p class="note">'+(o.note||'')+'</p></div>'+
   '<div class="list" data-r="inroom" hidden><div class="row between"><div class="row"><span class="lbl">ROOM</span><span class="code" data-r="rcode"></span></div><button data-r="leave">LEAVE</button></div>'+
   '<div class="roster" data-r="roster"></div><div class="row" data-r="hostctl"><label>CPU players <select data-r="cpus"></select></label><button class="go" data-r="start">START</button></div>'+
-  '<p class="note" data-r="wait">Waiting for the host to start…</p>'+(o.controls?'<div class="ctlCard"><b>CONTROLS</b><p>'+o.controls+'</p></div>':'')+'</div>';
+  '<label class="spec"><input type="checkbox" data-r="spec"> SPECTATE (watch, don&#39;t play)</label><p class="note" data-r="wait">Waiting for the host to start…</p>'+(o.controls?'<div class="ctlCard"><b>CONTROLS</b><p>'+o.controls+'</p></div>':'')+'</div>';
  q('cpus').innerHTML=Array.from({length:max},(_,i)=>'<option>'+i+'</option>').join('');q('cpus').value=String(o.cpus==null?1:o.cpus);
  const R={lobby:null,room:null,user:null,me:null,code:'',host:false,order:[],names:{},hostGone:0,lastB:0,lastL:0,lastSend:'',lastSendT:0,
   get online(){return!!R.room}};
@@ -451,7 +451,8 @@ RA.rooms=o=>{
  R.look=id=>{const pe=R.peer(id);return RA.look.clean(pe&&pe.presence&&pe.presence.lk)};
  R.input=id=>{const pe=R.peer(id);return pe?pe.presence:null};
  R.hostPeer=()=>{if(!R.room)return null;const hs=R.room.peers().filter(pe=>pe.presence&&pe.presence.host===1&&pe.presence.g);return hs.sort((a,b)=>a.peer<b.peer?-1:1)[0]||null};
- R.roster=()=>{const ps=R.room.peers().filter(pe=>pe.kind==='viewer'&&pe.presence&&pe.presence.j===1);
+ R.watchers=()=>R.room?R.room.peers().filter(pe=>pe.presence&&pe.presence.j===1&&pe.presence.sp):[];
+ R.roster=()=>{const ps=R.room.peers().filter(pe=>pe.kind==='viewer'&&pe.presence&&pe.presence.j===1&&!pe.presence.sp);
   for(const pe of ps)if(!R.order.includes(pe.peer))R.order.push(pe.peer);
   const me=ps.find(pe=>pe.sameTab),list=R.order.map(id=>ps.find(pe=>pe.peer===id)).filter(pe=>pe&&pe!==me);
   return(me?[me]:[]).concat(list).slice(0,max)};
@@ -467,7 +468,8 @@ RA.rooms=o=>{
   const cpus=R.host?+q('cpus').value:(g?g.cpu|0:0),all=R.room.peers();
   setH(q('roster'),ids.slice(0,max).map((id,i)=>{const pe=all.find(p=>p.peer===id),c=o.colors&&o.colors[i]?o.colors[i][1]:'#fcfcfc';
    return'<span style="color:'+c+'">'+RA.util.esc(R.name(pe,i))+(pe&&pe.sameTab?' (you)':'')+(i===0?' · host':'')+'</span>'}).join('')+
-   (cpus?'<span class="note">+ '+Math.min(cpus,max-ids.length)+' CPU</span>':''));
+   (cpus?'<span class="note">+ '+Math.min(cpus,max-ids.length)+' CPU</span>':'')+
+   (R.watchers().length?'<span class="note">👁 watching: '+R.watchers().map((pe,i)=>RA.util.esc(R.name(pe,i))).join(', ')+'</span>':''));
   if(q('hostctl').hidden!==!R.host)q('hostctl').hidden=!R.host;if(q('wait').hidden!==R.host)q('wait').hidden=R.host;
   {const t=!R.host&&!R.hostPeer()?'Looking for the host…':'Waiting for the host to start…';if(q('wait').textContent!==t)q('wait').textContent=t}}
  R.render=renderRoster;
@@ -481,7 +483,7 @@ RA.rooms=o=>{
   if(!R.lobby){off();return}msg('');RA.audio.ensure();
   try{R.room=await R.lobby.join(o.game+'-'+code.toLowerCase())}catch(e){msg('Could not join that room ('+(e&&e.code||'error')+'). Try again.');return}
   Object.assign(R,{host,code,order:[],hostGone:0,lastSend:''});
-  R.room.presence({j:1,nm:PLAYER.name||undefined,lk:RA.look(o.game)}).catch(()=>{});RA.player.room(R.room);
+  R.room.presence({j:1,sp:R.spec?1:null,nm:PLAYER.name||undefined,lk:RA.look(o.game)}).catch(()=>{});RA.player.room(R.room);
   R.room.onPeers(changed,()=>{msg('Lost the room connection.');R.leave()});
   q('home').hidden=true;q('inroom').hidden=false;q('rcode').textContent=code;renderRoster();if(o.onEnter)o.onEnter()};
  R.leave=async()=>{const r=R.room;R.room=null;if(r)RA.player.unroom(r);R.host=false;R.code='';
@@ -502,6 +504,7 @@ RA.rooms=o=>{
  q('code').addEventListener('keydown',e=>{if(e.key==='Enter')R.enter(q('code').value,false)});
  q('rooms').addEventListener('click',e=>{const c=e.target.dataset&&e.target.dataset.room;if(c)R.enter(c,false)});
  q('leave').addEventListener('click',()=>R.leave());
+ q('spec').addEventListener('change',e=>{R.spec=e.target.checked;if(R.room)R.room.presence({sp:R.spec?1:null}).catch(()=>{});renderRoster()});
  q('cpus').addEventListener('change',renderRoster);
  q('start').addEventListener('click',()=>{const r=R.roster(),cpus=Math.min(+q('cpus').value,max-r.length);
   if(r.length+cpus<(o.minPlayers||2)){msg('Need at least '+(o.minPlayers||2)+' players: wait for a friend or add a CPU.');return}

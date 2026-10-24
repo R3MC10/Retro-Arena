@@ -391,3 +391,11 @@ select.rsHid{position:absolute!important;opacity:0!important;pointer-events:none
 .rsOpt{font-family:var(--font);font-weight:700;font-size:14px;color:#dfe6f6;padding:6px 12px;border-radius:2px;cursor:pointer;white-space:nowrap}
 .rsOpt:hover{background:linear-gradient(90deg,rgba(56,232,255,.3),rgba(56,232,255,.05));color:#fff}
 .rsOpt.on{color:var(--rl)}.rsOpt.dis{opacity:.4;cursor:default}
+/* RA.kit games */
+.kit .kslots{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.kit .slot{grid-template-columns:auto minmax(0,1fr)}
+.kit .kmode{gap:10px;align-items:center;flex-wrap:wrap}
+.kit .kmode .tabs{margin:0}
+body.playing .kit .top{bottom:auto;top:calc(8px + env(safe-area-inset-top,0px))}
+.kit .ab button{width:92px;height:92px;font-size:10px}
+label.spec{display:flex;gap:8px;align-items:center;font-size:12px;opacity:.9;cursor:pointer}

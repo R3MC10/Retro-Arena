@@ -219,7 +219,14 @@ function spawnEnemy(){const free=spawnsE.filter(([tx,ty])=>!tanks.some(t=>Math.a
 
 /* effects: played here, and sent to everyone in the room by the host */
 const myCrew=()=>NET.myIdx>=0?crews[NET.myIdx]:null;
-const focusCrews=()=>{if(R.online)return NET.myIdx>=0?[crews[NET.myIdx]]:[];return crews.filter(c=>c.ctrl!=='cpu')};
+// spectating: watchers and knocked-out crews follow one living crew; ← → / Tab / click switch who
+let spec=-1;const live=c=>c&&!c.out;
+const spectating=()=>!demo&&state==='play'&&(R.online?(NET.myIdx<0||!live(crews[NET.myIdx])):!crews.some(c=>c.ctrl!=='cpu'&&live(c)));
+function cycle(d){const n=crews.length;let j=spec;for(let k=0;k<n;k++){j=((j+d)%n+n)%n;if(live(crews[j])){spec=j;return}}}
+addEventListener('keydown',e=>{if(!RA.menu.current||RA.menu.current.id!=='tanks'||!spectating())return;if(e.code==='ArrowRight'||e.code==='Tab'||e.code==='KeyE'){cycle(1);e.preventDefault()}else if(e.code==='ArrowLeft'||e.code==='KeyQ'){cycle(-1);e.preventDefault()}});
+cv.addEventListener('pointerdown',()=>{if(spectating())cycle(1)});
+const focusCrews=()=>{if(spectating()){if(!live(crews[spec]))cycle(1);return live(crews[spec])?[crews[spec]]:[]}
+ if(R.online)return NET.myIdx>=0?[crews[NET.myIdx]]:[];return crews.filter(c=>c.ctrl!=='cpu')};
 function ev(k,a){if(!hostOnline()||demo)return;NET.ev.push([++NET.es,k,...a]);if(NET.ev.length>30)NET.ev.shift()}
 function near(x,y){const fs=focusCrews();if(!fs.length)return true;return fs.some(c=>c.tank&&Math.hypot(c.tank.x-x,c.tank.y-y)<VW*.8)}
 function noise(t,a,x,y){if(!demo&&(x==null||near(x,y)))sfx(t,a);ev('s',[t,a|0,Math.round(x||0),Math.round(y||0)])}
@@ -526,9 +533,14 @@ function render(){
  for(const c of crews){const t=c.tank;if(!t||t.spawnT>0)continue;const x=Math.round(t.dx!=null?t.dx:t.x),y=Math.round(t.dy!=null?t.dy:t.y);
   const mine=focusCrews().includes(c)&&crews.length>1;RA.gfx.text(ctx,c.name.slice(0,8),x,y-20,c.col);if(mine&&(tick>>4)&1){ctx.fillStyle=c.col;ctx.fillRect(x-1,y-13,3,2)}}
  for(const t of texts)RA.gfx.text(ctx,t.s,Math.round(t.x),Math.round(t.y),t.col);
+ // every eagle wears its owner's name (colours repeat with 20 crews)
+ for(const b of bases){if(!b.alive)continue;const nm=mode===0?'EAGLE':mode>=2?TEAMN[b.own]:crews[b.own]&&crews[b.own].name;if(!nm)continue;
+  RA.gfx.text(ctx,String(nm).slice(0,12),b.tx*TS+8,b.ty*TS-WH-9,mode>=2?TEAMC[b.own]:crews[b.own]?crews[b.own].col:'#fcfcfc')}
  ctx.setTransform(1,0,0,1,0,0);
  if(grenFlash>0){ctx.fillStyle='rgba(255,255,255,'+(grenFlash/20)+')';ctx.fillRect(0,0,VW,VH)}
  if(!demo)drawHud();
+ if(spectating()){const f=crews[spec];ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(VW/2-70,22,140,16);ctx.font='7px "Russo One",sans-serif';ctx.textAlign='center';ctx.fillStyle='#fff';
+  ctx.fillText('👁 SPECTATING '+(f?f.name:'').toUpperCase(),VW/2,29.5);ctx.fillStyle='#9ab';ctx.font='5px "Exo 2",sans-serif';ctx.fillText('◀ ▶ / click to switch crew',VW/2,35.5)}
  // crosshair
  const c=myCrew()||crews.find(c=>c.ctrl==='mk');
  if(state==='play'&&!demo&&c&&c.tank&&mouse.on&&!touchDev&&(c.ctrl==='mk'||c.ctrl==='me'||c.ctrl==='net')){const x=Math.round(mouse.fx*VW),y=Math.round(mouse.fy*VH);
