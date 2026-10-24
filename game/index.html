@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Retro Arena</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
+<link rel="stylesheet" href="engine/ra.css">
+<link rel="stylesheet" href="games/worms.css">
+<link rel="stylesheet" href="games/jewels.css">
+<link rel="stylesheet" href="games/tanks.css">
+</head><body>
+
+<button class="cartMus" id="cartMus" aria-label="Music on or off">♪ MUSIC</button>
+<button class="chatBtn" id="chatBtn" aria-label="Open chat" aria-controls="chat">CHAT</button>
+<div class="toast" id="toast" hidden></div>
+<aside class="chat panel" id="chat" hidden aria-label="Chat">
+  <div class="chatHead"><b>CHAT</b><span>everyone on Retro Arena · C opens / closes</span><button id="chatX" aria-label="Close chat">✕</button></div>
+  <div class="chatLog" id="chatLog" aria-live="polite"></div>
+  <form class="chatForm" id="chatForm"><input id="chatIn" maxlength="160" autocomplete="off" placeholder="Type a message…" aria-label="Chat message"><button class="go" type="submit">SEND</button></form>
+</aside>
+<div class="cart" id="cart">
+  <div class="tv">
+    <header class="cartTop"><h1>RETRO ARENA</h1><div class="sub" id="cartSub"></div></header>
+    <div class="cartBody">
+      <div class="cartSide">
+        <section class="pcard" id="pcard" aria-label="Your player">
+          <form id="nickForm" class="nickForm"><label for="nickIn">PLAYER NICKNAME</label>
+            <div class="nickRow"><input id="nickIn" maxlength="12" autocomplete="off" placeholder="Type your name" spellcheck="false"><button class="go" type="submit">OK</button></div></form>
+          <p class="needMsg">Pick a nickname to start playing. Everyone sees it in rooms and chat.</p>
+          <div class="pstats" id="pstats"></div>
+        </section>
+        <div class="blurb" id="blurb" aria-live="polite"></div>
+      </div>
+      <ul class="games" id="games"></ul>
+    </div>
+    <div class="keys"><span>▲▼ CHOOSE</span><span>C CHAT · M MUSIC · N NEXT TRACK</span><span>ENTER / A / TAP = START</span></div>
+  </div>
+</div>
+<div id="stage"></div>
+<!-- The engine first, then one file per game (the menu lists them in this order), then boot. -->
+<script src="engine/ra.js"></script>
+<script src="games/worms.js"></script>
+<script src="games/jewels.js"></script>
+<script src="games/tanks.js"></script>
+<script src="games/catalog.js"></script>
+<script>RA.boot()</script>
+</body></html>

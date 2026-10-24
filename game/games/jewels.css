@@ -1,0 +1,8 @@
+/* Magic Jewelry only. Everything else comes from engine/ra.css. */
+.mj .mjslots{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.mj .slot{grid-template-columns:auto minmax(0,1fr)}
+.mj #mjOver .row{justify-content:center}
+body.playing .mj .top{bottom:auto;top:calc(8px + env(safe-area-inset-top,0px))}
+.mj .ab{display:grid;grid-template-columns:auto auto auto;gap:8px 12px;align-items:end}
+.mj .ab .c{grid-column:1;width:54px;height:54px;font-size:7px}
+.mj .ab .b{grid-column:2;grid-row:1/3}.mj .ab .a{grid-column:3;grid-row:1/3}

@@ -1,0 +1,25 @@
+{
+  "name": "retro-arena",
+  "version": "0.1.0",
+  "description": "Retro Arena - 8-bit multiplayer games",
+  "main": "main.js",
+  "scripts": {
+    "build": "node build.js",
+    "start": "electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "trystero": "^0.26.0",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "@fontsource/press-start-2p": "^5.3.0",
+    "@fontsource/vt323": "^5.3.0",
+    "electron": "^33.4.11",
+    "esbuild": "^0.28.2"
+  },
+  "productName": "Retro Arena"
+}

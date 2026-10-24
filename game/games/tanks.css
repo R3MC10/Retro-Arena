@@ -1,0 +1,8 @@
+/* Battle City only. Everything else comes from engine/ra.css. */
+.bc .bcslots{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.bc .slot{grid-template-columns:auto minmax(0,1fr)}
+.bc #bcOver .row{justify-content:center}
+.bc .bcmode{gap:10px;align-items:center;flex-wrap:wrap}
+.bc .bcmode .tabs{margin:0}
+body.playing .bc .top{bottom:auto;top:calc(8px + env(safe-area-inset-top,0px))}
+.bc .ab button{width:92px;height:92px;font-size:10px}

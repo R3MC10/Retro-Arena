@@ -1,0 +1,35 @@
+# Every push to main builds the Windows app and publishes it as the "latest" release,
+# so players can always download a fresh copy from the Releases page.
+name: Build Windows app
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 20}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Bundle the game
+        run: python game/tools/bundle.py app/retro-arena.html
+      - name: Build and package
+        working-directory: app
+        run: |
+          npm ci
+          node build.js
+          npx @electron/packager . "Retro Arena" --platform=win32 --arch=x64 --out=dist --overwrite --ignore="^/dist" --ignore="^/src" --ignore="retro-arena.html" --ignore="build.js"
+          Compress-Archive -Path "dist/Retro Arena-win32-x64/*" -DestinationPath RetroArena-win64.zip
+      - name: Publish latest release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Retro Arena (latest)
+          body: Download RetroArena-win64.zip, unzip it and run Retro Arena.exe.
+          files: app/RetroArena-win64.zip
+          make_latest: true
