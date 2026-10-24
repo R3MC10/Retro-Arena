@@ -536,7 +536,7 @@ body.playing .bc .top{bottom:auto;top:calc(8px + env(safe-area-inset-top,0px))}
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v45';
+RA.VERSION='v46';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -593,7 +593,9 @@ RA.fx={
   for(let i=4;i>=1;i--){c.globalAlpha=(a==null?.5:a)*(.25+.18*(4-i));disc(c,x,y,Math.round(r*i/4))}c.globalAlpha=1;c.globalCompositeOperation=prev},
  // PS1 "pre-rendered" sprite: a little scene of shaded spheres (x,y,z,r,col[,spec]) ray-cast into a w*h canvas,
  // lit from the top left with a specular glint, a dark rim and ordered dither. Build once, cache, blit every frame.
- model(w,h,balls,o){o=o||{};const k=document.createElement('canvas');k.width=w;k.height=h;const g=k.getContext('2d'),im=g.createImageData(w,h),d=im.data;
+ // RA.fx.Q: models render Q x finer; the canvas remembers _q so drawImage/sprite still place it at its logical size
+ model(w,h,balls,o){o=o||{};const Q=o.q||RA.fx.Q||1;if(Q>1){balls=balls.map(b=>Object.assign({},b,{x:b.x*Q,y:b.y*Q,z:(b.z||0)*Q,r:b.r*Q}));w*=Q;h*=Q}
+  const k=document.createElement('canvas');k.width=w;k.height=h;if(Q>1)k._q=Q;const g=k.getContext('2d'),im=g.createImageData(w,h),d=im.data;
   const L=[-.52,-.62,.58],ln=Math.hypot(...L),Lx=L[0]/ln,Ly=L[1]/ln,Lz=L[2]/ln,C=balls.map(b=>hex(b.col));
   for(let py=0;py<h;py++)for(let px=0;px<w;px++){const X=px+.5,Y=py+.5;let best=-1e9,bi=-1,nx=0,ny=0,nz=0;
    for(let i=0;i<balls.length;i++){const b=balls[i],dx=X-b.x,dy=Y-b.y,q=b.r*b.r-dx*dx-dy*dy;if(q<0)continue;const z=(b.z||0)+Math.sqrt(q);
@@ -606,7 +608,7 @@ RA.fx={
  shadow(c,x,y,w,a){c.fillStyle='rgba(0,0,0,'+(a==null?.4:a)+')';const h=Math.max(1,Math.round(w/4));for(let dy=-h;dy<=h;dy++){const ww=Math.round(w*Math.sqrt(1-(dy/(h+.5))**2));c.fillRect(Math.round(x-ww),Math.round(y+dy),ww*2,1)}},
  // a sprite scaled and spun about its centre, crisp pixels
  sprite(c,img,x,y,scale,angle,alpha){c.save();c.imageSmoothingEnabled=false;c.translate(Math.round(x),Math.round(y));if(angle)c.rotate(angle);if(alpha!=null)c.globalAlpha=alpha;
-  const w=img.width*(scale||1),h=img.height*(scale||1);c.drawImage(img,-w/2,-h/2,w,h);c.restore()},
+  const q=img._q||1,w=img.width/q*(scale||1),h=img.height/q*(scale||1);c.drawImage(img,-w/2,-h/2,w,h);c.restore()},
  // textured perspective floor (Mode 7 / PS1 floor): tex = canvas, view {x, z, angle, height, horizon}; draws rows from horizon down
  floor(c,tex,v,x0,y0,w,h){const hor=v.horizon,ca=Math.cos(v.angle||0),sa=Math.sin(v.angle||0),tw=tex.width,th=tex.height;
   const d=floorData(tex);
@@ -621,6 +623,18 @@ let floorBuf=null;const floorCache=new WeakMap();
 function floorData(tex){let d=floorCache.get(tex);if(!d){d=tex.getContext('2d').getImageData(0,0,tex.width,tex.height).data;floorCache.set(tex,d)}return d}
 
 /* ---------- screen: whole-number pixel scale, the view widens or narrows to fill any window ---------- */
+// models made at Q x resolution draw at their logical size wherever a game calls drawImage(img,x,y)
+{const P=CanvasRenderingContext2D.prototype,dI=P.drawImage;P.drawImage=function(img,a,b,c,d,e,f,g,h){const q=img&&img._q;
+ if(!q)return arguments.length===3?dI.call(this,img,a,b):arguments.length===5?dI.call(this,img,a,b,c,d):dI.call(this,img,a,b,c,d,e,f,g,h);
+ if(arguments.length===3)return dI.call(this,img,a,b,img.width/q,img.height/q);if(arguments.length===5)return dI.call(this,img,a,b,c,d);
+ return dI.call(this,img,a*q,b*q,c*q,d*q,e,f,g,h)}}
+RA.fx.Q=3;
+RA.lw=img=>img._q?img.width/img._q:img.width;RA.lh=img=>img._q?img.height/img._q:img.height;
+// hi-res context: every transform the game sets is multiplied by k, so logical coordinates stay the same
+function hiCtx(cv,k){const c=cv.getContext('2d');if(!c._st){c._st=c.setTransform.bind(c);c._k=1;
+  c.setTransform=function(a,b,cc,d,e,f){if(typeof a==='object'&&a)return c._st(a);return c._st(a*c._k,b*c._k,cc*c._k,d*c._k,e*c._k,f*c._k)};
+  c.resetTransform=function(){c._st(c._k,0,0,c._k,0,0)}}
+ c._k=k;c._st(k,0,0,k,0,0);c.imageSmoothingEnabled=false}
 RA.screen=o=>{
  // o.baseH / o.minW: the view the game wants (may change between rounds, then call fit()).
  // o.whole: true = never scale past what fits (board games), default rounds to the nearest scale (scrolling games).
@@ -631,8 +645,10 @@ RA.screen=o=>{
   const w=sc.clientWidth*dpr,h=sc.clientHeight*dpr,s=Math.max(1,(o.whole?Math.floor:Math.round)(Math.min(h/baseH,w/minW)));
   const nw=Math.max(160,Math.ceil(w/s)),nh=Math.max(120,Math.ceil(h/s));
   st.s=s;st.dpr=dpr;o.canvas.style.width=(nw*s/dpr)+'px';o.canvas.style.height=(nh*s/dpr)+'px';
-  if(nw===st.w&&nh===st.h)return;
-  st.w=nw;st.h=nh;o.canvas.width=nw;o.canvas.height=nh;if(o.onResize)o.onResize(nw,nh);
+  // o.res: render k x sharper than the game's logical pixels (text, shapes, models get the detail; game code is unchanged)
+  const k=Math.max(1,Math.min(o.res||1,s));
+  if(nw===st.w&&nh===st.h&&k===st.k)return;
+  st.w=nw;st.h=nh;st.k=k;o.canvas.width=nw*k;o.canvas.height=nh*k;hiCtx(o.canvas,k);if(o.onResize)o.onResize(nw,nh);
  }
  try{new ResizeObserver(()=>fit()).observe(o.el)}catch(e){}
  addEventListener('resize',fit);
@@ -1310,6 +1326,15 @@ let G=0.12;const G0=0.12,MAXP=20;
 let W=320,H=200,WATER=188;
 const cv=$('cv'),ctx=cv.getContext('2d');
 const tCan=document.createElement('canvas'),tCtx=tCan.getContext('2d');
+// the land is shown through a Scale2x pass (smooth diagonals, no blur) so it reads PS1-sharp instead of blocky
+const t2=document.createElement('canvas'),t2Ctx=t2.getContext('2d');let t2Img=null;
+function up2(x0,y0,x1,y1){x0=Math.max(0,x0-1);y0=Math.max(0,y0-1);x1=Math.min(W,x1+1);y1=Math.min(H,y1+1);
+ const S=new Uint32Array(tImg.data.buffer),D=new Uint32Array(t2Img.data.buffer),W2=W*2;
+ for(let y=y0;y<y1;y++){const r=y*W,ru=(y>0?y-1:y)*W,rd=(y<H-1?y+1:y)*W;
+  for(let x=x0;x<x1;x++){const P=S[r+x],A=S[ru+x],Dn=S[rd+x],L=S[r+(x>0?x-1:x)],Rr=S[r+(x<W-1?x+1:x)];let e0=P,e1=P,e2=P,e3=P;
+   if(A!==Dn&&L!==Rr){if(A===L)e0=A;if(A===Rr)e1=Rr;if(Dn===L)e2=L;if(Dn===Rr)e3=Rr}
+   const o=y*2*W2+x*2;D[o]=e0;D[o+1]=e1;D[o+W2]=e2;D[o+W2+1]=e3}}
+ t2Ctx.putImageData(t2Img,0,0,x0*2,y0*2,(x1-x0)*2,(y1-y0)*2)}
 const sky=document.createElement('canvas');
 let terr,tImg,tDirty=true,shake=0;
 const solid=(x,y)=>{x=Math.floor(x);y=Math.floor(y);if(x<0||x>=W||y<0)return false;if(y>=H)return true;return terr[y*W+x]===1};
@@ -1321,14 +1346,14 @@ const mm=document.createElement('canvas'),mmCtx=mm.getContext('2d');let mmDirty=
 function setSize(n){
  n=Math.max(2,Math.min(MAXP,n|0));
  W=Math.min(2400,560+n*100);H=Math.min(420,220+n*10);WATER=H-12;
- tCan.width=W;tCan.height=H;
+ tCan.width=W;tCan.height=H;t2.width=W*2;t2.height=H*2;t2Img=t2Ctx.createImageData(W*2,H*2);
  terr=new Uint8Array(W*H);tImg=tCtx.createImageData(W,H);
  sizeMini();
  buildSky();cam.snap=true;cam.z=1;cam.x=(W-VW)/2;cam.y=H-VH;
 }
 function sizeMini(){mm.width=Math.max(56,Math.min(120,Math.round(VW*.2)));mm.height=Math.max(8,Math.round(mm.width*H/W));mmDirty=true;mm.ok=0}
 // Crisp pixels at any resolution: the engine picks a whole-number scale and widens or narrows the view to fill the window.
-const SCR=RA.screen({el:root.querySelector('.screen'),canvas:cv,onResize:(w,h)=>{VW=w;VH=h;fogC.width=w;fogC.height=h;if(terr){sizeMini();buildSky()}}});
+const SCR=RA.screen({el:root.querySelector('.screen'),canvas:cv,res:3,onResize:(w,h)=>{VW=w;VH=h;fogC.width=w;fogC.height=h;if(terr){sizeMini();buildSky()}}});
 const CLOUD=['.....kkkk.......','...kkwwwwkk.....','..kwwwwwwwwkkk..','.kwwwwwwwwwwwwk.','kwwwwwwwwwwwwwwk','kwwwwwwwwwwwsswk','.kswwwssssssssk.','..kkkkkkkkkkkk..'];
 // Parallax background: clouds and far mountains drift slowly, near hills faster. Same 8-bit art, modern depth.
 function layer(f,draw){const c=document.createElement('canvas');c.width=Math.ceil(VW+(W-VW)*f)+2;c.height=Math.ceil(VH+(H-VH)*f)+2;draw(c.getContext('2d'),c.width,c.height);return{c,f}}
@@ -1398,7 +1423,7 @@ function genTerrain(seed){
 }
 // Armageddon landscapes: themed objects buried in the soil and standing on the surface, all part of the (destructible) land
 let PROPS=null;
-function getProps(){if(PROPS)return PROPS;const M=RA.fx.model,ball=(x,y,r,col,o)=>Object.assign({x,y,r,col},o||{}),
+function getProps(){if(PROPS)return PROPS;const M=(w,h,b)=>RA.fx.model(w,h,b,{q:1}),ball=(x,y,r,col,o)=>Object.assign({x,y,r,col},o||{}),
  col=(x,y0,y1,r,c)=>{const n=Math.max(2,Math.round((y1-y0)/1.2));return Array.from({length:n},(_,i)=>ball(x,y0+(y1-y0)*i/(n-1),r,c))},
  tree=(leaf,trunk)=>M(22,30,[...col(11,14,29,1.8,trunk),ball(11,9,6,leaf),ball(6,12,4.6,leaf),ball(16,12,4.6,leaf),ball(9,5,4,leaf),ball(14,5.5,4,leaf)]),
  rock=c=>M(12,9,[ball(5,5,3.6,c),ball(8,5.5,3,c),ball(6.5,3.2,2.6,c)]),
@@ -2097,6 +2122,8 @@ function update(){
  const fp=focusP();
  for(const p of players){if(p.ctrl==='net')readGuest(p);else control(p,readInput(p,fp))}
  players.forEach(p=>{if(p.ctrl!=='net'||p.kami>0)stepWorm(p)});
+ // remote-run worms still need their timers ticked here, or shield / hide / reveal never wear off (stuck blinking, invulnerable, invisible)
+ for(const p of players)if(p.ctrl==='net'&&p.alive&&!(p.kami>0)){if(p.inv>0)p.inv--;if(p.flash>0)p.flash--;if(p.reveal>0)p.reveal--;if(p.hide>0)p.hide--;if(p.poison>0)p.poison--}
  projs.forEach(stepProj);projs=projs.filter(p=>!p.dead);
  crates.forEach(stepCrate);crates=crates.filter(c=>!c.gone);
  stepFx();
@@ -2131,7 +2158,7 @@ const SKIN={Golden:['#f0c040',40,.95],Zombie:['#7ca05c',6,.2],Chrome:['#c4ccd8',
 function lookOf(p){if(!p)return{};if(NET.mode==='online'){if(!p.peer)return{};const pe=NET.room&&NET.room.peers().find(q=>q.peer===p.peer);return RA.look.clean(pe&&pe.presence&&pe.presence.lk)}
  return p.ctrl&&p.ctrl!=='cpu'?RA.look('worms'):{}}
 function wormSprite(col,f,flash,skin){const sk=SKIN[skin],key=col+f+(flash?1:0)+(sk?skin:'');if(WSPR[key])return WSPR[key];
- const body=flash?'#ffffff':sk?mix(sk[0],col,.15):mix('#f4a0b0',col,.25),belly=flash?'#ffffff':mix(body,'#fff4f0',.35),balls=[],air=f===4,ph=f*Math.PI/2,N=14;
+ const body=flash?'#ffffff':sk?sk[0]:'#f4a0b0',belly=flash?'#ffffff':mix(body,'#fff4f0',.35),balls=[],air=f===4,ph=f*Math.PI/2,N=14;
  // Armageddon worm: tail lying flat behind, S-curved neck rising to a big round head, two big goggle eyes looking forward
  for(let i=0;i<N;i++){const t=i/(N-1);let x,y;
   if(air){x=3+9*t;y=19-15*t}
@@ -2278,8 +2305,8 @@ const BAY=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
 function drawProj(k,x,y,d,a){
  if(k===13){for(let i=0;i<3;i++){const fx=x+Math.sin(tick*.3+i*2+x)*1.2,fy=y-i*1.4-((tick+i*3)%6)*.3;RA.fx.light(ctx,fx,fy,3-i*.6,i?'#ff8020':'#ffe060',.5)}ctx.fillStyle='#fff0a0';ctx.fillRect(x,y-1,1,1);return}
  if(PMOD[k]){const m=PMOD[k],bob=WALKER.has(k)&&(tick>>3)&1?1:0;ctx.save();ctx.translate(x,y-bob);if(d<0)ctx.scale(-1,1);if(SPIN.has(k)&&a)ctx.rotate(a);
-  ctx.drawImage(m,-(m.width>>1),-(m.height>>1));
-  if(k===0){ctx.fillStyle=(tick&2)?'#ffd060':'#ff8020';ctx.fillRect(-(m.width>>1)-2,-1,2,2)}
+  const mw=RA.lw(m),mh=RA.lh(m);ctx.drawImage(m,-(mw>>1),-(mh>>1));
+  if(k===0){ctx.fillStyle=(tick&2)?'#ffd060':'#ff8020';ctx.fillRect(-(mw>>1)-2,-1,2,2)}
   if(k===3||k===7){if(tick&2){ctx.fillStyle='#fff8c0';ctx.fillRect(0,-(m.height>>1)-1,1,1)}RA.fx.light(ctx,0,-(m.height>>1),2.5,'#ffa030',.5)}
   if(k===10&&(tick>>3)&1)RA.fx.light(ctx,0,-2,2.5,'#ff2010',.6);
   ctx.restore();return}
@@ -2362,7 +2389,7 @@ function drawMini(){
 }
 function render(){
  if(!terr)return;
- if(tDirty&&tD){tCtx.putImageData(tImg,0,0,tD[0],tD[1],Math.max(1,tD[2]-tD[0]),Math.max(1,tD[3]-tD[1]));tD=null}tDirty=false;
+ if(tDirty&&tD){tCtx.putImageData(tImg,0,0,tD[0],tD[1],Math.max(1,tD[2]-tD[0]),Math.max(1,tD[3]-tD[1]));up2(tD[0],tD[1],tD[2],tD[3]);tD=null}tDirty=false;
  const z=cam.z,ox=Math.round(cam.x*z),oy=Math.round(cam.y*z);
  ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;
  if(skyG)ctx.drawImage(skyG,0,0);else{ctx.fillStyle=NES.sky;ctx.fillRect(0,0,VW,VH)}
@@ -2370,7 +2397,7 @@ function render(){
  for(const L of layers)ctx.drawImage(L.c,-Math.round(ox*L.f),-Math.round(oy*L.f));
  let sx=0,sy=0;if(shake>0){sx=Math.round(rnd(-shake,shake));sy=Math.round(rnd(-shake,shake))}
  ctx.setTransform(z,0,0,z,sx-ox,sy-oy);
- ctx.drawImage(tCan,0,0);
+ ctx.drawImage(t2,0,0,W,H);
  for(const c of crates){const x=c.x-4,y=Math.round(c.y)-7;
   if(!c.landed)blit(ctx,CHUTE,x-1,y-7,CR_COLS);
   RA.fx.shadow(ctx,c.x,Math.round(c.y)+1,5,c.landed?.35:0);ctx.drawImage(crateSprite(c.party?'p':c.hp?'h':'w'),x-1,y-2);}
@@ -2440,8 +2467,8 @@ const WICON={
 function wIcon(id){const d=DEF[id];if(WICON[id])return WICON[id];
  if(id==='armageddon')return PMOD[12];if(id==='donkey')return PMOD[11];if(id==='parachute')return CHUTEM;if(id==='minestrike')return PMOD[10];if(id==='sheepstrike')return PMOD[8];
  return d&&d.spr!=null&&PMOD[d.spr]||PMOD[6]}
-const ICONURL={};const iconUrl=id=>{if(ICONURL[id])return ICONURL[id];const m=wIcon(id),k=document.createElement('canvas');k.width=k.height=16;const g=k.getContext('2d');
- const sc=Math.min(14/m.width,14/m.height,1.6);g.imageSmoothingEnabled=false;g.drawImage(m,Math.round(8-m.width*sc/2),Math.round(8-m.height*sc/2),Math.round(m.width*sc),Math.round(m.height*sc));return ICONURL[id]=k.toDataURL()};
+const ICONURL={};const iconUrl=id=>{if(ICONURL[id])return ICONURL[id];const m=wIcon(id),k=document.createElement('canvas');k.width=k.height=48;const g=k.getContext('2d');
+ const mw=RA.lw(m),mh=RA.lh(m),sc=Math.min(42/mw,42/mh,4.8);g.imageSmoothingEnabled=false;g.drawImage(m,Math.round(24-mw*sc/2),Math.round(24-mh*sc/2),Math.round(mw*sc),Math.round(mh*sc));return ICONURL[id]=k.toDataURL()};
 function openPanel(on){const p=focusP();if(on&&(!p||!p.alive||state!=='play'))on=false;panelOn=on;$('wpanel').hidden=!on;panelSig='';
  if(on){renderPanel();mouse.down=false;blip(880)}}
 function renderPanel(){const p=focusP();if(!p)return;const sig=p.wpn+(p.ammo||[]).join();if(sig===panelSig)return;panelSig=sig;

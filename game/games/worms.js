@@ -90,6 +90,15 @@ let G=0.12;const G0=0.12,MAXP=20;
 let W=320,H=200,WATER=188;
 const cv=$('cv'),ctx=cv.getContext('2d');
 const tCan=document.createElement('canvas'),tCtx=tCan.getContext('2d');
+// the land is shown through a Scale2x pass (smooth diagonals, no blur) so it reads PS1-sharp instead of blocky
+const t2=document.createElement('canvas'),t2Ctx=t2.getContext('2d');let t2Img=null;
+function up2(x0,y0,x1,y1){x0=Math.max(0,x0-1);y0=Math.max(0,y0-1);x1=Math.min(W,x1+1);y1=Math.min(H,y1+1);
+ const S=new Uint32Array(tImg.data.buffer),D=new Uint32Array(t2Img.data.buffer),W2=W*2;
+ for(let y=y0;y<y1;y++){const r=y*W,ru=(y>0?y-1:y)*W,rd=(y<H-1?y+1:y)*W;
+  for(let x=x0;x<x1;x++){const P=S[r+x],A=S[ru+x],Dn=S[rd+x],L=S[r+(x>0?x-1:x)],Rr=S[r+(x<W-1?x+1:x)];let e0=P,e1=P,e2=P,e3=P;
+   if(A!==Dn&&L!==Rr){if(A===L)e0=A;if(A===Rr)e1=Rr;if(Dn===L)e2=L;if(Dn===Rr)e3=Rr}
+   const o=y*2*W2+x*2;D[o]=e0;D[o+1]=e1;D[o+W2]=e2;D[o+W2+1]=e3}}
+ t2Ctx.putImageData(t2Img,0,0,x0*2,y0*2,(x1-x0)*2,(y1-y0)*2)}
 const sky=document.createElement('canvas');
 let terr,tImg,tDirty=true,shake=0;
 const solid=(x,y)=>{x=Math.floor(x);y=Math.floor(y);if(x<0||x>=W||y<0)return false;if(y>=H)return true;return terr[y*W+x]===1};
@@ -101,14 +110,14 @@ const mm=document.createElement('canvas'),mmCtx=mm.getContext('2d');let mmDirty=
 function setSize(n){
  n=Math.max(2,Math.min(MAXP,n|0));
  W=Math.min(2400,560+n*100);H=Math.min(420,220+n*10);WATER=H-12;
- tCan.width=W;tCan.height=H;
+ tCan.width=W;tCan.height=H;t2.width=W*2;t2.height=H*2;t2Img=t2Ctx.createImageData(W*2,H*2);
  terr=new Uint8Array(W*H);tImg=tCtx.createImageData(W,H);
  sizeMini();
  buildSky();cam.snap=true;cam.z=1;cam.x=(W-VW)/2;cam.y=H-VH;
 }
 function sizeMini(){mm.width=Math.max(56,Math.min(120,Math.round(VW*.2)));mm.height=Math.max(8,Math.round(mm.width*H/W));mmDirty=true;mm.ok=0}
 // Crisp pixels at any resolution: the engine picks a whole-number scale and widens or narrows the view to fill the window.
-const SCR=RA.screen({el:root.querySelector('.screen'),canvas:cv,onResize:(w,h)=>{VW=w;VH=h;fogC.width=w;fogC.height=h;if(terr){sizeMini();buildSky()}}});
+const SCR=RA.screen({el:root.querySelector('.screen'),canvas:cv,res:3,onResize:(w,h)=>{VW=w;VH=h;fogC.width=w;fogC.height=h;if(terr){sizeMini();buildSky()}}});
 const CLOUD=['.....kkkk.......','...kkwwwwkk.....','..kwwwwwwwwkkk..','.kwwwwwwwwwwwwk.','kwwwwwwwwwwwwwwk','kwwwwwwwwwwwsswk','.kswwwssssssssk.','..kkkkkkkkkkkk..'];
 // Parallax background: clouds and far mountains drift slowly, near hills faster. Same 8-bit art, modern depth.
 function layer(f,draw){const c=document.createElement('canvas');c.width=Math.ceil(VW+(W-VW)*f)+2;c.height=Math.ceil(VH+(H-VH)*f)+2;draw(c.getContext('2d'),c.width,c.height);return{c,f}}
@@ -178,7 +187,7 @@ function genTerrain(seed){
 }
 // Armageddon landscapes: themed objects buried in the soil and standing on the surface, all part of the (destructible) land
 let PROPS=null;
-function getProps(){if(PROPS)return PROPS;const M=RA.fx.model,ball=(x,y,r,col,o)=>Object.assign({x,y,r,col},o||{}),
+function getProps(){if(PROPS)return PROPS;const M=(w,h,b)=>RA.fx.model(w,h,b,{q:1}),ball=(x,y,r,col,o)=>Object.assign({x,y,r,col},o||{}),
  col=(x,y0,y1,r,c)=>{const n=Math.max(2,Math.round((y1-y0)/1.2));return Array.from({length:n},(_,i)=>ball(x,y0+(y1-y0)*i/(n-1),r,c))},
  tree=(leaf,trunk)=>M(22,30,[...col(11,14,29,1.8,trunk),ball(11,9,6,leaf),ball(6,12,4.6,leaf),ball(16,12,4.6,leaf),ball(9,5,4,leaf),ball(14,5.5,4,leaf)]),
  rock=c=>M(12,9,[ball(5,5,3.6,c),ball(8,5.5,3,c),ball(6.5,3.2,2.6,c)]),
@@ -877,6 +886,8 @@ function update(){
  const fp=focusP();
  for(const p of players){if(p.ctrl==='net')readGuest(p);else control(p,readInput(p,fp))}
  players.forEach(p=>{if(p.ctrl!=='net'||p.kami>0)stepWorm(p)});
+ // remote-run worms still need their timers ticked here, or shield / hide / reveal never wear off (stuck blinking, invulnerable, invisible)
+ for(const p of players)if(p.ctrl==='net'&&p.alive&&!(p.kami>0)){if(p.inv>0)p.inv--;if(p.flash>0)p.flash--;if(p.reveal>0)p.reveal--;if(p.hide>0)p.hide--;if(p.poison>0)p.poison--}
  projs.forEach(stepProj);projs=projs.filter(p=>!p.dead);
  crates.forEach(stepCrate);crates=crates.filter(c=>!c.gone);
  stepFx();
@@ -911,7 +922,7 @@ const SKIN={Golden:['#f0c040',40,.95],Zombie:['#7ca05c',6,.2],Chrome:['#c4ccd8',
 function lookOf(p){if(!p)return{};if(NET.mode==='online'){if(!p.peer)return{};const pe=NET.room&&NET.room.peers().find(q=>q.peer===p.peer);return RA.look.clean(pe&&pe.presence&&pe.presence.lk)}
  return p.ctrl&&p.ctrl!=='cpu'?RA.look('worms'):{}}
 function wormSprite(col,f,flash,skin){const sk=SKIN[skin],key=col+f+(flash?1:0)+(sk?skin:'');if(WSPR[key])return WSPR[key];
- const body=flash?'#ffffff':sk?mix(sk[0],col,.15):mix('#f4a0b0',col,.25),belly=flash?'#ffffff':mix(body,'#fff4f0',.35),balls=[],air=f===4,ph=f*Math.PI/2,N=14;
+ const body=flash?'#ffffff':sk?sk[0]:'#f4a0b0',belly=flash?'#ffffff':mix(body,'#fff4f0',.35),balls=[],air=f===4,ph=f*Math.PI/2,N=14;
  // Armageddon worm: tail lying flat behind, S-curved neck rising to a big round head, two big goggle eyes looking forward
  for(let i=0;i<N;i++){const t=i/(N-1);let x,y;
   if(air){x=3+9*t;y=19-15*t}
@@ -1058,8 +1069,8 @@ const BAY=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
 function drawProj(k,x,y,d,a){
  if(k===13){for(let i=0;i<3;i++){const fx=x+Math.sin(tick*.3+i*2+x)*1.2,fy=y-i*1.4-((tick+i*3)%6)*.3;RA.fx.light(ctx,fx,fy,3-i*.6,i?'#ff8020':'#ffe060',.5)}ctx.fillStyle='#fff0a0';ctx.fillRect(x,y-1,1,1);return}
  if(PMOD[k]){const m=PMOD[k],bob=WALKER.has(k)&&(tick>>3)&1?1:0;ctx.save();ctx.translate(x,y-bob);if(d<0)ctx.scale(-1,1);if(SPIN.has(k)&&a)ctx.rotate(a);
-  ctx.drawImage(m,-(m.width>>1),-(m.height>>1));
-  if(k===0){ctx.fillStyle=(tick&2)?'#ffd060':'#ff8020';ctx.fillRect(-(m.width>>1)-2,-1,2,2)}
+  const mw=RA.lw(m),mh=RA.lh(m);ctx.drawImage(m,-(mw>>1),-(mh>>1));
+  if(k===0){ctx.fillStyle=(tick&2)?'#ffd060':'#ff8020';ctx.fillRect(-(mw>>1)-2,-1,2,2)}
   if(k===3||k===7){if(tick&2){ctx.fillStyle='#fff8c0';ctx.fillRect(0,-(m.height>>1)-1,1,1)}RA.fx.light(ctx,0,-(m.height>>1),2.5,'#ffa030',.5)}
   if(k===10&&(tick>>3)&1)RA.fx.light(ctx,0,-2,2.5,'#ff2010',.6);
   ctx.restore();return}
@@ -1142,7 +1153,7 @@ function drawMini(){
 }
 function render(){
  if(!terr)return;
- if(tDirty&&tD){tCtx.putImageData(tImg,0,0,tD[0],tD[1],Math.max(1,tD[2]-tD[0]),Math.max(1,tD[3]-tD[1]));tD=null}tDirty=false;
+ if(tDirty&&tD){tCtx.putImageData(tImg,0,0,tD[0],tD[1],Math.max(1,tD[2]-tD[0]),Math.max(1,tD[3]-tD[1]));up2(tD[0],tD[1],tD[2],tD[3]);tD=null}tDirty=false;
  const z=cam.z,ox=Math.round(cam.x*z),oy=Math.round(cam.y*z);
  ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;
  if(skyG)ctx.drawImage(skyG,0,0);else{ctx.fillStyle=NES.sky;ctx.fillRect(0,0,VW,VH)}
@@ -1150,7 +1161,7 @@ function render(){
  for(const L of layers)ctx.drawImage(L.c,-Math.round(ox*L.f),-Math.round(oy*L.f));
  let sx=0,sy=0;if(shake>0){sx=Math.round(rnd(-shake,shake));sy=Math.round(rnd(-shake,shake))}
  ctx.setTransform(z,0,0,z,sx-ox,sy-oy);
- ctx.drawImage(tCan,0,0);
+ ctx.drawImage(t2,0,0,W,H);
  for(const c of crates){const x=c.x-4,y=Math.round(c.y)-7;
   if(!c.landed)blit(ctx,CHUTE,x-1,y-7,CR_COLS);
   RA.fx.shadow(ctx,c.x,Math.round(c.y)+1,5,c.landed?.35:0);ctx.drawImage(crateSprite(c.party?'p':c.hp?'h':'w'),x-1,y-2);}
@@ -1220,8 +1231,8 @@ const WICON={
 function wIcon(id){const d=DEF[id];if(WICON[id])return WICON[id];
  if(id==='armageddon')return PMOD[12];if(id==='donkey')return PMOD[11];if(id==='parachute')return CHUTEM;if(id==='minestrike')return PMOD[10];if(id==='sheepstrike')return PMOD[8];
  return d&&d.spr!=null&&PMOD[d.spr]||PMOD[6]}
-const ICONURL={};const iconUrl=id=>{if(ICONURL[id])return ICONURL[id];const m=wIcon(id),k=document.createElement('canvas');k.width=k.height=16;const g=k.getContext('2d');
- const sc=Math.min(14/m.width,14/m.height,1.6);g.imageSmoothingEnabled=false;g.drawImage(m,Math.round(8-m.width*sc/2),Math.round(8-m.height*sc/2),Math.round(m.width*sc),Math.round(m.height*sc));return ICONURL[id]=k.toDataURL()};
+const ICONURL={};const iconUrl=id=>{if(ICONURL[id])return ICONURL[id];const m=wIcon(id),k=document.createElement('canvas');k.width=k.height=48;const g=k.getContext('2d');
+ const mw=RA.lw(m),mh=RA.lh(m),sc=Math.min(42/mw,42/mh,4.8);g.imageSmoothingEnabled=false;g.drawImage(m,Math.round(24-mw*sc/2),Math.round(24-mh*sc/2),Math.round(mw*sc),Math.round(mh*sc));return ICONURL[id]=k.toDataURL()};
 function openPanel(on){const p=focusP();if(on&&(!p||!p.alive||state!=='play'))on=false;panelOn=on;$('wpanel').hidden=!on;panelSig='';
  if(on){renderPanel();mouse.down=false;blip(880)}}
 function renderPanel(){const p=focusP();if(!p)return;const sig=p.wpn+(p.ammo||[]).join();if(sig===panelSig)return;panelSig=sig;

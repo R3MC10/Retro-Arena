@@ -6,7 +6,7 @@
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v45';
+RA.VERSION='v46';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -63,7 +63,9 @@ RA.fx={
   for(let i=4;i>=1;i--){c.globalAlpha=(a==null?.5:a)*(.25+.18*(4-i));disc(c,x,y,Math.round(r*i/4))}c.globalAlpha=1;c.globalCompositeOperation=prev},
  // PS1 "pre-rendered" sprite: a little scene of shaded spheres (x,y,z,r,col[,spec]) ray-cast into a w*h canvas,
  // lit from the top left with a specular glint, a dark rim and ordered dither. Build once, cache, blit every frame.
- model(w,h,balls,o){o=o||{};const k=document.createElement('canvas');k.width=w;k.height=h;const g=k.getContext('2d'),im=g.createImageData(w,h),d=im.data;
+ // RA.fx.Q: models render Q x finer; the canvas remembers _q so drawImage/sprite still place it at its logical size
+ model(w,h,balls,o){o=o||{};const Q=o.q||RA.fx.Q||1;if(Q>1){balls=balls.map(b=>Object.assign({},b,{x:b.x*Q,y:b.y*Q,z:(b.z||0)*Q,r:b.r*Q}));w*=Q;h*=Q}
+  const k=document.createElement('canvas');k.width=w;k.height=h;if(Q>1)k._q=Q;const g=k.getContext('2d'),im=g.createImageData(w,h),d=im.data;
   const L=[-.52,-.62,.58],ln=Math.hypot(...L),Lx=L[0]/ln,Ly=L[1]/ln,Lz=L[2]/ln,C=balls.map(b=>hex(b.col));
   for(let py=0;py<h;py++)for(let px=0;px<w;px++){const X=px+.5,Y=py+.5;let best=-1e9,bi=-1,nx=0,ny=0,nz=0;
    for(let i=0;i<balls.length;i++){const b=balls[i],dx=X-b.x,dy=Y-b.y,q=b.r*b.r-dx*dx-dy*dy;if(q<0)continue;const z=(b.z||0)+Math.sqrt(q);
@@ -76,7 +78,7 @@ RA.fx={
  shadow(c,x,y,w,a){c.fillStyle='rgba(0,0,0,'+(a==null?.4:a)+')';const h=Math.max(1,Math.round(w/4));for(let dy=-h;dy<=h;dy++){const ww=Math.round(w*Math.sqrt(1-(dy/(h+.5))**2));c.fillRect(Math.round(x-ww),Math.round(y+dy),ww*2,1)}},
  // a sprite scaled and spun about its centre, crisp pixels
  sprite(c,img,x,y,scale,angle,alpha){c.save();c.imageSmoothingEnabled=false;c.translate(Math.round(x),Math.round(y));if(angle)c.rotate(angle);if(alpha!=null)c.globalAlpha=alpha;
-  const w=img.width*(scale||1),h=img.height*(scale||1);c.drawImage(img,-w/2,-h/2,w,h);c.restore()},
+  const q=img._q||1,w=img.width/q*(scale||1),h=img.height/q*(scale||1);c.drawImage(img,-w/2,-h/2,w,h);c.restore()},
  // textured perspective floor (Mode 7 / PS1 floor): tex = canvas, view {x, z, angle, height, horizon}; draws rows from horizon down
  floor(c,tex,v,x0,y0,w,h){const hor=v.horizon,ca=Math.cos(v.angle||0),sa=Math.sin(v.angle||0),tw=tex.width,th=tex.height;
   const d=floorData(tex);
@@ -91,6 +93,18 @@ let floorBuf=null;const floorCache=new WeakMap();
 function floorData(tex){let d=floorCache.get(tex);if(!d){d=tex.getContext('2d').getImageData(0,0,tex.width,tex.height).data;floorCache.set(tex,d)}return d}
 
 /* ---------- screen: whole-number pixel scale, the view widens or narrows to fill any window ---------- */
+// models made at Q x resolution draw at their logical size wherever a game calls drawImage(img,x,y)
+{const P=CanvasRenderingContext2D.prototype,dI=P.drawImage;P.drawImage=function(img,a,b,c,d,e,f,g,h){const q=img&&img._q;
+ if(!q)return arguments.length===3?dI.call(this,img,a,b):arguments.length===5?dI.call(this,img,a,b,c,d):dI.call(this,img,a,b,c,d,e,f,g,h);
+ if(arguments.length===3)return dI.call(this,img,a,b,img.width/q,img.height/q);if(arguments.length===5)return dI.call(this,img,a,b,c,d);
+ return dI.call(this,img,a*q,b*q,c*q,d*q,e,f,g,h)}}
+RA.fx.Q=3;
+RA.lw=img=>img._q?img.width/img._q:img.width;RA.lh=img=>img._q?img.height/img._q:img.height;
+// hi-res context: every transform the game sets is multiplied by k, so logical coordinates stay the same
+function hiCtx(cv,k){const c=cv.getContext('2d');if(!c._st){c._st=c.setTransform.bind(c);c._k=1;
+  c.setTransform=function(a,b,cc,d,e,f){if(typeof a==='object'&&a)return c._st(a);return c._st(a*c._k,b*c._k,cc*c._k,d*c._k,e*c._k,f*c._k)};
+  c.resetTransform=function(){c._st(c._k,0,0,c._k,0,0)}}
+ c._k=k;c._st(k,0,0,k,0,0);c.imageSmoothingEnabled=false}
 RA.screen=o=>{
  // o.baseH / o.minW: the view the game wants (may change between rounds, then call fit()).
  // o.whole: true = never scale past what fits (board games), default rounds to the nearest scale (scrolling games).
@@ -101,8 +115,10 @@ RA.screen=o=>{
   const w=sc.clientWidth*dpr,h=sc.clientHeight*dpr,s=Math.max(1,(o.whole?Math.floor:Math.round)(Math.min(h/baseH,w/minW)));
   const nw=Math.max(160,Math.ceil(w/s)),nh=Math.max(120,Math.ceil(h/s));
   st.s=s;st.dpr=dpr;o.canvas.style.width=(nw*s/dpr)+'px';o.canvas.style.height=(nh*s/dpr)+'px';
-  if(nw===st.w&&nh===st.h)return;
-  st.w=nw;st.h=nh;o.canvas.width=nw;o.canvas.height=nh;if(o.onResize)o.onResize(nw,nh);
+  // o.res: render k x sharper than the game's logical pixels (text, shapes, models get the detail; game code is unchanged)
+  const k=Math.max(1,Math.min(o.res||1,s));
+  if(nw===st.w&&nh===st.h&&k===st.k)return;
+  st.w=nw;st.h=nh;st.k=k;o.canvas.width=nw*k;o.canvas.height=nh*k;hiCtx(o.canvas,k);if(o.onResize)o.onResize(nw,nh);
  }
  try{new ResizeObserver(()=>fit()).observe(o.el)}catch(e){}
  addEventListener('resize',fit);
