@@ -1,9 +1,6 @@
 /* Cartridges on the menu that are still being made. When one is built it gets its own games/<id>.js
    (see games/README.md) and its line here goes away. [name, kind, players, description, 10x10 icon] */
 [
- ['EXCITEBIKE','Motocross','2-20 players',
-  'Side-view motocross: hit the ramps, land clean, keep the engine cool and bump rivals off the track.',
-  ['..........','.....kk...','....krrk..','..kkrrrkk.','.krrrrrrsk','kkkkkskkkk','kwk...kwk.','kkk...kkk.','..........','..........']],
  ['GOAL 3','Football','2-20 players',
   'Side-view arcade football in the Goal 3 style, up to 10 a side.',
   ['wwwwwwwwww','w.k.k.k.kw','wk.k.k.k.w','w.k.k.k.kw','wk.k.k.k.w','w........w','w...kk...w','w..kwwk..w','w...kk...w','gggggggggg']],
