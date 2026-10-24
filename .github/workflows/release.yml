@@ -25,6 +25,8 @@ jobs:
           npm ci
           node build.js
           npx @electron/packager . "Retro Arena" --platform=win32 --arch=x64 --out=dist --overwrite --ignore="^/dist" --ignore="^/src" --ignore="retro-arena.html" --ignore="build.js"
+          Copy-Item app/index.html game.html
+          Copy-Item app/net.js net.js
           Compress-Archive -Path "dist/Retro Arena-win32-x64/*" -DestinationPath RetroArena-win64.zip
       - name: Publish latest release
         uses: softprops/action-gh-release@v2
@@ -32,5 +34,8 @@ jobs:
           tag_name: latest
           name: Retro Arena (latest)
           body: Download RetroArena-win64.zip, unzip it and run Retro Arena.exe.
-          files: app/RetroArena-win64.zip
+          files: |
+            app/RetroArena-win64.zip
+            app/game.html
+            app/net.js
           make_latest: true

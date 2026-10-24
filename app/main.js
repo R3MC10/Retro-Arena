@@ -67,6 +67,35 @@ ipcMain.handle('lan-hub-stop', async () => {
   hub = null;
 });
 
+/* ---------- auto update: the game itself (page + net.js) is fetched from the latest GitHub release on every start ---------- */
+const REL = 'https://github.com/R3MC10/Retro-Arena/releases/latest/download/';
+const verOf = html => { const m = /RA\.VERSION='v(\d+)'/.exec(html || ''); return m ? +m[1] : 0; };
+async function grab(name) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 6000);
+  try { const r = await fetch(REL + name, {signal: ctl.signal, redirect: 'follow'}); if (!r.ok) throw new Error(r.status); return await r.text(); }
+  finally { clearTimeout(t); }
+}
+async function loadGame() {
+  const fs = require('fs');
+  const bundled = path.join(__dirname, 'app'), cache = path.join(app.getPath('userData'), 'game');
+  let dir = bundled;
+  try {
+    const have = verOf(fs.readFileSync(path.join(bundled, 'index.html'), 'utf8'));
+    let cached = 0; try { cached = verOf(fs.readFileSync(path.join(cache, 'index.html'), 'utf8')); } catch {}
+    try {
+      const [html, net] = await Promise.all([grab('game.html'), grab('net.js')]);
+      const v = verOf(html);
+      if (v > Math.max(have, cached) && net.length > 1000) {
+        fs.mkdirSync(path.join(cache, 'fonts'), {recursive: true});
+        for (const f of fs.readdirSync(path.join(bundled, 'fonts'))) fs.copyFileSync(path.join(bundled, 'fonts', f), path.join(cache, 'fonts', f));
+        fs.writeFileSync(path.join(cache, 'net.js'), net); fs.writeFileSync(path.join(cache, 'index.html'), html); cached = v;
+      }
+    } catch (e) { console.log('update check failed:', e.message); }
+    if (cached > have) dir = cache;
+  } catch (e) { console.log('update error:', e.message); }
+  win.loadFile(path.join(dir, 'index.html'));
+}
+
 /* ---------- window ---------- */
 function createWindow() {
   win = new BrowserWindow({
@@ -74,7 +103,7 @@ function createWindow() {
     webPreferences: {preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false}
   });
   Menu.setApplicationMenu(null);
-  win.loadFile(path.join(__dirname, 'app', 'index.html'));
+  loadGame();
   if (process.env.RA_DEVTOOLS) win.webContents.openDevTools();
 }
 app.whenReady().then(createWindow);
