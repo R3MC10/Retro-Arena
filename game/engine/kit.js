@@ -13,6 +13,9 @@
      ranks()                       [[name, col, text]] best first, for the results screen
      result(i, win)                the save-file record for seat i ({won, kills, bestScore, ...})
      teamOf(i)                     optional: team of seat i (team modes)
+   localFirst: true   each guest runs its OWN seat with zero lag: on a guest K.step calls local(myIdx) every step and upload(myIdx) rides
+                      along with its buttons; on the host K.remote(i) is that seat's latest upload (simulate nothing for it, just read it).
+                      apply(g) must leave the guest's own seat alone.
    win = {i: seat} | {team: t, name} | null (draw). K.fx(kind, ...args) sends a one-off effect to guests (they get onFx(kind,args)). */
 (()=>{
 const {$,esc,touchDev}=RA.util;
@@ -93,9 +96,10 @@ RA.kit=o=>{
   if(s.ctrl==='cpu')return o.bot?o.bot(i):{};
   if(s.ctrl==='net'){const p=R.input(s.peer);if(!p)return{};const r=fromBits(p.i|0),d=(((p.f|0)-(s.lf|0))%1000+1000)%1000;s.lf=p.f|0;if(d)r.tap=true;if(typeof p.a==='number')r.aim=p.a/100;return r}
   const r=localIn(i,s.ctrl),pr=s.prev||{};s.prev=r;if(r.fire&&!pr.fire)r.tap=true;return r};
+ K.remote=i=>{const s=K.seats[i];if(!s||s.ctrl!=='net')return null;const p=R.input(s.peer);return p&&p.b||null};
  function clientSend(now){const r=localIn(NET.myIdx,'me'),pr=NET.prev;NET.prev=r;if(r.fire&&!pr.fire)NET.fc=(NET.fc+1)%1000;
   let a=r.aim!=null?Math.round(r.aim*100):NET.lastA;if(Math.abs(a-NET.lastA)<4&&now-NET.lastAT<120)a=NET.lastA;else{NET.lastA=a;NET.lastAT=now}
-  const p={i:toBits(r),f:NET.fc};if(r.aim!=null)p.a=a;R.send(p,now)}
+  const p={i:toBits(r),f:NET.fc};if(r.aim!=null)p.a=a;if(o.localFirst&&o.upload){if(now-(NET.upT||0)<33&&p.i===NET.upI&&p.f===NET.upF)return;NET.upT=now;NET.upI=p.i;NET.upF=p.f;p.b=o.upload(NET.myIdx)}R.send(p,now)}
  const usesKey=e=>{if(K.state!=='play'||K.demo)return false;if(R.online)return!!(KEYS.mk[e.code]||KEYS.k3[e.code]);return K.seats.some(s=>KEYS[s.ctrl]&&KEYS[s.ctrl][e.code])};
  RA.input.attachPointer(cv,{active:()=>K.state==='play'&&!K.demo&&(R.online?NET.myIdx>=0:K.seats.some(s=>s.ctrl==='mk')),
   touchActive:()=>K.state==='play'&&!K.demo&&(R.online?NET.myIdx>=0:K.seats.some(s=>s.ctrl==='touch'))});
@@ -152,7 +156,7 @@ RA.kit=o=>{
   if(!Array.isArray(g.r))return;const me=R.room&&R.room.peers().find(p=>p.sameTab),n=Math.min(MAX,g.n|0);
   if(g.id!==NET.id||K.seats.length!==n||K.demo){NET.id=g.id;NET.seen=0;for(const e of g.e||[])NET.seen=Math.max(NET.seen,e[0]|0);
    K.seed=g.sd|0;NET.myIdx=me?g.r.indexOf(me.peer):-1;K.myIdx=NET.myIdx;const all=R.room?R.room.peers():[];let c=0;
-   begin(g.r.slice(0,n).map((p,i)=>({ctrl:'net',peer:p,name:p?(p===(me&&me.peer)?(RA.player.name||'YOU'):R.name(all.find(x=>x.peer===p),i)):'CPU '+(++c)})),Math.max(0,Math.min(modes.length-1,g.md|0)),false);
+   begin(g.r.slice(0,n).map((p,i)=>({ctrl:p&&me&&p===me.peer?'me':'net',peer:p,name:p?(p===(me&&me.peer)?(RA.player.name||'YOU'):R.name(all.find(x=>x.peer===p),i)):'CPU '+(++c)})),Math.max(0,Math.min(modes.length-1,g.md|0)),false);
    enterPlay(touchDev&&NET.myIdx>=0)}
   K.tick=g.t|0;o.apply(g);
   for(const e of g.e||[]){if((e[0]|0)<=NET.seen)continue;NET.seen=e[0]|0;if(o.onFx)o.onFx(e[1],e.slice(2))}
@@ -162,7 +166,7 @@ RA.kit=o=>{
   if(now-R.lastL>1500&&R.lobby){R.lastL=now;R.lobby.presence({open:{gm:id,c:R.code,n:ids.length,ph:'lobby'}}).catch(()=>{})}return}_bc(now,g,inGame)};
  // ---- loop
  function step(){
-  if(isClient()&&!K.demo){K.tick++;if(o.follow)o.follow();return}
+  if(isClient()&&!K.demo){K.tick++;if(o.follow)o.follow();if(o.localFirst&&NET.myIdx>=0&&K.state==='play'&&o.local)o.local(NET.myIdx);return}
   if(K.state==='play'||K.state==='ending'){K.tick++;o.step();if(K.state==='ending'&&--overT<=0){ranksCache=o.ranks();showOver()}}
   else if(o.idle)o.idle()}
  function frame(now){
