@@ -6,7 +6,7 @@
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v47';
+RA.VERSION='v48';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -70,8 +70,11 @@ RA.fx={
   for(let py=0;py<h;py++)for(let px=0;px<w;px++){const X=px+.5,Y=py+.5;let best=-1e9,bi=-1,nx=0,ny=0,nz=0;
    for(let i=0;i<balls.length;i++){const b=balls[i],dx=X-b.x,dy=Y-b.y,q=b.r*b.r-dx*dx-dy*dy;if(q<0)continue;const z=(b.z||0)+Math.sqrt(q);
     if(z>best){best=z;bi=i;nx=dx/b.r;ny=dy/b.r;nz=Math.sqrt(q)/b.r}}
-   if(bi<0)continue;const b=balls[bi],c=C[bi],dif=Math.max(0,nx*Lx+ny*Ly+nz*Lz),hz=nz+Lz,hn=Math.hypot(nx+Lx,ny+Ly,hz),sp=Math.pow(Math.max(0,hz/hn),b.spec||18)*(b.gloss==null?.7:b.gloss);
-   let sh=(o.amb==null?.38:o.amb)+.8*dif;if(nz<.32)sh*=.55;const di=(BAYER[(py&3)*4+(px&3)]/16-.5)*10,q=(py*w+px)*4;
+   if(bi<0){if(Q>1){let cov=0,ci=-1;for(let i=0;i<balls.length;i++){const b=balls[i],e=b.r-Math.hypot(X-b.x,Y-b.y)+1;if(e>cov){cov=e;ci=i}}
+     if(ci>=0&&cov>0){const c=C[ci],q=(py*w+px)*4,sh=(o.amb==null?.38:o.amb)*.8;for(let j=0;j<3;j++)d[q+j]=c[j]*sh;d[q+3]=Math.round(Math.min(1,cov)*255)}}continue}
+   const b=balls[bi],c=C[bi],dif=Math.max(0,nx*Lx+ny*Ly+nz*Lz),hz=nz+Lz,hn=Math.hypot(nx+Lx,ny+Ly,hz),sp=Math.pow(Math.max(0,hz/hn),b.spec||18)*(b.gloss==null?.7:b.gloss);
+   // smooth (hi-res) models: soft rim falloff and no dither; low-res keeps the hard rim + ordered dither
+   let sh=(o.amb==null?.38:o.amb)+.8*dif;if(Q>1)sh*=.62+.38*Math.min(1,nz/.32);else if(nz<.32)sh*=.55;const di=Q>1?0:(BAYER[(py&3)*4+(px&3)]/16-.5)*10,q=(py*w+px)*4;
    for(let j=0;j<3;j++)d[q+j]=Math.max(0,Math.min(255,c[j]*sh+sp*255+di));d[q+3]=255}
   g.putImageData(im,0,0);return k},
  // soft round shadow under anything standing on the ground
@@ -87,9 +90,10 @@ RA.fx={
   for(let r=0;r<h-hor;r++){const dist=(v.height||40)*(v.fov||120)/(r+1),fog=Math.min(1,r/((h-hor)*.6)+.15);
    const lx=-sa*dist,ly=ca*dist,rx=ca*dist*w/(v.fov||120)/2,ry=sa*dist*w/(v.fov||120)/2;
    for(let i=0;i<w;i++){const f=(i/w-.5)*2,u=((Math.floor(v.x+lx+rx*f)%tw)+tw)%tw,t=((Math.floor(v.z+ly+ry*f)%th)+th)%th,q=(t*tw+u)*4,o=(r*w+i)*4;
-    const k=fog*(.8+.2*(BAYER[(r&3)*4+(i&3)]/16));out[o]=d[q]*k;out[o+1]=d[q+1]*k;out[o+2]=d[q+2]*k;out[o+3]=255}}
-  c.putImageData(floorBuf,x0,y0+hor)}};
-let floorBuf=null;const floorCache=new WeakMap();
+    const k=fog*.9;out[o]=d[q]*k;out[o+1]=d[q+1]*k;out[o+2]=d[q+2]*k;out[o+3]=255}}
+  if(!floorC)floorC=document.createElement('canvas');if(floorC.width!==floorBuf.width||floorC.height!==floorBuf.height){floorC.width=floorBuf.width;floorC.height=floorBuf.height}
+  floorC.getContext('2d').putImageData(floorBuf,0,0);const sm=c.imageSmoothingEnabled;c.imageSmoothingEnabled=true;c.drawImage(floorC,x0,y0+hor);c.imageSmoothingEnabled=sm}};
+let floorBuf=null,floorC=null;const floorCache=new WeakMap();
 function floorData(tex){let d=floorCache.get(tex);if(!d){d=tex.getContext('2d').getImageData(0,0,tex.width,tex.height).data;floorCache.set(tex,d)}return d}
 
 /* ---------- screen: whole-number pixel scale, the view widens or narrows to fill any window ---------- */

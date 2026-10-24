@@ -120,11 +120,12 @@ function sizeMini(){mm.width=Math.max(56,Math.min(120,Math.round(VW*.2)));mm.hei
 const SCR=RA.screen({el:root.querySelector('.screen'),canvas:cv,res:3,onResize:(w,h)=>{VW=w;VH=h;fogC.width=w;fogC.height=h;if(terr){sizeMini();buildSky()}}});
 const CLOUD=['.....kkkk.......','...kkwwwwkk.....','..kwwwwwwwwkkk..','.kwwwwwwwwwwwwk.','kwwwwwwwwwwwwwwk','kwwwwwwwwwwwsswk','.kswwwssssssssk.','..kkkkkkkkkkkk..'];
 // Parallax background: clouds and far mountains drift slowly, near hills faster. Same 8-bit art, modern depth.
-function layer(f,draw){const c=document.createElement('canvas');c.width=Math.ceil(VW+(W-VW)*f)+2;c.height=Math.ceil(VH+(H-VH)*f)+2;draw(c.getContext('2d'),c.width,c.height);return{c,f}}
+// parallax layers are painted at 3x and tagged _q, so they draw at their logical size but stay smooth
+function layer(f,draw){const c=document.createElement('canvas'),w=Math.ceil(VW+(W-VW)*f)+2,h=Math.ceil(VH+(H-VH)*f)+2,Q=3;c.width=w*Q;c.height=h*Q;c._q=Q;const g=c.getContext('2d');g.scale(Q,Q);draw(g,w,h);return{c,f}}
 function buildSky(){
  const T=THEME,hc=T.hills;skyG=RA.fx.gradientCanvas(VW,VH,T.sky[0],T.sky[1],24);
  const range=(s,w,h,base,amp,top,bot,seed)=>{const g=s.createLinearGradient(0,h*(base-amp/h*2),0,h);g.addColorStop(0,top);g.addColorStop(1,bot);s.fillStyle=g;
-  for(let x=0;x<w;x++){const y=Math.round(h*base+amp*Math.sin(x*.013+seed)+amp*.5*Math.sin(x*.041+seed*2)+amp*.2*Math.sin(x*.13));s.fillRect(x,y,1,h-y)}};
+  s.beginPath();s.moveTo(0,h);for(let x=0;x<=w;x+=2){const y=h*base+amp*Math.sin(x*.013+seed)+amp*.5*Math.sin(x*.041+seed*2)+amp*.2*Math.sin(x*.13);s.lineTo(x,y)}s.lineTo(w,h);s.closePath();s.fill()};
  layers=[
   layer(.08,(s,w,h)=>{for(let i=0;i<Math.max(4,Math.round(w/90));i++){const cx=(i*97+30)%w,cy=10+(i*41)%Math.max(24,h*.3),n=4+i%3,b=[];
    for(let k=0;k<n;k++)b.push({x:6+k*8+((k*7)%3),y:13+(k%2?-3:0)-(k>0&&k<n-1?3:0),r:6+(k*5)%4,col:T.cloud||'#fff4ec',spec:4,gloss:.15});
@@ -132,7 +133,7 @@ function buildSky(){
   layer(.22,(s,w,h)=>range(s,w,h,.5,16,hc[0],hc[1],2)),
   layer(.4,(s,w,h)=>range(s,w,h,.6,12,hc[2],hc[3],5)),
   layer(.6,(s,w,h)=>{range(s,w,h,.68,9,hc[4],hc[5],1);
-   for(let x=4;x<w;x+=7){const y=Math.round(h*.68+9*Math.sin(x*.013+1)+4.5*Math.sin(x*.041+2)+1.8*Math.sin(x*.13))-1,t=4+hash(x,5)%5;s.fillStyle=hc[6];for(let k=0;k<t;k++)s.fillRect(x-(t-k>>1),y-k,(t-k>>1)*2+1,1)}})];
+   for(let x=4;x<w;x+=7){const y=Math.round(h*.68+9*Math.sin(x*.013+1)+4.5*Math.sin(x*.041+2)+1.8*Math.sin(x*.13))-1,t=4+hash(x,5)%5;s.fillStyle=hc[6];s.beginPath();s.moveTo(x-t/2,y+1);s.lineTo(x,y-t);s.lineTo(x+t/2,y+1);s.fill()}})];
 }
 
 /* ---------- terrain (seeded so every online player builds the same map) ---------- */
@@ -1156,12 +1157,12 @@ function render(){
  if(tDirty&&tD){tCtx.putImageData(tImg,0,0,tD[0],tD[1],Math.max(1,tD[2]-tD[0]),Math.max(1,tD[3]-tD[1]));up2(tD[0],tD[1],tD[2],tD[3]);tD=null}tDirty=false;
  const z=cam.z,ox=Math.round(cam.x*z),oy=Math.round(cam.y*z);
  ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;
- if(skyG)ctx.drawImage(skyG,0,0);else{ctx.fillStyle=NES.sky;ctx.fillRect(0,0,VW,VH)}
+ {const g=ctx.createLinearGradient(0,0,0,VH);g.addColorStop(0,THEME.sky[0]);g.addColorStop(1,THEME.sky[1]);ctx.fillStyle=g;ctx.fillRect(0,0,VW,VH)}
  RA.fx.light(ctx,VW*.72,VH*.5,Math.round(VH*.07),'#fff0c0',.5);
- for(const L of layers)ctx.drawImage(L.c,-Math.round(ox*L.f),-Math.round(oy*L.f));
+ ctx.imageSmoothingEnabled=true;for(const L of layers)ctx.drawImage(L.c,-Math.round(ox*L.f),-Math.round(oy*L.f));ctx.imageSmoothingEnabled=false;
  let sx=0,sy=0;if(shake>0){sx=Math.round(rnd(-shake,shake));sy=Math.round(rnd(-shake,shake))}
  ctx.setTransform(z,0,0,z,sx-ox,sy-oy);
- ctx.drawImage(t2,0,0,W,H);
+ ctx.imageSmoothingEnabled=true;ctx.drawImage(t2,0,0,W,H);ctx.imageSmoothingEnabled=false;
  for(const c of crates){const x=c.x-4,y=Math.round(c.y)-7;
   if(!c.landed)blit(ctx,CHUTE,x-1,y-7,CR_COLS);
   RA.fx.shadow(ctx,c.x,Math.round(c.y)+1,5,c.landed?.35:0);ctx.drawImage(crateSprite(c.party?'p':c.hp?'h':'w'),x-1,y-2);}

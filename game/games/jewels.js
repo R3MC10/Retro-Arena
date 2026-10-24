@@ -74,7 +74,7 @@ const root=RA.mount(`
   </div>`);
 root.classList.add('mj');
 const cv=$('mjCv'),ctx=cv.getContext('2d');
-const SO={el:root.querySelector('.screen'),canvas:cv,whole:true,baseH:BLH+20,minW:2*BLW+8};
+const SO={el:root.querySelector('.screen'),canvas:cv,whole:true,baseH:BLH+20,minW:2*BLW+8,res:3};
 const SCR=RA.screen(SO);
 
 /* ---------- jewel art: drawn once per colour, a different shape per colour so it reads without colour too ---------- */
@@ -95,18 +95,19 @@ const DITH=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
 const GSET={Pastel:[null,[248,140,160],[150,232,170],[150,180,250],[250,230,150],[220,170,248],[250,190,140]],
  Royal:[null,[150,8,40],[8,110,60],[20,40,160],[200,150,20],[110,20,150],[190,70,10]],
  Neon:[null,[255,40,120],[60,255,90],[40,200,255],[255,255,60],[230,60,255],[255,150,30]]};
-function gem(c,pal){const k=document.createElement('canvas');k.width=k.height=CS;const g=k.getContext('2d'),im=g.createImageData(CS,CS),o=im.data;
- const put=(x,y,r,gg,bb)=>{const q=(y*CS+x)*4,d=(DITH[(y&3)*4+(x&3)]-7.5)*1.6;o[q]=Math.max(0,Math.min(255,r+d));o[q+1]=Math.max(0,Math.min(255,gg+d));o[q+2]=Math.max(0,Math.min(255,bb+d));o[q+3]=255};
- if(c===7){for(let y=0;y<CS;y++)for(let x=0;x<CS;x++){const n=Math.abs(Math.sin(x*12.9+y*78.2)*437.5)%1,edge=x===0||y===0||x===CS-1||y===CS-1,
-   lit=x===1||y===1?1.35:x===CS-2||y===CS-2?.6:1,crack=(x===4&&y>3&&y<9)||(y===8&&x>3&&x<9);
-   const v=edge?30:crack?60:(110+n*40)*lit;put(x,y,v,v*.96,v*.9)}
+// jewels render at 3x (smooth, no dither) and carry _q so they still draw at CS x CS
+function gem(c,pal){const Q=3,N=CS*Q,k=document.createElement('canvas');k.width=k.height=N;k._q=Q;const g=k.getContext('2d'),im=g.createImageData(N,N),o=im.data;
+ const put=(x,y,r,gg,bb)=>{const q=(y*N+x)*4,d=0;o[q]=Math.max(0,Math.min(255,r+d));o[q+1]=Math.max(0,Math.min(255,gg+d));o[q+2]=Math.max(0,Math.min(255,bb+d));o[q+3]=255};
+ if(c===7){for(let Y=0;Y<N;Y++)for(let X=0;X<N;X++){const x=X/Q,y=Y/Q,n=Math.abs(Math.sin(Math.floor(x*2)*12.9+Math.floor(y*2)*78.2)*437.5)%1,edge=x<.6||y<.6||x>CS-.6||y>CS-.6,
+   lit=x<1.6||y<1.6?1.35:x>CS-1.6||y>CS-1.6?.6:1,crack=(Math.abs(x-4.3)<.35&&y>3&&y<9)||(Math.abs(y-8.3)<.35&&x>3.6&&x<9);
+   const v=edge?30:crack?60:(110+n*40)*lit;put(X,Y,v,v*.96,v*.9)}
   g.putImageData(im,0,0);return k}
  const P=CUT[c],E=P.map((v,i)=>{const w=P[(i+1)%P.length];let nx=w[1]-v[1],ny=v[0]-w[0];const l=Math.hypot(nx,ny);nx/=l;ny/=l;let cc=nx*v[0]+ny*v[1];if(cc<0){nx=-nx;ny=-ny;cc=-cc}return[nx,ny,cc]});
  const L=[-.5,-.68,.53],base=(pal||JRGB)[c];
- for(let y=0;y<CS;y++)for(let x=0;x<CS;x++){const u=((x+.5)/CS*2-1)/.99,v=((y+.5)/CS*2-1)/.99;let d=0,f=0;
-  E.forEach((e,i)=>{const t=(e[0]*u+e[1]*v)/e[2];if(t>d){d=t;f=i}});if(d>1)continue;
-  let N=d<.5?[0,0,1]:[E[f][0]*.8,E[f][1]*.8,.6];const nl=Math.hypot(...N);
-  let sh=.3+1.0*Math.max(0,(N[0]*L[0]+N[1]*L[1]+N[2]*L[2])/nl);sh*=1.1-.22*d;
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){const u=((x+.5)/N*2-1)/.99,v=((y+.5)/N*2-1)/.99;let d=0,f=0;
+  E.forEach((e,i)=>{const t=(e[0]*u+e[1]*v)/e[2];if(t>d){d=t;f=i}});if(d>1.03)continue;
+  let Nv=d<.5?[0,0,1]:[E[f][0]*.8,E[f][1]*.8,.6];const nl=Math.hypot(...Nv);
+  let sh=.3+1.0*Math.max(0,(Nv[0]*L[0]+Nv[1]*L[1]+Nv[2]*L[2])/nl);sh*=1.1-.22*d;
   if(d>.84)sh*=.42;                                                   // dark girdle so every stone reads on any background
   const hl=d<.5&&Math.hypot(u+.18,v+.2)<.17?1:0;                       // specular glint on the table
   const w=Math.max(0,sh-1)*200+hl*255;put(x,y,base[0]*sh+w,base[1]*sh+w,base[2]*sh+w)}
@@ -506,11 +507,11 @@ const floorOf=S=>{const k=document.createElement('canvas');k.width=k.height=64;c
 const FLOORS=SCENES.map(floorOf);let sceneK=-1;
 function sceneNow(){if(demo||!boards.length)return 0;const b=boards[NET.myIdx]||boards.find(o=>o.ctrl!=='cpu'&&o.ctrl!=='net')||boards[0];return Math.min(3,Math.floor(((b.lvl||1)-1)/3))}
 function drawBg(){const w=SCR.w,h=SCR.h,hor=Math.round(h*.58),sk=sceneNow(),S=SCENES[sk];
- if(bgC.width!==w||bgC.height!==h||sceneK!==sk){sceneK=sk;bgC.width=w;bgC.height=h;const g=bgC.getContext('2d');
+ const K=ctx._k||1;if(bgC.width!==w*K||bgC.height!==h*K||sceneK!==sk){sceneK=sk;bgC.width=w*K;bgC.height=h*K;const g=bgC.getContext('2d');g.scale(K,K);
   RA.fx.gradient(g,0,0,w,hor,S.sky[0],S.sky[1],24);
   for(let i=0;i<w*hor/700;i++){const x=(i*97)%w,y=(i*61+((i*i)%37))%Math.max(1,hor-8);g.fillStyle=i%7?'#8c7cc8':'#fcfcfc';g.fillRect(x,y,1,1)}
   RA.fx.light(g,w/2,hor,Math.round(w*.32),S.glow,.22)}
- ctx.drawImage(bgC,0,0);
+ ctx.drawImage(bgC,0,0,w,h);
  RA.fx.floor(ctx,FLOORS[sk],{x:0,z:tick*.35,angle:Math.sin(tick*.003)*.18,height:26,fov:110,horizon:hor},0,0,w,h);
  ctx.fillStyle=S.line;ctx.fillRect(0,hor,w,1);
  // big jewels tumbling past at two depths, each with its shadow on the floor

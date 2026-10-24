@@ -72,3 +72,9 @@ RA.register({id:'pacman',name:'PAC-MAN',kind:'Maze chase',players:'2-20 players'
 Every player has their own save file for every game. Use `const SAVE=RA.save('<game id>')` once at the top of the game,
 call `SAVE.record({won, kills, bestScore, ...})` when a match ends for the local player, and `SAVE.set({...})` for
 settings or unlocks. The menu shows each ready game's save line automatically. See the comment above `RA.save` in engine/ra.js.
+
+## Online play is lag-free by default (RA.sync)
+Every game uses the engine's `RA.sync`: each player's own character/board runs on their own device with zero input delay,
+guests upload their state, the host referees shared things (projectiles, damage, items) and routes hits to the owner of the
+target (`S.hit(key, kind, value, from)` → `onHit` on the owning device). Remote characters glide with `S.follow`.
+Never make a guest wait for the host to move its own character. See the comment above `RA.sync` in engine/ra.js.
