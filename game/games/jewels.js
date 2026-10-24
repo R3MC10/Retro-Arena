@@ -9,9 +9,10 @@
 (()=>{
 const {$,esc,touchDev}=RA.util,T=RA.music.track,music=RA.music,sfx=RA.audio.sfx,audio=RA.audio.ensure;
 const {touchK,mouse}=RA.input;
-const MAXP=20,BW=6,BH=13,CS=14;                 // well size in cells, cell size in pixels
-const BLW=BW*CS+CS+22,BLH=BH*CS+38;                           // one board block on screen (well + next box + name + score)
-const TM=['RANDOM','ATTACKERS','LEADER','WEAKEST'];
+const MAXP=20,CS=14;let BW=6,BH=13;                 // well size in cells, cell size in pixels
+let BLW=BW*CS+CS+22,BLH=BH*CS+38;
+function setSize(w,h){BW=w;BH=h;BLW=BW*CS+CS+22;BLH=BH*CS+38}                           // one board block on screen (well + next box + name + score)
+const TM=['RANDOM','ATTACKERS','LEADER','WEAKEST','NEXT IN RING'];
 // A cell is colour (low 4 bits: 1-6 jewels, 7 rock, 8 magic) + power (high bits, 1-7). Clear a power jewel to fill your item slot.
 const C=v=>v&15,PW=v=>v>>4;
 const POW=[null,
@@ -21,8 +22,13 @@ const POW=[null,
  {n:'FOG',self:0,col:'#bcbcbc',d:'your target plays blind for 10 s',art:['..........','...kkk....','..kwwwkkk.','.kwwwwwwwk','kwwwwwwwwk','kssssssssk','.kkkkkkkk.','..........','.s.s.s.s..','..s.s.s.s.']},
  {n:'SPEED',self:0,col:'#f8b800',d:'your target falls 3x faster for 8 s',art:['.....kkkk.','....kyyk..','...kyyk...','..kyyykkk.','.kyyyyyyk.','.kkkyyyk..','...kyyk...','..kyyk....','..kyk.....','..kk......']},
  {n:'REVERSE',self:0,col:'#f878f8',d:'flips your target\'s left and right for 8 s',art:['..........','..k.......','.kpkkkkkk.','kppppppppk','.kpkkkkkk.','.kkkkkkpk.','kppppppppk','.kkkkkkpk.','.......k..','..........']},
- {n:'JUMBLE',self:0,col:'#e45c10',d:'recolours 8 of your target\'s jewels',art:['.kkkkkkkk.','kwwwwwwwwk','kwkwwwwkwk','kwwwwwwwwk','kwwwkkwwwk','kwwwkkwwwk','kwwwwwwwwk','kwkwwwwkwk','kwwwwwwwwk','.kkkkkkkk.']}];
-const PCOL={k:'#000',w:'#fcfcfc',r:'#d82800',y:'#f8b800',c:'#3cbcfc',b:'#0058f8',s:'#7c7c7c',p:'#f878f8'};
+ {n:'JUMBLE',self:0,col:'#e45c10',d:'recolours 8 of your target\'s jewels',art:['.kkkkkkkk.','kwwwwwwwwk','kwkwwwwkwk','kwwwwwwwwk','kwwwkkwwwk','kwwwkkwwwk','kwwwwwwwwk','kwkwwwwkwk','kwwwwwwwwk','.kkkkkkkk.']},
+ // party / troll items (survey: wild party)
+ {n:'FLIP',self:0,party:1,col:'#3cbcfc',d:'your target\'s well turns upside down for 8 s',art:['....k.....','...kck....','..kccck...','.kkkckkk..','...kck....','...kck....','.kkkckkk..','..kccck...','...kck....','....k.....']},
+ {n:'DISCO',self:0,party:1,col:'#f878f8',d:'your target\'s jewels flash every colour for 8 s',art:['...kkkk...','..kppppk..','.kpwpppck.','.kppppcck.','.kppcccck.','.kpcccyyk.','.kcccyyyk.','..kyyyyk..','...kkkk...','....kk....']},
+ {n:'ROCKET',self:0,party:1,all:1,col:'#d82800',d:'2 rocks on every other board',art:['....kk....','...kwwk...','...kwwk...','..kwrrwk..','..kwrrwk..','..kwwwwk..','.kkwwwwkk.','kk.kyyk.kk','...kyyk...','....kk....']},
+ {n:'GIFT',self:1,party:1,col:'#58d854',d:'a surprise for you: good or bad',art:['..k....k..','.krk..krk.','..kkkkkk..','kkkkrkkkkk','kggggrgggk','kggggrgggk','kggggrgggk','kggggrgggk','kggggrgggk','kkkkkkkkkk']}];
+const PCOL={k:'#000',w:'#fcfcfc',r:'#d82800',y:'#f8b800',c:'#3cbcfc',b:'#0058f8',s:'#7c7c7c',p:'#f878f8',g:'#00b800'};
 
 const root=RA.mount(`
   <div class="top">
@@ -48,6 +54,7 @@ const root=RA.mount(`
   <section class="panel" id="mjOnlinePanel">
     <h2 class="ph">ONLINE · UP TO 20 PLAYERS</h2>
     <div id="mjOnline"></div>
+    <div class="row mset" id="mjsetO"><span class="lbl">HOST SETTINGS</span></div>
   </section>
   <section class="panel" id="mjSetup" hidden>
     <h2 class="ph">LOCAL MATCH · ONE SCREEN</h2>
@@ -57,6 +64,7 @@ const root=RA.mount(`
         <label for="mjCpu">CPU <select id="mjCpu"><option value="0">Easy</option><option value="1" selected>Normal</option><option value="2">Hard</option></select></label></div>
       <button class="go" id="mjStart">START ▶</button>
     </div>
+    <div class="row mset" id="mjsetL"></div>
     <div class="list mjslots" id="mjSlots"></div>
     <p class="note" id="mjNote"></p>
   </section>
@@ -160,6 +168,25 @@ function setTab(on){onlineTab=on;$('mjTabOn').classList.toggle('on',on);$('mjTab
 $('mjTabOn').addEventListener('click',()=>setTab(true));$('mjTabLocal').addEventListener('click',()=>setTab(false));
 syncSlots();
 
+/* ---------- host match settings (survey: host picks size, speed, length, modes, items, targeting) ---------- */
+const MSET=[['mode','Mode',[['ffa','Everyone vs everyone'],['teams','2 teams'],['royale','Battle royale'],['coop','Co-op score attack'],['race','Race to 150 jewels']]],
+ ['size','Board',[['6x13','6×13 classic'],['8x13','8×13 wide'],['10x15','10×15 huge']]],
+ ['speed','Speed',[['n','Normal'],['f','Faster sooner'],['c','Slower, chill']]],
+ ['len','Time limit',[[0,'None'],[2,'2 min'],[5,'5 min'],[10,'10 min']]],
+ ['pow','Power jewels',[['all','All'],['self','Self-help only'],['troll','Troll only'],['off','Off']]],
+ ['party','Party items',[[1,'On'],[0,'Off']]],
+ ['tgt','Targeting',[['pick','Players pick'],['rand','Always random'],['lead','Always the leader'],['ring','Ring: next player']]]];
+let CFG={mode:'ffa',size:'6x13',speed:'n',len:0,pow:'all',party:1,tgt:'pick'};
+try{Object.assign(CFG,JSON.parse(localStorage.getItem('mj-mset')||'{}'))}catch(e){}
+let M={...CFG};
+const TEAMC=['#f04848','#4890f8'],TEAMN=['RED TEAM','BLUE TEAM'];
+for(const pre of['L','O'])$('mjset'+pre).insertAdjacentHTML('beforeend',MSET.map(([k,t,o])=>'<label>'+t+' <select id="mj'+pre+k+'">'+
+ o.map(([v,l])=>'<option value="'+v+'"'+(String(CFG[k])===String(v)?' selected':'')+'>'+l+'</option>').join('')+'</select></label>').join(''));
+for(const[k]of MSET)for(const pre of['L','O'])$('mj'+pre+k).addEventListener('change',e=>{const v=e.target.value;CFG[k]=isNaN(+v)?v:+v;
+ for(const q of['L','O'])$('mj'+q+k).value=v;try{localStorage.setItem('mj-mset',JSON.stringify(CFG))}catch(_){}});
+const lockedTm=()=>({rand:0,lead:2,ring:4})[M.tgt];
+const foe=(b,o)=>o!==b&&o.alive&&(M.mode!=='teams'||o.team!==b.team);
+
 /* ---------- online room ---------- */
 const NET={matchId:0,mroster:[],ev:[],es:0,seen:0,winner:-1,myIdx:-1,mc:-1,rc:0,dc:0,tc:0,prev:{},out:[],os:0,incSeen:0};
 const R=RA.rooms({game:'jewels',el:$('mjOnline'),colors:COLORS,max:MAXP,minPlayers:2,cpus:1,
@@ -171,16 +198,19 @@ const hostOnline=()=>R.online&&R.host;
 /* ---------- the game ---------- */
 let boards=[],state='menu',tick=0,matchT=0,parts=[],texts=[],lay=null,demo=true,lastTrack=-1;
 const rnd6=()=>1+Math.floor(Math.random()*6);
+function powPool(solo){if(M.pow==='off')return[];const out=[];for(let t=1;t<POW.length;t++){const P=POW[t];if(P.party&&!M.party)continue;if(solo&&!P.self)continue;
+  if(M.mode==='coop'&&!P.self&&!P.all)continue;if(M.pow==='self'&&!P.self)continue;if(M.pow==='troll'&&P.self&&!P.party)continue;out.push(t)}return out}
 function newPiece(lvl,b){if(Math.random()<(lvl>=2?.03:0))return[8,8,8];const j=[rnd6(),rnd6(),rnd6()];
  if(b&&!demo){const solo=boards.length===1,behind=!solo&&(height(b)>=8||b.score<=Math.min(...boards.filter(o=>o.alive).map(o=>o.score)));
-  if(Math.random()<(solo?.07:behind?.22:.11)){const t=solo?1+Math.floor(Math.random()*3):1+Math.floor(Math.random()*7);j[Math.floor(Math.random()*3)]|=t<<4}}
+  const pool=powPool(solo);if(pool.length&&Math.random()<(solo?.07:behind?.22:.11)){const t=pool[Math.floor(Math.random()*pool.length)];j[Math.floor(Math.random()*3)]|=t<<4}}
  return j}
-function makeBoard(i,ctrl,name,peer){return{i,ctrl,name,peer:peer||'',col:COLORS[i][1],g:new Uint8Array(BW*BH),pc:null,next:newPiece(1),ph:'spawn',t:20,chain:0,
+function makeBoard(i,ctrl,name,peer){return{i,ctrl,name,peer:peer||'',col:COLORS[i][1],g:new Uint8Array(BW*BH),pc:null,next:newPiece(1),team:i,ph:'spawn',t:20,chain:0,
  score:0,jewels:0,lvl:1,garb:0,alive:true,outAt:0,mark:null,das:0,dasDir:0,lock:0,lockN:0,soft:false,prev:{},mcol:null,shake:0,bot:null,
- tm:ctrl==='cpu'?Math.floor(Math.random()*4):0,tg:-1,ko:0,lastBy:-1,lr:0,ld:0,lt:0,li:0,lmc:-2,item:0,itemT:0,fx:{fog:0,speed:0,rev:0,slow:0,shield:0}}}
+ tm:ctrl==='cpu'?Math.floor(Math.random()*4):0,tg:-1,ko:0,lastBy:-1,lr:0,ld:0,lt:0,li:0,lmc:-2,item:0,itemT:0,fx:{fog:0,speed:0,rev:0,slow:0,shield:0,flip:0,disco:0}}}
 const CPU=[{react:14,noise:60,drop:0},{react:7,noise:18,drop:.3},{react:3,noise:3,drop:.8}];
 function startMatch(list,isDemo){
- demo=!!isDemo;if(hostOnline())SY.reset();boards=list.map((d,i)=>makeBoard(i,d.ctrl,d.name,d.peer));tick=0;matchT=0;parts=[];texts=[];lastTrack=-1;NET.ev=[];NET.winner=-1;
+ demo=!!isDemo;if(hostOnline())SY.reset();M=demo?{...CFG,mode:'ffa',len:0,size:'6x13',tgt:'pick'}:{...CFG};const sz=M.size.split('x');setSize(+sz[0]||6,+sz[1]||13);
+ boards=list.map((d,i)=>makeBoard(i,d.ctrl,d.name,d.peer));for(const b of boards){b.team=M.mode==='teams'?b.i%2:b.i;if(M.mode==='teams')b.col=TEAMC[b.team];if(lockedTm()!=null)b.tm=lockedTm()}NET.royT=0;tick=0;matchT=0;parts=[];texts=[];lastTrack=-1;NET.ev=[];NET.winner=-1;NET.wl='';
  const cl=CPU[+$('mjCpu').value]||CPU[1];for(const b of boards){b.cpu=isDemo?CPU[1]:cl;b.tg=pickTarget(b)}
  state='play';layout();
 }
@@ -224,7 +254,8 @@ function findMatches(g){const m=new Uint8Array(BW*BH);let n=0;
 function collapse(g){for(let x=0;x<BW;x++){let w=BH-1;for(let y=BH-1;y>=0;y--){const c=g[y*BW+x];if(c){g[y*BW+x]=0;g[w*BW+x]=c;w--}}}}
 
 /* targeting: who your rocks hit */
-function pickTarget(b){const foes=boards.filter(o=>o!==b&&o.alive);if(!foes.length)return -1;let c=foes;
+function pickTarget(b){const foes=boards.filter(o=>foe(b,o));if(!foes.length)return -1;let c=foes;
+ if(b.tm===4){for(let k=1;k<boards.length;k++){const o=boards[(b.i+k)%boards.length];if(foe(b,o))return o.i}}
  if(b.tm===1){const a=foes.filter(o=>o.tg===b.i);if(a.length)c=a}
  else if(b.tm===2){const m=Math.max(...foes.map(o=>o.score));c=foes.filter(o=>o.score===m)}
  else if(b.tm===3){const h=foes.map(height),m=Math.max(...h);c=foes.filter((o,k)=>h[k]===m)}
@@ -259,8 +290,8 @@ function clearMarked(b){const g=b.g,m=b.mark;let n=0;
  let rows=(b.chain>=2?b.chain-1:0)+(n>=6?1:0)+(b.magic&&b.magic>=6?1:0);
  if(rows&&boards.length>1){rows+=Math.floor(rows*.25*Math.min(8,b.ko));if(b.tm===1&&attackers(b)>=2)rows++;
   const c=Math.min(rows,b.garb);b.garb-=c;rows-=c;
-  let o=boards[b.tg];if(!o||!o.alive||o===b){b.tg=pickTarget(b);o=boards[b.tg]}
-  if(rows&&o){fly(b.i,o.i);hit(o,'g',rows,b.i)}
+  let o=boards[b.tg];if(!o||!foe(b,o)){b.tg=pickTarget(b);o=boards[b.tg]}
+  if(rows&&o&&M.mode!=='coop'){fly(b.i,o.i);hit(o,'g',rows,b.i)}
   if(b.tm===0)b.tg=pickTarget(b)}
  collapse(b.g);b.ph='settle';b.t=0}
 function gainItem(b,t){if(b.item){b.score+=150;say(b,'+150','#fcfcfc',86);return}
@@ -269,22 +300,24 @@ function gainItem(b,t){if(b.item){b.score+=150;say(b,'+150','#fcfcfc',86);return
 function useItem(b){const t=b.item;if(!t)return;b.item=0;const P=POW[t];
  if(P.self){if(t===1){for(let k=0;k<3*BW;k++){const q=(BH-1)*BW-k+BW-1;if(b.g[q])burst(b.i,q%BW,(q/BW)|0,C(b.g[q]))}
    b.g.copyWithin(3*BW,0,(BH-3)*BW);b.g.fill(0,0,3*BW);b.shake=12;noise('boom',24,b,true);say(b,'BOOM!','#fcfcfc',60)}
+  else if(t===11){const g=[1,2,3,4,5,6,7,8][Math.floor(Math.random()*8)];if(g<=3){b.item=g;useItem(b)}else{applyHit(b,'i',g,b.i);say(b,'OOPS!','#58d854',50)}}
   else if(t===2){b.fx.shield=6;noise('sel',0,b);say(b,'SHIELD UP','#3cbcfc',60)}
   else{b.fx.slow=600;noise('sel',0,b);say(b,'SLOW TIME','#58f898',60)}
   return}
- let o=boards[b.tg];if(!o||!o.alive||o===b){b.tg=pickTarget(b);o=boards[b.tg]}if(!o)return;
+ if(P.all){for(const o of boards)if(foe(b,o)){fly(b.i,o.i);hit(o,'g',2,b.i)}say(b,P.n+'!',P.col,76);return}
+ let o=boards[b.tg];if(!o||!foe(b,o)){b.tg=pickTarget(b);o=boards[b.tg]}if(!o)return;
  fly(b.i,o.i);hit(o,'i',t,b.i);say(b,P.n+' SENT',P.col,76)}
 /* Online, every player runs their own board here with no delay. A hit on a board this device does not run
    travels instead: a guest sends it to the host, the host passes it on to the board's owner in the snapshot. */
 const owned=b=>isClient()?b.i===NET.myIdx:b.ctrl!=='net';
 const SY=RA.sync({owns:i=>!!boards[i]&&owned(boards[i]),host:()=>hostOnline(),onHit:(i,k,v,by)=>boards[i]&&applyHit(boards[i],k,v|0,by)});
-const hit=(o,k,v,by)=>SY.hit(o.i,k,k==='g'?Math.max(0,Math.min(30,v|0)):Math.max(0,Math.min(7,v|0)),by);
+const hit=(o,k,v,by)=>SY.hit(o.i,k,k==='g'?Math.max(0,Math.min(30,v|0)):Math.max(0,Math.min(15,v|0)),by);
 function applyHit(o,k,v,by){if(!o.alive)return;
  if(k==='g'){let rows=v;const blk=Math.min(rows,o.fx.shield);if(blk){o.fx.shield-=blk;rows-=blk;say(o,'BLOCKED','#3cbcfc',70)}
   if(rows){o.garb+=rows;o.lastBy=by;if(rows>=3)say(o,rows+' ROCKS','#d82800',70)}return}
  const t=v,P=POW[t];if(!P)return;
  if(o.fx.shield>0){o.fx.shield=Math.max(0,o.fx.shield-2);say(o,'BLOCKED','#3cbcfc',60);return}
- if(t===4)o.fx.fog=600;else if(t===5)o.fx.speed=480;else if(t===6)o.fx.rev=480;
+ if(t===4)o.fx.fog=600;else if(t===5)o.fx.speed=480;else if(t===6)o.fx.rev=480;else if(t===8)o.fx.flip=480;else if(t===9)o.fx.disco=480;
  else{const js=[];for(let q=0;q<BW*BH;q++){const c=C(o.g[q]);if(c>=1&&c<=6)js.push(q)}
   for(let k2=0;k2<8&&js.length;k2++){const q=js.splice(Math.floor(Math.random()*js.length),1)[0];o.g[q]=rnd6()|(o.g[q]&0xf0)}}
  noise('magic',0,o,true);say(o,P.n+'!',P.col,60)}
@@ -293,18 +326,18 @@ function addRocks(b){const n=Math.min(3,b.garb);if(!n)return;b.garb-=n;b.shake=1
  for(let k=0;k<n;k++){for(let x=0;x<BW;x++)if(b.g[x]){topout(b);return}
   b.g.copyWithin(0,BW);for(let x=0;x<BW;x++)b.g[(BH-1)*BW+x]=7}}
 function spawn(b){addRocks(b);if(!b.alive)return;
- if(at(b,2,0)){topout(b);return}
- b.pc={x:2,y:-2,j:b.next};b.next=newPiece(b.lvl,b);b.lock=0;b.lockN=0;b.ph='fall';b.bot=null}
-const speed=b=>Math.min(.45,.02*Math.pow(1.2,b.lvl-1))*(b.fx.speed>0?3:1)*(b.fx.slow>0?.4:1);
+ const mx=Math.floor((BW-1)/2);if(at(b,mx,0)){topout(b);return}
+ b.pc={x:mx,y:-2,j:b.next};b.next=newPiece(b.lvl,b);b.lock=0;b.lockN=0;b.ph='fall';b.bot=null}
+const speed=b=>Math.min(.45,(M.speed==='c'?.014:.02)*Math.pow(M.speed==='f'?1.3:M.speed==='c'?1.13:1.2,b.lvl-1))*(b.fx.speed>0?3:1)*(b.fx.slow>0?.4:1);
 function stepBoard(b){
  if(b.shake>0)b.shake--;
  if(!b.alive){b.t++;return}
  b.lvl=Math.min(20,1+Math.floor(b.jewels/24)+(boards.length>1?Math.floor(matchT/(60*40)):0));
  if(b.tm&&tick%60===b.i)b.tg=pickTarget(b);
- const F=b.fx;for(const k of['fog','speed','rev','slow'])if(F[k]>0)F[k]--;
+ const F=b.fx;for(const k of['fog','speed','rev','slow','flip','disco'])if(F[k]>0)F[k]--;
  const inp=readInput(b);if(inp.gone){topout(b);return}
  if(inp.item&&!b.prev.item||inp.nitem)useItem(b);
- if(inp.tgt&&!b.prev.tgt||inp.ntgt){b.tm=(b.tm+(inp.ntgt||1))%4;b.tg=pickTarget(b);noise('sel',0,b);say(b,TM[b.tm],'#3cbcfc',112)}
+ if((inp.tgt&&!b.prev.tgt||inp.ntgt)&&lockedTm()==null){b.tm=(b.tm+(inp.ntgt||1))%4;b.tg=pickTarget(b);noise('sel',0,b);say(b,TM[b.tm],'#3cbcfc',112)}
  if(b.ph==='spawn'){b.prev=inp;if(--b.t<=0)spawn(b);return}
  if(b.ph==='clear'){b.prev=inp;if(++b.t>=22)clearMarked(b);return}
  if(b.ph==='settle'){b.prev=inp;if(++b.t>=6)check(b);return}
@@ -382,22 +415,22 @@ function bot(b){if(b.item&&--b.itemT<=0)return{item:true};const pc=b.pc;if(!pc)r
 /* ---------- host -> everyone: the whole match in one compact snapshot ---------- */
 const B64='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 const encG=g=>String.fromCharCode(...Array.from(g,v=>48+v));
-const encM=m=>{let s='';for(let y=0;y<BH;y++){let v=0;for(let x=0;x<BW;x++)if(m[y*BW+x])v|=1<<x;s+=B64[v]}return s};
+const encM=m=>{let s='';for(let y=0;y<BH;y++){let v=0;for(let x=0;x<BW;x++)if(m[y*BW+x])v|=1<<x;s+=B64[v&63]+B64[v>>6]}return s};
 // one board as a compact array, shared by the host's snapshot and a guest's upload of its own board
 const encB=b=>[encG(b.g),b.pc?b.pc.x:-1,b.pc?Math.round(b.pc.y*10):0,b.pc?encG(b.pc.j):'',encG(b.next),b.score,b.lvl,b.garb,b.alive?1:0,
- b.mark?encM(b.mark):'',b.tg,b.ko,b.tm,b.outAt,b.item,(b.fx.fog>0?1:0)|(b.fx.speed>0?2:0)|(b.fx.rev>0?4:0)|(b.fx.slow>0?8:0),b.fx.shield];
-const decCell=c=>{const v=Math.max(0,(c||48)-48);return(v&15)>8?0:v&127};
+ b.mark?encM(b.mark):'',b.tg,b.ko,b.tm,b.outAt,b.item,(b.fx.fog>0?1:0)|(b.fx.speed>0?2:0)|(b.fx.rev>0?4:0)|(b.fx.slow>0?8:0)|(b.fx.flip>0?16:0)|(b.fx.disco>0?32:0),b.fx.shield];
+const decCell=c=>{const v=Math.max(0,(c||48)-48);return(v&15)>8||(v>>4)>=POW.length?0:v&255};
 function decB(b,a,i){const old=b.mark,og=b.g.slice();
  const s=String(a[0]||'');for(let q=0;q<BW*BH;q++)b.g[q]=decCell(s.charCodeAt(q));
  b.pc=a[1]>=0&&String(a[3]).length===3?{x:Math.max(0,Math.min(BW-1,a[1]|0)),y:(a[2]|0)/10,j:[0,1,2].map(k=>decCell(String(a[3]).charCodeAt(k)))}:null;
  b.next=[0,1,2].map(k=>decCell(String(a[4]||'111').charCodeAt(k))||1);
- b.item=Math.max(0,Math.min(7,a[14]|0));const f=a[15]|0;b.fx={fog:f&1,speed:f&2,rev:f&4,slow:f&8,shield:a[16]|0};
- Object.assign(b,{score:a[5]|0,lvl:a[6]|0,garb:a[7]|0,tg:a[10]|0,tm:(a[12]|0)&3});
+ b.item=Math.max(0,Math.min(POW.length-1,a[14]|0));const f=a[15]|0;b.fx={fog:f&1,speed:f&2,rev:f&4,slow:f&8,flip:f&16,disco:f&32,shield:a[16]|0};
+ Object.assign(b,{score:a[5]|0,lvl:a[6]|0,garb:a[7]|0,tg:a[10]|0,tm:Math.min(4,(a[12]|0)&7)});
  b.alive=!!a[8];b.outAt=a[13]|0;
- if(a[9]){const m=new Uint8Array(BW*BH),ms=String(a[9]);for(let y=0;y<BH;y++){const v=B64.indexOf(ms[y]);for(let x=0;x<BW;x++)if(v>0&&v&(1<<x))m[y*BW+x]=1}b.mark=m}
+ if(a[9]){const m=new Uint8Array(BW*BH),ms=String(a[9]);for(let y=0;y<BH;y++){const v=Math.max(0,B64.indexOf(ms[y*2]))|Math.max(0,B64.indexOf(ms[y*2+1]))<<6;for(let x=0;x<BW;x++)if(v&(1<<x))m[y*BW+x]=1}b.mark=m}
  else{if(old)for(let q=0;q<BW*BH;q++)if(old[q])burst(i,q%BW,(q/BW)|0,og[q]);b.mark=null}}
 function snapshot(){
- const g={ph:state==='over'?'over':'play',id:NET.matchId,r:NET.mroster,w:NET.winner,t:(matchT/60)|0,
+ const g={ph:state==='over'?'over':'play',id:NET.matchId,r:NET.mroster,w:NET.winner,wl:NET.wl||'',t:(matchT/60)|0,cf:[M.mode,M.size,M.speed,M.len,M.tgt],
   b:boards.map(encB),hx:SY.pack(),e:NET.ev.slice()};
  while(JSON.stringify(g).length>3700&&g.e.length)g.e.shift();
  return g}
@@ -415,7 +448,8 @@ function applySnap(g){
  if(g.id!==NET.matchId||boards.length!==n||demo){
   NET.matchId=g.id;NET.seen=0;for(const e of g.e||[])NET.seen=Math.max(NET.seen,e[0]|0);
   NET.myIdx=me?g.r.indexOf(me.peer):-1;demo=false;SY.reset();
-  boards=g.b.slice(0,n).map((a,i)=>makeBoard(i,i===NET.myIdx?'me':'net','',g.r[i]));parts=[];texts=[];lastTrack=-1;state='play';tick=0;
+  if(Array.isArray(g.cf)){M={...CFG,mode:String(g.cf[0]),size:String(g.cf[1]),speed:String(g.cf[2]),len:g.cf[3]|0,tgt:String(g.cf[4])};const sz=M.size.split('x');setSize(Math.max(4,Math.min(10,+sz[0]||6)),Math.max(10,Math.min(15,+sz[1]||13)))}
+  boards=g.b.slice(0,n).map((a,i)=>makeBoard(i,i===NET.myIdx?'me':'net','',g.r[i]));for(const b of boards){b.team=M.mode==='teams'?b.i%2:b.i;if(M.mode==='teams')b.col=TEAMC[b.team];if(lockedTm()!=null)b.tm=lockedTm()}parts=[];texts=[];lastTrack=-1;state='play';tick=0;
   const mb=boards[NET.myIdx];if(mb&&Array.isArray(g.b[NET.myIdx]))mb.next=[0,1,2].map(k=>decCell(String(g.b[NET.myIdx][4]||'111').charCodeAt(k))||1);
   layout();enterPlay(touchDev&&NET.myIdx>=0)}
  SY.unpack(g.hx);
@@ -429,7 +463,7 @@ function applySnap(g){
   else if(k==='x'&&Array.isArray(a)&&boards[bi]&&bi!==NET.myIdx)texts.push({b:bi,x:BW*CS/2,y:a[2]|0,s:String(a[0]).slice(0,12),t:60,col:/^#[0-9a-f]{6}$/i.test(a[1])?a[1]:'#fcfcfc'});
   else if(k==='f'&&boards[bi]&&boards[a|0]&&bi!==NET.myIdx)for(let j=0;j<6;j++)parts.push({fly:1,from:bi,to:a|0,t:30+j*3,k:30+j*3})}
  if(Math.abs(matchT-(g.t|0)*60)>90)matchT=(g.t|0)*60;
- if(g.ph==='over'&&state!=='over'){NET.winner=g.w;showOver(boards[g.w]||null)}
+ if(g.ph==='over'&&state!=='over'){NET.winner=g.w;NET.wl=g.wl||'';showOver(boards[g.w]||null)}
 }
 
 /* ---------- layout: boards in a grid that fits the window, never cut off ---------- */
@@ -449,21 +483,28 @@ addEventListener('resize',()=>{if(boards.length&&!RA.menu.open&&RA.menu.current&
 /* ---------- drawing ---------- */
 const bgC=document.createElement('canvas');
 // marble floor tile: two stones, gold inlay seams, a small jewel set in every light square
-const FLOOR=(()=>{const k=document.createElement('canvas');k.width=k.height=64;const g=k.getContext('2d'),im=g.createImageData(64,64),o=im.data;
+// scenes change with level (survey): dusk marble, treasure cave, ice palace, volcano
+const SCENES=[{n:'Marble Dusk',sky:['#05021a','#4a1c62'],glow:'#c04878',line:'#e888c0',lt:[70,56,120],dk:[26,20,60],seam:[200,150,40]},
+ {n:'Treasure Cave',sky:['#0c0602','#5c3410'],glow:'#f8a030',line:'#f8c060',lt:[120,84,40],dk:[46,30,14],seam:[250,200,60]},
+ {n:'Ice Palace',sky:['#020c1e','#2c6c9c'],glow:'#7cd8ff',line:'#bcecff',lt:[150,200,230],dk:[40,70,110],seam:[230,250,255]},
+ {n:'Volcano',sky:['#100202','#7c1408'],glow:'#ff5010',line:'#ff9050',lt:[90,40,30],dk:[30,10,8],seam:[255,120,20]}];
+const floorOf=S=>{const k=document.createElement('canvas');k.width=k.height=64;const g=k.getContext('2d'),im=g.createImageData(64,64),o=im.data;
  for(let y=0;y<64;y++)for(let x=0;x<64;x++){const lt=((x>>5)^(y>>5))&1,n=Math.abs(Math.sin(x*3.1+y*1.7)+Math.sin(x*.37-y*.53)*1.6),vein=n>2.2?30:0,
   seam=(x&31)===0||(y&31)===0,q=(y*64+x)*4;let r,gg,bb;
-  if(seam){r=200;gg=150;bb=40}else if(lt){r=70+vein;gg=56+vein;bb=120+vein}else{r=26+vein*.5;gg=20+vein*.5;bb=60+vein*.5}
+  if(seam){[r,gg,bb]=S.seam}else if(lt){r=S.lt[0]+vein;gg=S.lt[1]+vein;bb=S.lt[2]+vein}else{r=S.dk[0]+vein*.5;gg=S.dk[1]+vein*.5;bb=S.dk[2]+vein*.5}
   const dx=(x&31)-16,dy=(y&31)-16;if(lt&&Math.abs(dx)+Math.abs(dy)<4){r=230-(dx+dy)*10;gg=60;bb=90}
   o[q]=r;o[q+1]=gg;o[q+2]=bb;o[q+3]=255}
- g.putImageData(im,0,0);return k})();
-function drawBg(){const w=SCR.w,h=SCR.h,hor=Math.round(h*.58);
- if(bgC.width!==w||bgC.height!==h){bgC.width=w;bgC.height=h;const g=bgC.getContext('2d');
-  RA.fx.gradient(g,0,0,w,hor,'#05021a','#4a1c62',24);
+ g.putImageData(im,0,0);return k};
+const FLOORS=SCENES.map(floorOf);let sceneK=-1;
+function sceneNow(){if(demo||!boards.length)return 0;const b=boards[NET.myIdx]||boards.find(o=>o.ctrl!=='cpu'&&o.ctrl!=='net')||boards[0];return Math.min(3,Math.floor(((b.lvl||1)-1)/3))}
+function drawBg(){const w=SCR.w,h=SCR.h,hor=Math.round(h*.58),sk=sceneNow(),S=SCENES[sk];
+ if(bgC.width!==w||bgC.height!==h||sceneK!==sk){sceneK=sk;bgC.width=w;bgC.height=h;const g=bgC.getContext('2d');
+  RA.fx.gradient(g,0,0,w,hor,S.sky[0],S.sky[1],24);
   for(let i=0;i<w*hor/700;i++){const x=(i*97)%w,y=(i*61+((i*i)%37))%Math.max(1,hor-8);g.fillStyle=i%7?'#8c7cc8':'#fcfcfc';g.fillRect(x,y,1,1)}
-  RA.fx.light(g,w/2,hor,Math.round(w*.32),'#c04878',.22)}
+  RA.fx.light(g,w/2,hor,Math.round(w*.32),S.glow,.22)}
  ctx.drawImage(bgC,0,0);
- RA.fx.floor(ctx,FLOOR,{x:0,z:tick*.35,angle:Math.sin(tick*.003)*.18,height:26,fov:110,horizon:hor},0,0,w,h);
- ctx.fillStyle='#e888c0';ctx.fillRect(0,hor,w,1);
+ RA.fx.floor(ctx,FLOORS[sk],{x:0,z:tick*.35,angle:Math.sin(tick*.003)*.18,height:26,fov:110,horizon:hor},0,0,w,h);
+ ctx.fillStyle=S.line;ctx.fillRect(0,hor,w,1);
  // big jewels tumbling past at two depths, each with its shadow on the floor
  for(let i=0;i<12;i++){const near=i%2,sp=near?.14:.06,sz=near?2.4:1.5,x=((i*131+tick*sp*(i%3?1:-1))%(w+60)+w+60)%(w+60)-30,y=(((i*89-tick*sp*.5)%(hor*.9))+hor*.9)%(hor*.9);
   RA.fx.sprite(ctx,GEM[1+i%6],x,y,sz,Math.sin(tick*.01+i)*.5,near?.5:.28)}}
@@ -481,13 +522,17 @@ function glass(x,y,w,h,danger){const g=ctx.createLinearGradient(x,y,x,y+h);g.add
 function reflect(x,y,w,h){ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.fillStyle='rgba(255,255,255,.07)';ctx.beginPath();
  ctx.moveTo(x+w*.15,y);ctx.lineTo(x+w*.5,y);ctx.lineTo(x,y+h*.45);ctx.lineTo(x,y+h*.2);ctx.fill();
  ctx.fillStyle='rgba(255,255,255,.04)';ctx.beginPath();ctx.moveTo(x+w,y+h*.55);ctx.lineTo(x+w,y+h*.7);ctx.lineTo(x+w*.6,y+h);ctx.lineTo(x+w*.4,y+h);ctx.fill();ctx.restore()}
-const gemOf=v=>{const c=v&15;return GEM[c===8?1+((tick>>2)%6):c]||GEM[1]};
+let discoOn=false;
+const gemOf=v=>{const c=v&15;if(discoOn&&c>=1&&c<=6)return GEM[1+((tick>>2)+c)%6];return GEM[c===8?1+((tick>>2)%6):c]||GEM[1]};
 const ICON=POW.map(P=>{if(!P)return null;const k=document.createElement('canvas');k.width=k.height=10;RA.gfx.blit(k.getContext('2d'),P.art,0,0,PCOL);return k});
 // a power jewel sparkles in its power's colour
 function sparkle(v,x,y){const t=PW(v);if(!t)return;const on=(tick>>3)&1,cx=x+CS-4,cy=y+3,col=on?POW[t].col:'#fcfcfc';
  RA.fx.light(ctx,cx,cy,5,POW[t].col,.35);ctx.fillStyle='#000';ctx.fillRect(cx-3,cy-1,7,3);ctx.fillRect(cx-1,cy-3,3,7);
  ctx.fillStyle=col;ctx.fillRect(cx-2,cy,5,1);ctx.fillRect(cx,cy-2,1,5);ctx.fillStyle='#fff';ctx.fillRect(cx,cy,1,1)}
-function drawBoard(b,L){
+function drawBoard(b,L){ctx.save();discoOn=!!b.fx.disco&&b.alive;
+ if(b.fx.flip&&b.alive){const cy=L.y+10+BH*CS/2;ctx.translate(0,cy*2);ctx.scale(1,-1)}
+ drawBoard0(b,L);ctx.restore();discoOn=false}
+function drawBoard0(b,L){
  const sx=b.shake?Math.round((Math.random()-.5)*3):0,X=L.x+2+sx,Y=L.y+10,txt=RA.gfx.text,danger=b.alive&&height(b)>=BH-3;
  txt(ctx,b.name.slice(0,9),X+BW*CS/2,L.y,b.alive?b.col:'#7c7c7c');
  if(focus(b)&&!demo&&boards.length>1){ctx.fillStyle=b.col;ctx.fillRect(X+BW*CS/2-12,L.y+7,24,1)}
@@ -520,7 +565,7 @@ function drawBoard(b,L){
  frameRect(NX,Y+3*CS+6,CS,CS,b.item&&(tick>>4)&1?POW[b.item].col:'#4c4c4c');glass(NX,Y+3*CS+6,CS,CS,false);if(b.item)ctx.drawImage(ICON[b.item],NX+2,Y+3*CS+8);
  for(let k=0;k<Math.min(6,b.garb);k++){ctx.fillStyle='#000';ctx.fillRect(NX,Y+4*CS+12+k*6,CS,5);ctx.fillStyle=k<3?'#d82800':'#7c7c7c';ctx.fillRect(NX+1,Y+4*CS+13+k*6,CS-2,3)}
  // active effects, shown on the well
- const fxs=[b.fx.shield?['SHIELD '+b.fx.shield,'#3cbcfc']:null,b.fx.slow?['SLOW','#58f898']:null,b.fx.speed?['FAST!','#f8b800']:null,b.fx.rev?['REVERSE','#f878f8']:null,b.fx.fog?['FOG','#fcfcfc']:null].filter(Boolean);
+  const fxs=[b.fx.flip?['FLIP','#3cbcfc']:null,b.fx.disco?['DISCO','#f878f8']:null,b.fx.shield?['SHIELD '+b.fx.shield,'#3cbcfc']:null,b.fx.slow?['SLOW','#58f898']:null,b.fx.speed?['FAST!','#f8b800']:null,b.fx.rev?['REVERSE','#f878f8']:null,b.fx.fog?['FOG','#fcfcfc']:null].filter(Boolean);
  fxs.forEach((f,k)=>txt(ctx,f[0],X+BW*CS/2,Y+3+k*7,f[1]));
  if(b.fx.shield&&b.alive){ctx.fillStyle='#3cbcfc';ctx.fillRect(X,Y,BW*CS,1);ctx.fillRect(X,Y+BH*CS-1,BW*CS,1);ctx.fillRect(X,Y,1,BH*CS);ctx.fillRect(X+BW*CS-1,Y,1,BH*CS)}
  if(b.ko){txt(ctx,'KO',NX+CS/2,Y+BH*CS-40,'#f8b800');RA.gfx.num(ctx,b.ko,NX+CS/2,Y+BH*CS-33,'#fcfcfc')}
@@ -560,17 +605,32 @@ function step(){tick++;
  stepFx();
  const alive=boards.filter(b=>b.alive);
  if(!demo&&(boards.length>2&&alive.length===2||boards.length===1&&boards[0].lvl>=8))playTrack(3);
+ // royale: every 30 s (after the first minute) every well gets a rock row, faster later
+ if(!demo&&M.mode==='royale'&&matchT>3600&&matchT%Math.max(900,1800-((matchT/3600)|0)*300)===0)for(const b of alive){hit(b,'g',1,-1);say(b,'WELLS CLOSE IN','#d82800',40)}
+ // co-op: pressure rocks for everyone every 25 s
+ if(!demo&&M.mode==='coop'&&boards.length>1&&matchT%1500===0)for(const b of alive)hit(b,'g',1+Math.floor(matchT/7200),-1);
+ if(!demo&&boards.length>1){let end=null;
+  if(M.mode==='race'){const w=boards.find(b=>b.alive&&b.jewels>=150);if(w)end=w}
+  const lim=M.len?M.len*3600:M.mode==='coop'?3*3600:0;
+  if(lim&&matchT>=lim)end=leader()||'draw';
+  if(M.mode==='teams'&&new Set(alive.map(b=>b.team)).size<=1&&alive.length)end=alive[0];
+  if(M.mode==='coop'&&!alive.length)end='draw';
+  if(end){NET.winner=end==='draw'?-1:end.i;showOver(end==='draw'?null:end);return}}
+ if((M.mode==='teams'||M.mode==='coop')&&boards.length>1&&!demo)return;
  if(boards.length>1?alive.length<=1:!alive.length){
   if(demo){if(!alive.length||boards.some(b=>!b.alive&&b.t>120))startDemo();return}
   if(boards.some(b=>!b.alive&&b.t<60))return;          // let the last board crumble first
   NET.winner=alive[0]?alive[0].i:-1;showOver(alive[0]||null)}
 }
+function leader(){const sc={};for(const b of boards){const k=M.mode==='coop'?0:b.team,o=sc[k]||(sc[k]={s:0,b,al:0});o.s+=b.score;o.al+=b.alive?1:0;if(b.score>o.b.score)o.b=b}
+ const a=Object.values(sc).sort((x,y)=>(y.al>0)-(x.al>0)||y.s-x.s);return a.length>1&&a[0].s===a[1].s?null:a[0].b}
 function showOver(w){state='over';
+ if(!isClient())NET.wl=M.mode==='coop'?'TEAM SCORE '+boards.reduce((a,b)=>a+b.score,0):w&&M.mode==='teams'?TEAMN[w.team]+' WINS':'';
  const solo=boards.length===1,b0=boards[0];
  if(solo&&b0.score>best){best=b0.score;try{localStorage.setItem('mj-best',best)}catch(e){}}
  const me=boards[NET.myIdx]||(!isClient()&&boards.find(b=>b.ctrl!=='cpu'));
- if(me){const m={won:!solo&&w===me,bestScore:me.score|0,bestLevel:me.lvl|0,ko:me.ko|0};SAVE.record(m);ACH.check(m)}
- $('mjWin').textContent=solo?'SCORE '+b0.score:w?(w.isMe?'YOU WIN!':w.name.toUpperCase()+' WINS'):'DRAW';
+ if(me){const m={won:!solo&&!!w&&(w===me||(M.mode==='teams'&&w.team===me.team)||M.mode==='coop'),bestScore:me.score|0,bestLevel:me.lvl|0,ko:me.ko|0};SAVE.record(m);ACH.check(m)}
+ $('mjWin').textContent=solo?'SCORE '+b0.score:NET.wl?NET.wl:w?(w.isMe?'YOU WIN!':w.name.toUpperCase()+' WINS'):'DRAW';
  const list=solo?boards:boards.slice().sort((a,b)=>(b.alive-a.alive)||(b.outAt-a.outAt)||(b.score-a.score));
  $('mjRanks').innerHTML=solo?'<li><span class="pos">★</span><span>Best score</span><em>'+best+'</em></li><li><span class="pos">LV</span><span>Level reached</span><em>'+b0.lvl+'</em></li>':
   list.slice(0,8).map((b,k)=>'<li style="animation-delay:'+k*60+'ms"><span class="pos">'+(k+1)+'</span><span style="color:'+b.col+'">'+esc(b.name)+'</span><em>'+(b.ko?b.ko+' KO · ':'')+b.score+'</em></li>').join('');
@@ -578,9 +638,10 @@ function showOver(w){state='over';
  $('mjAgain').textContent=hostOnline()?'BACK TO ROOM':'PLAY AGAIN';$('mjSetupBtn').textContent=R.online?'LEAVE ROOM':'SETUP';
  $('mjOver').hidden=false;root.querySelector('.pad').hidden=true;sfx('pick')}
 function hudInfo(){if(demo||state!=='play')return;const s=(matchT/60)|0,b=boards[NET.myIdx]||boards.find(b=>b.ctrl!=='cpu')||boards[0];
- const t=Math.floor(s/60)+':'+String(s%60).padStart(2,'0'),n=boards.filter(b=>b.alive).length;
+ const lim=boards.length>1?(M.len?M.len*60:M.mode==='coop'?180:0):0,rs=lim?Math.max(0,lim-s):s,t=Math.floor(rs/60)+':'+String(rs%60).padStart(2,'0'),n=boards.filter(b=>b.alive).length;
+ const MN={teams:'Teams',royale:'Battle royale',coop:'Co-op',race:'Race to 150'}[M.mode];
  $('mjInfo').innerHTML=(R.online?'Room <b>'+R.code+'</b> · ':'')+(isClient()&&NET.myIdx<0?'<b>Watching</b>, you play next round · ':'')+
-  (boards.length===1?'Best <b>'+Math.max(best,b.score)+'</b> · ':'<b>'+n+'</b> board'+(n===1?'':'s')+' left · ')+'Time <b>'+t+'</b>'}
+  (boards.length===1?'Best <b>'+Math.max(best,b.score)+'</b> · ':'<b>'+n+'</b> board'+(n===1?'':'s')+' left · ')+(MN?'<b>'+MN+'</b> · ':'')+(lim?'Time left <b>':'Time <b>')+t+'</b>'}
 function frame(now){
  if(isClient()&&!demo&&state==='play'&&NET.myIdx>=0)clientSend(now);
  if(hostOnline()){const inGame=!demo&&(state==='play'||state==='over');R.broadcast(now,inGame?snapshot():null,inGame)}

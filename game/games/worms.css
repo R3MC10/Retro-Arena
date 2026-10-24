@@ -26,9 +26,6 @@ body.touchplay .wpanel{top:calc(60px + env(safe-area-inset-top,0px));bottom:auto
 .wpanel button{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:4px;font-family:var(--pixel);font-size:8px;line-height:1.35;padding:6px 7px;min-height:46px;margin:0;text-align:left;white-space:normal}
 .wpanel button em{font-style:normal;color:var(--dim)}
 .wpanel button.on{box-shadow:inset 0 0 0 2px var(--hot);color:var(--hot)}
-/* host match settings */
-.mset{flex-wrap:wrap;gap:6px 12px;margin:6px 0}
-.mset label{font-size:13px;display:flex;gap:4px;align-items:center;white-space:nowrap}
 /* weapon preset editor */
 .wpre{position:fixed;inset:0;z-index:60;background:rgba(0,0,20,.8);overflow:auto;padding:16px}
 .wpre[hidden]{display:none}

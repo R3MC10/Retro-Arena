@@ -281,3 +281,8 @@ body:not(.playing)::after{content:"";position:fixed;left:-50%;right:-50%;bottom:
 button{border-radius:6px;background:linear-gradient(180deg,#4a4f8a,#24275a);border-color:#9aa4ff}
 .go{background:linear-gradient(180deg,#ff6a3c,#c81e00);border-color:#ffb08c}
 .pcard{backdrop-filter:blur(4px)}
+
+/* host match settings (shared by every game) */
+.mset{flex-wrap:wrap;gap:6px 12px;margin:6px 0}
+.mset label{font-size:13px;display:flex;gap:4px;align-items:center;white-space:nowrap}
+.mset .lbl{width:100%}
