@@ -6,7 +6,7 @@
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v34';
+RA.VERSION='v35';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -54,6 +54,17 @@ RA.fx={
  // additive coloured light (explosions, magic, lamps); stepped rings, like a PS1 light sprite
  light(c,x,y,r,col,a){const prev=c.globalCompositeOperation;c.globalCompositeOperation='lighter';c.fillStyle=col;
   for(let i=4;i>=1;i--){c.globalAlpha=(a==null?.5:a)*(.25+.18*(4-i));disc(c,x,y,Math.round(r*i/4))}c.globalAlpha=1;c.globalCompositeOperation=prev},
+ // PS1 "pre-rendered" sprite: a little scene of shaded spheres (x,y,z,r,col[,spec]) ray-cast into a w*h canvas,
+ // lit from the top left with a specular glint, a dark rim and ordered dither. Build once, cache, blit every frame.
+ model(w,h,balls,o){o=o||{};const k=document.createElement('canvas');k.width=w;k.height=h;const g=k.getContext('2d'),im=g.createImageData(w,h),d=im.data;
+  const L=[-.52,-.62,.58],ln=Math.hypot(...L),Lx=L[0]/ln,Ly=L[1]/ln,Lz=L[2]/ln,C=balls.map(b=>hex(b.col));
+  for(let py=0;py<h;py++)for(let px=0;px<w;px++){const X=px+.5,Y=py+.5;let best=-1e9,bi=-1,nx=0,ny=0,nz=0;
+   for(let i=0;i<balls.length;i++){const b=balls[i],dx=X-b.x,dy=Y-b.y,q=b.r*b.r-dx*dx-dy*dy;if(q<0)continue;const z=(b.z||0)+Math.sqrt(q);
+    if(z>best){best=z;bi=i;nx=dx/b.r;ny=dy/b.r;nz=Math.sqrt(q)/b.r}}
+   if(bi<0)continue;const b=balls[bi],c=C[bi],dif=Math.max(0,nx*Lx+ny*Ly+nz*Lz),hz=nz+Lz,hn=Math.hypot(nx+Lx,ny+Ly,hz),sp=Math.pow(Math.max(0,hz/hn),b.spec||18)*(b.gloss==null?.7:b.gloss);
+   let sh=(o.amb==null?.38:o.amb)+.8*dif;if(nz<.32)sh*=.55;const di=(BAYER[(py&3)*4+(px&3)]/16-.5)*10,q=(py*w+px)*4;
+   for(let j=0;j<3;j++)d[q+j]=Math.max(0,Math.min(255,c[j]*sh+sp*255+di));d[q+3]=255}
+  g.putImageData(im,0,0);return k},
  // soft round shadow under anything standing on the ground
  shadow(c,x,y,w,a){c.fillStyle='rgba(0,0,0,'+(a==null?.4:a)+')';const h=Math.max(1,Math.round(w/4));for(let dy=-h;dy<=h;dy++){const ww=Math.round(w*Math.sqrt(1-(dy/(h+.5))**2));c.fillRect(Math.round(x-ww),Math.round(y+dy),ww*2,1)}},
  // a sprite scaled and spun about its centre, crisp pixels
@@ -379,7 +390,7 @@ RA.rooms=o=>{
   '<p class="note online" data-r="who"></p><div class="list" data-r="rooms"></div><p class="note">'+(o.note||'')+'</p></div>'+
   '<div class="list" data-r="inroom" hidden><div class="row between"><div class="row"><span class="lbl">ROOM</span><span class="code" data-r="rcode"></span></div><button data-r="leave">LEAVE</button></div>'+
   '<div class="roster" data-r="roster"></div><div class="row" data-r="hostctl"><label>CPU players <select data-r="cpus"></select></label><button class="go" data-r="start">START</button></div>'+
-  '<p class="note" data-r="wait">Waiting for the host to start…</p></div>';
+  '<p class="note" data-r="wait">Waiting for the host to start…</p>'+(o.controls?'<div class="ctlCard"><b>CONTROLS</b><p>'+o.controls+'</p></div>':'')+'</div>';
  q('cpus').innerHTML=Array.from({length:max},(_,i)=>'<option>'+i+'</option>').join('');q('cpus').value=String(o.cpus==null?1:o.cpus);
  const R={lobby:null,room:null,user:null,me:null,code:'',host:false,order:[],names:{},hostGone:0,lastB:0,lastL:0,lastSend:'',lastSendT:0,
   get online(){return!!R.room}};

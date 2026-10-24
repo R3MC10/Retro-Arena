@@ -125,7 +125,7 @@ syncSlots();
 
 /* ---------- online room ---------- */
 const NET={matchId:0,mroster:[],ev:[],es:0,seen:0,chg:[],cs:0,cseen:0,chunk:0,winner:-1,myIdx:-1,fc:0,prev:{},lastAim:-99,lastAimT:0};
-const R=RA.rooms({game:'tanks',el:$('bcOnline'),colors:COLORS,max:MAXP,minPlayers:1,cpus:1,
+const R=RA.rooms({game:'tanks',controls:HOWTO,el:$('bcOnline'),colors:COLORS,max:MAXP,minPlayers:1,cpus:1,
  note:'Up to 20 crews per room, CPU crews fill seats. The host picks the mode above. Friends need to be signed in to claude.ai and have this page shared with them. '+HOWTO,
  onStart:startOnline,onState:applySnap,onLeave:()=>{if(!RA.menu.open&&RA.menu.current&&RA.menu.current.id==='tanks')toLobby()}});
 const isClient=()=>R.online&&!R.host;

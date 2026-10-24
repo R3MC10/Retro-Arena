@@ -191,7 +191,7 @@ const foe=(b,o)=>o!==b&&o.alive&&(M.mode!=='teams'||o.team!==b.team);
 const NET={matchId:0,mroster:[],ev:[],es:0,seen:0,winner:-1,myIdx:-1,mc:-1,rc:0,dc:0,tc:0,prev:{},out:[],os:0,incSeen:0};
 const R=RA.rooms({game:'jewels',el:$('mjOnline'),colors:COLORS,max:MAXP,minPlayers:2,cpus:1,
  note:'Up to 20 players per room, CPUs fill empty seats. Friends need to be signed in to claude.ai and have this page shared with them. '+HOWTO,
- onStart:startOnline,onState:applySnap,onLeave:()=>{if(!RA.menu.open&&RA.menu.current&&RA.menu.current.id==='jewels')toLobby()}});
+ controls:HOWTO,onStart:startOnline,onState:applySnap,onLeave:()=>{if(!RA.menu.open&&RA.menu.current&&RA.menu.current.id==='jewels')toLobby()}});
 const isClient=()=>R.online&&!R.host;
 const hostOnline=()=>R.online&&R.host;
 

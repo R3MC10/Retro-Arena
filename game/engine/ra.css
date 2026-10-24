@@ -286,3 +286,7 @@ button{border-radius:6px;background:linear-gradient(180deg,#4a4f8a,#24275a);bord
 .mset{flex-wrap:wrap;gap:6px 12px;margin:6px 0}
 .mset label{font-size:13px;display:flex;gap:4px;align-items:center;white-space:nowrap}
 .mset .lbl{width:100%}
+/* controls card shown inside every game room */
+.ctlCard{border:1px solid rgba(255,255,255,.35);border-radius:6px;padding:8px 10px;background:rgba(0,0,30,.35);margin-top:6px}
+.ctlCard b{font-family:var(--pixel);font-size:10px;color:#f8d878;letter-spacing:.08em}
+.ctlCard p{margin:4px 0 0;font-size:17px;line-height:1.25}

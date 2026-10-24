@@ -75,6 +75,7 @@ const root=RA.mount(`
         <button class="go" id="hstart">START</button>
       </div>
       <div class="row mset" id="msetO"></div>
+      <div class="ctlCard"><b>CONTROLS</b><p id="ctlTxt">A/D walk, Space jump (tap twice to backflip), W/S climb the rope and fly the jet pack. The mouse aims, left click fires (hold to charge). E/Q or the mouse wheel switch weapon, right-click or Tab opens the weapon list. Out of lives? Click the map to drop a crate. C opens chat, Esc for the menu. Gamepad: stick moves, A jump, B fire, Y/LB weapon.</p></div>
       <p class="note" id="rwait">Waiting for the host to start…</p>
     </div>
   </section>
@@ -386,7 +387,7 @@ function gameOver(p){
 /* ---------- physics ---------- */
 const curW=p=>DEF[p.wpn]||DEF.bazooka;
 function hitWorm(x,y,owner,age){
- return players.find(u=>u.alive&&!(u===owner&&age<12)&&Math.abs(u.x-x)<4&&y>u.y-9&&y<u.y+1.5);
+ return players.find(u=>u.alive&&!(u===owner&&age<12)&&Math.abs(u.x-x)<4.5&&y>u.y-15&&y<u.y+1.5);
 }
 function addFeed(k,v){
  NET.feed.push([k,v,++NET.fs]);if(NET.feed.length>4)NET.feed.shift();
@@ -865,6 +866,17 @@ function word(x,y){texts.push({x,y,s:WORDS[Math.floor(Math.random()*WORDS.length
 const GRUB=[[
  '...kkkk..','..klbbbk.','..klwwpk.','..kbwwpk.','..kbbbbk.','...kbbk..','..kbbbbk.','.kdbbbbk.','kdbbbdbk.','kkkkkkkk.'],[
  '...kkkk..','..klbbbk.','..klwwpk.','..kbwwpk.','..kbbbbk.','..kbbbk..','..kbbbbk.','..kbbbbdk','.kbdbbbbk','.kkkkkkkk']];
+// PS1 worms: pre-rendered shaded bodies (RA.fx.model), 4 walk frames + a flying frame, cached per colour
+const WSPR={};
+function wormSprite(col,f,flash){const key=col+f+(flash?1:0);if(WSPR[key])return WSPR[key];
+ const body=flash?'#ffffff':mix('#f4a0b0',col,.38),balls=[],air=f===4,ph=f*Math.PI/2;
+ for(let i=0;i<=9;i++){const t=i/9,st=t<.3?0:t>1?1:(t-.3)/.7,ss=st*st*(3-2*st);
+  const x=air?3.5+4*t:2+9*t-(t>.55?(t-.55)*5:0),y=air?18-14*t:18.4-12.5*ss-(t<.6&&!air?Math.max(0,Math.sin(t*9+ph))*2.2:0);
+  balls.push({x,y,z:0,r:2.1+2.5*t,col:body,spec:12,gloss:.55})}
+ const hx=balls[9].x,hy=balls[9].y;
+ balls.push({x:hx+1.8,y:hy-1.6,z:3.6,r:1.75,col:'#ffffff',spec:30,gloss:.9},{x:hx+3.2,y:hy-1.4,z:3.2,r:1.55,col:'#ffffff',spec:30,gloss:.9});
+ balls.push({x:hx+2.5,y:hy-1.2,z:5.1,r:1,col:'#101010',gloss:.9},{x:hx+3.9,y:hy-1,z:4.6,r:.9,col:'#101010',gloss:.9});
+ return WSPR[key]=RA.fx.model(18,21,balls,{amb:.28})}
 const shade={};
 function grubCols(c,flash){
  if(flash)return{k:'#000',b:'#fcfcfc',l:'#fcfcfc',d:'#fcfcfc',w:'#fcfcfc',p:'#fcfcfc'};
@@ -882,9 +894,13 @@ function drawWorm(u){
  if(u.hide>0)ctx.globalAlpha=.35;
  if(u.inv>0&&(tick>>2)%2){ctx.globalAlpha=1;return drawLabel(u,x,y)}
  if(u.grounded!==false)RA.fx.shadow(ctx,x,y+1,5,.35);
- const art=GRUB[u.grounded===false?1:(Math.round(u.x/2)&1)],cols=grubCols(u.col,u.flash>0&&(u.flash&2));
- for(let r=0;r<10;r++)for(let i=0;i<9;i++){const ch=art[r][i];if(ch==='.')continue;
-  ctx.fillStyle=cols[ch];ctx.fillRect(d>0?x-4+i:x+4-i,y-9+r,1,1)}
+ {const mv=Math.abs(u.x-(u._lx==null?u.x:u._lx))>.05;u._lx=u.x;if(mv)u._mv=8;else if(u._mv>0)u._mv--;
+  const fr=u.grounded===false?4:u._mv>0?(Math.round(u.x/1.5)&3):((tick>>5)&1)*2,img=wormSprite(u.col,fr,u.flash>0&&(u.flash&2));
+  ctx.save();ctx.translate(x,y+1);if(d<0)ctx.scale(-1,1);ctx.drawImage(img,-7,-21);
+  // held weapon: a shaded tube along the aim
+  {const a=-u.aim;ctx.translate(6,-9);ctx.rotate(a);const gr=ctx.createLinearGradient(0,-1.5,0,1.5);gr.addColorStop(0,'#c8ccd8');gr.addColorStop(.5,'#5c6070');gr.addColorStop(1,'#20222c');
+   ctx.fillStyle=gr;ctx.fillRect(-1,-1,7,2.5);ctx.fillStyle='#101014';ctx.fillRect(6,-1,1,2.5)}
+  ctx.restore()}
  ctx.globalAlpha=1;if(u.poison>0&&(tick>>3)&1){ctx.fillStyle='#a8f048';ctx.fillRect(x-1,y-14,1,1);ctx.fillRect(x+2,y-16,1,1)}
  drawLabel(u,x,y);
  const[cx,cy]=aimVec(u),ax=Math.round(u.x+cx*13),ay=Math.round(u.y-5+cy*13);
@@ -899,8 +915,8 @@ function drawWorm(u){
   ctx.fillStyle=(tick>>3)&1?u.col:'#fcfcfc';for(let i=-3;i<=3;i++){ctx.fillRect(tx+i,ty+i,1,1);ctx.fillRect(tx+i,ty-i,1,1)}}
 }
 function drawLabel(u,x,y){
- drawNum(u.hp,x,y-17,u.col);
- if(u.mine){ctx.fillStyle='#fcfcfc';ctx.fillRect(x-2,y-22,5,1);ctx.fillRect(x-1,y-21,3,1);ctx.fillRect(x,y-20,1,1)}
+ drawNum(u.hp,x,y-27,u.col);
+ if(u.mine){ctx.fillStyle='#fcfcfc';ctx.fillRect(x-2,y-32,5,1);ctx.fillRect(x-1,y-31,3,1);ctx.fillRect(x,y-30,1,1)}
 }
 // Dotted landing preview while charging (modern touch).
 function preview(u){
@@ -930,7 +946,28 @@ const SPR=[['kkkk','kwwk','kwwk','kkkk'],['.kk.','kggk','kggk','.kk.'],['kkk','k
 // walkers waddle: their leg row shifts every few frames
 const WALKS=new Set([8,9,14,18]);
 const GRAVE=['.kkk.','kllwk','kwwwk','kllwk','kllsk','kllsk','kkkkk'];
+// PS1 shots: shaded models for the round ones, crates as lit wooden boxes
+const M3=RA.fx.model,PMOD={
+ 0:M3(9,5,[{x:2,y:2.5,r:1.8,col:'#8c94a8'},{x:4,y:2.5,r:2,col:'#9ca4b8'},{x:6.2,y:2.5,r:1.8,col:'#d83020',spec:20}]),
+ 1:M3(6,6,[{x:3,y:3.2,r:2.6,col:'#3c8c30'},{x:3,y:.9,r:.9,z:1,col:'#c0c0c8'}]),
+ 2:M3(6,6,[{x:3,y:3.2,r:2.5,col:'#1c5c24'},{x:2,y:2,r:.8,z:2,col:'#f8d020'}]),
+ 5:M3(8,9,[{x:4,y:5,r:3.3,col:'#f0c020',spec:30,gloss:1},{x:4,y:1.5,r:1,z:1,col:'#f8f0a0'}]),
+ 6:M3(5,5,[{x:2.5,y:2.5,r:2,col:'#6c6c74'}]),
+ 10:M3(7,5,[{x:3.5,y:3.6,r:2.6,col:'#5c1010',spec:20},{x:3.5,y:1.2,r:.8,z:1,col:'#ff3020'}]),
+ 12:M3(7,7,[{x:3.5,y:3.5,r:3,col:'#ff7020',spec:6,gloss:.9}]),
+ 8:M3(10,8,[{x:3,y:4.5,r:2.6,col:'#f4f4f0'},{x:5.2,y:4,r:2.8,col:'#ffffff'},{x:4,y:2.8,r:2,col:'#f0f0ec'},{x:8,y:3.4,r:1.8,z:1,col:'#202020'}])};
+const CRS={};
+function crateSprite(kind){if(CRS[kind])return CRS[kind];const k=document.createElement('canvas');k.width=k.height=10;const g=k.getContext('2d');
+ const base=kind==='h'?[236,236,236]:kind==='p'?[150,80,210]:[176,118,60];
+ for(let y=0;y<10;y++)for(let x=0;x<10;x++){let l=1.05-y*.03-x*.025;if(y===0||x===0)l=1.35;if(y===9||x===9)l=.45;if(kind==='w'&&(y===3||y===6))l*=.7;
+  if(kind==='w'&&(x===1||x===8)&&y>0&&y<9)l*=.8;const dth=(BAY[(y&3)*4+(x&3)]/16-.5)*14;g.fillStyle='rgb('+base.map(v=>Math.max(0,Math.min(255,v*l+dth))|0)+')';g.fillRect(x,y,1,1)}
+ if(kind==='h'){g.fillStyle='#d82020';g.fillRect(4,2,2,6);g.fillRect(2,4,6,2)}
+ if(kind==='p'){g.fillStyle='#fff';g.fillRect(3,2,4,1);g.fillRect(6,3,1,2);g.fillRect(4,5,2,1);g.fillRect(4,7,2,1)}
+ if(kind==='w'){g.fillStyle='#f8d040';g.fillRect(4,4,2,2)}
+ g.strokeStyle='rgba(0,0,0,.8)';g.strokeRect(.5,.5,9,9);return CRS[kind]=k}
+const BAY=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
 function drawProj(k,x,y){
+ if(PMOD[k]){const m=PMOD[k];ctx.drawImage(m,x-(m.width>>1),y-(m.height>>1));if(k===0&&(tick&2)){ctx.fillStyle='#ffc040';ctx.fillRect(x-5,y-1,2,2)}return}
  if(k===13){const c=['#f8b800','#e45c10','#d82800'];ctx.fillStyle=c[(x+tick>>2)%3];ctx.fillRect(x,y-1-((x+tick>>1)&1),1,2);ctx.fillStyle=c[(x+tick>>1)%3];ctx.fillRect(x+((tick>>2)&1?1:-1),y,1,1);return}
  let a=SPR[k]||SPR[0];
  if(WALKS.has(k)&&(tick>>3)&1){const l=a[a.length-1];a=a.slice(0,-1).concat(l.slice(-1)+l.slice(0,-1))}
@@ -1021,7 +1058,7 @@ function render(){
  ctx.drawImage(tCan,0,0);
  for(const c of crates){const x=c.x-4,y=Math.round(c.y)-7;
   if(!c.landed)blit(ctx,CHUTE,x-1,y-7,CR_COLS);
-  blit(ctx,c.party?CRATE_P:c.hp?CRATE_H:CRATE_W,x,y,CR_COLS);}
+  RA.fx.shadow(ctx,c.x,Math.round(c.y)+1,5,c.landed?.35:0);ctx.drawImage(crateSprite(c.party?'p':c.hp?'h':'w'),x-1,y-2);}
  for(const g of graves)blit(ctx,GRAVE,Math.round(g.x)-2,Math.round(g.y)-3,PC);
  for(const u of players)if(u.alive&&showWorm(u))drawWorm(u);
  for(const p of (isClient()?projs:projs.map(projView))){if(!seen(p.x,p.y))continue;const x=Math.round(p.x),y=Math.round(p.y);
@@ -1029,11 +1066,12 @@ function render(){
   if(p.f)drawNum(p.f,x,y-10,'#fcfcfc')}
  for(const p of parts){
   if(p.ring){const r=p.r,t=p.t;
-   RA.fx.light(ctx,p.x,p.y,Math.round(r*1.6),'#ffa040',t/14);
-   if(t>6)pixCircle(p.x,p.y,Math.round(r*.9),'#fcfcfc');
-   else if(t>3)pixCircle(p.x,p.y,Math.round(r*.7),'#f8b800');
-   else pixCircle(p.x,p.y,Math.round(r*.4),'#d82800');}
-  else if(p.smoke)pixCircle(p.x,p.y,Math.max(1,Math.round(p.s*Math.min(1,p.t/30))),p.t>40?'#bcbcbc':'#7c7c7c');
+   RA.fx.light(ctx,p.x,p.y,Math.round(r*1.8),'#ff9030',t/12);
+   // fireball: white-hot core, orange body, red rim, shrinking as it burns out
+   const f=t/9,R=Math.max(1,r*(.55+.5*f)),g=ctx.createRadialGradient(p.x-R*.2,p.y-R*.25,0,p.x,p.y,R);
+   g.addColorStop(0,'rgba(255,255,230,'+Math.min(1,f*1.4)+')');g.addColorStop(.35,'rgba(255,200,60,'+Math.min(1,f*1.2)+')');g.addColorStop(.75,'rgba(232,80,20,'+f+')');g.addColorStop(1,'rgba(120,20,10,0)');
+   ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,R,0,7);ctx.fill();}
+  else if(p.smoke){const R=Math.max(1,p.s*(1.3-p.t/80)),a=Math.min(.55,p.t/60),g=ctx.createRadialGradient(p.x-R*.3,p.y-R*.3,0,p.x,p.y,R);g.addColorStop(0,'rgba(190,186,180,'+a+')');g.addColorStop(1,'rgba(70,66,64,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,R,0,7);ctx.fill()}
   else{ctx.fillStyle=p.col;ctx.fillRect(Math.round(p.x),Math.round(p.y),1,1)}}
  const x0=Math.max(0,Math.floor(cam.x)-4),x1=Math.min(W,Math.ceil(cam.x+VW/z)+4);
  {const yb=Math.max(H,cam.y+VH/z)+4,wg=ctx.createLinearGradient(0,WATER,0,WATER+40);wg.addColorStop(0,'rgba(40,120,200,.78)');wg.addColorStop(1,'rgba(8,24,72,.95)');
@@ -1397,6 +1435,6 @@ RA.register({id:'worms',name:'WORMS',kind:'Artillery',players:'2-20 players',rea
  onEsc(){if(panelOn){openPanel(false);return true}},
  onQuit(){if(NET.mode==='online'){leaveRoom();return}
   players=[];projs=[];crates=[];setSize(2);genTerrain((Math.random()*1e9)|0);showMenu()}});
-window.__gb={solid:(x,y)=>solid(x,y),get projs(){return projs},explodeAt:(x,y)=>explode(x,y,20,25,null),get cam(){return cam},get VW(){return VW},get VH(){return VH},get state(){return state},get players(){return players},get crates(){return crates},fireW:(p)=>fire(p),partyCrate:(p,i)=>{PARTY[i][1](p)},PARTYN:()=>PARTY.length,WLIST,spawnCrate,get M(){return M},get theme(){return THEME.n},update,newLocalGame,snapshot,applySnap,NET,
+window.__gb={wormSprite,solid:(x,y)=>solid(x,y),get projs(){return projs},explodeAt:(x,y)=>explode(x,y,20,25,null),get cam(){return cam},get VW(){return VW},get VH(){return VH},get state(){return state},get players(){return players},get crates(){return crates},fireW:(p)=>fire(p),partyCrate:(p,i)=>{PARTY[i][1](p)},PARTYN:()=>PARTY.length,WLIST,spawnCrate,get M(){return M},get theme(){return THEME.n},update,newLocalGame,snapshot,applySnap,NET,
  terrSum:()=>{let s=0;for(let i=0;i<terr.length;i++)if(terr[i])s=(s+i*7)%1000003;return s}};
 })();
