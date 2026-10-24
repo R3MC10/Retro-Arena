@@ -156,5 +156,5 @@ K=RA.kit({id:'galaxian',name:'GALAXIAN',kind:'Space shooter',players:'1-20 playe
  alive:i=>!!ships[i]&&!ships[i].out,start,step,local,upload,follow,snap,apply,render,bot,onFx,teamOf:i=>K.mode===0?0:i,
  ranks:()=>ships.slice().sort((a,b)=>b.score-a.score).map(s=>[s.name,s.col,s.score+' · '+s.kills+' aliens']),
  result:(i,w)=>{const s=ships[i];return{won:!!w&&(w.coop!=null?!!w.coop:w.i===i),kills:s.kills,bestScore:s.score}}});
-window.__gx={get ships(){return ships},get aliens(){return aliens},K};
+window.__gx={P:()=>Math.round(ships[1].x),get ships(){return ships},get aliens(){return aliens},K};
 })();
