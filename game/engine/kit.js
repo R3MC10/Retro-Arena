@@ -123,7 +123,7 @@ RA.kit=o=>{
  function enterPlay(tp){document.body.classList.add('playing');document.body.classList.toggle('touchplay',tp);
   document.body.classList.toggle('mouseaim',!!o.aim&&!touchDev&&(R.online?NET.myIdx>=0:K.seats.some(s=>s.ctrl==='mk')));
   root.querySelector('.pad').hidden=!tp;for(const s of['Title','Over','Setup','OnlinePanel','Tabs','Back'])q(s).hidden=true;root.querySelectorAll('.kmode').forEach(e=>e.hidden=true);
-  RA.hud.disarm();lastTrack=-1;K.track(1+Math.floor(Math.random()*Math.max(1,(o.music||[]).length-1)))}
+  RA.hud.disarm();lastTrack=-1;const nm=(o.music||[]).length;K.track(1+Math.floor(Math.random()*Math.max(1,nm>3?nm-2:nm-1)))}
  function startLocal(){save();RA.audio.ensure();const n=nSel(),ctr=[...Array(n)].map((_,i)=>q('c'+i).value),nm=RA.player.seats(ctr);
   NET.myIdx=-1;K.myIdx=-1;K.seed=(Math.random()*1e9)|0;begin(ctr.map((c,i)=>({ctrl:c,name:nm[i]})),selMode,false);enterPlay(K.seats.some(s=>s.ctrl==='touch'))}
  function startOnline(list){RA.audio.ensure();NET.id=(Math.random()*1e9)|0;NET.r=list.map(x=>x.peer);K.seed=(Math.random()*1e9)|0;let c=0;
@@ -148,7 +148,7 @@ RA.kit=o=>{
   showS();q('Info').textContent=R.online?'Room '+R.code:'';setTab(onlineTab||R.online);if(R.online)R.render();
   NET.myIdx=-1;K.myIdx=-1;startDemo();setMode(selMode);RA.music.play(id,0);lastTrack=0}
  // ---- snapshots
- function snapshot(){const g=Object.assign({ph:K.state==='over'?'over':'play',id:NET.id,r:NET.r,md:K.mode,bs:S,sd:K.seed,n:K.seats.length,t:K.tick},o.snap());
+ function snapshot(){const g=Object.assign({ph:K.state==='over'?'over':'play',id:NET.id,r:NET.r,md:K.mode,bs:S,sd:K.seed,n:K.seats.length,t:K.tick,mt:lastTrack},o.snap());
   if(K.state==='over'){g.w=K.winner;g.rk=ranksCache}g.e=NET.ev.slice();
   while(JSON.stringify(g).length>3800&&g.e.length)g.e.shift();return g}
  function applySnap(g){if(!g)return;if(g.bs)S=cleanS(g.bs);
@@ -158,7 +158,7 @@ RA.kit=o=>{
    K.seed=g.sd|0;NET.myIdx=me?g.r.indexOf(me.peer):-1;K.myIdx=NET.myIdx;const all=R.room?R.room.peers():[];let c=0;
    begin(g.r.slice(0,n).map((p,i)=>({ctrl:p&&me&&p===me.peer?'me':'net',peer:p,name:p?(p===(me&&me.peer)?(RA.player.name||'YOU'):R.name(all.find(x=>x.peer===p),i)):'CPU '+(++c)})),Math.max(0,Math.min(modes.length-1,g.md|0)),false);
    enterPlay(touchDev&&NET.myIdx>=0)}
-  K.tick=g.t|0;o.apply(g);
+  K.tick=g.t|0;o.apply(g);if(typeof g.mt==='number'&&g.mt>=0&&g.mt!==lastTrack&&K.state==='play')K.track(g.mt);
   for(const e of g.e||[]){if((e[0]|0)<=NET.seen)continue;NET.seen=e[0]|0;if(o.onFx)o.onFx(e[1],e.slice(2))}
   if(g.ph==='over'&&K.state!=='over'){K.winner=g.w||null;ranksCache=Array.isArray(g.rk)?g.rk:[];showOver()}}
  const _bc=R.broadcast;R.broadcast=(now,g,inGame)=>{if(!inGame&&R.host&&R.room){if(now-R.lastB<300)return;R.lastB=now;const ids=R.roster().map(p=>p.peer);

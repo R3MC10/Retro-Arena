@@ -18,7 +18,7 @@ let K,planes=[],foes=[],guns=[],shots=[],crates=[],bombs=[],parts=[],texts=[],sm
 const wrap=(v,m)=>((v%m)+m)%m,wd=(a,b,m)=>{let d=b-a;if(d>m/2)d-=m;if(d<-m/2)d+=m;return d};
 const teamOf=i=>K.mode===1?i%2:K.mode===2?0:i;
 function spawnPos(i){const a=i/Math.max(1,planes.length)*Math.PI*2;return[MW/2+Math.cos(a)*500,MH/2+Math.sin(a)*500,a+Math.PI]}
-function start(seats,md,S,seed){champ=-1;planes=seats.map((s,i)=>({i,name:s.name,col:md===1?TEAMC[i%2]:s.col,x:0,y:0,a:0,sp:2,hp:3,maxhp:3,alive:true,dead:0,kills:0,deaths:0,score:0,lives:S.lives,out:false,fx:{},inv:120,cd:0,shotSeq:0,hitLog:[],rSeen:0,myShots:[],bombCd:0}));
+function start(seats,md,S,seed){champ=-1;wave=0;planes=seats.map((s,i)=>({i,name:s.name,col:md===1?TEAMC[i%2]:s.col,x:0,y:0,a:0,sp:2,hp:3,maxhp:3,alive:true,dead:0,kills:0,deaths:0,score:0,lives:S.lives,out:false,fx:{},inv:120,cd:0,shotSeq:0,hitLog:[],rSeen:0,myShots:[],bombCd:0}));
  planes.forEach((p,i)=>{const[x,y,a]=spawnPos(i);Object.assign(p,{x,y,a})});
  const rr=RA.util.mulberry(seed);deco=[];for(let k=0;k<140;k++)deco.push({x:rr()*MW,y:rr()*MH,k:Math.floor(rr()*4),r:6+rr()*14});
  clouds=Array.from({length:26},()=>({x:rr()*MW,y:rr()*MH,r:30+rr()*50,hi:rr()<.4}));
@@ -38,7 +38,7 @@ function stepMyShots(p){for(const s of p.myShots){s.x=wrap(s.x+s.vx,MW);s.y=wrap
   if(s.t>0&&zep&&Math.hypot(wd(s.x,zep.x,MW)/2.4,wd(s.y,zep.y,MH))<12){s.t=0;claim(p,'z',0)}
   if(s.t>0)for(const c of crates)if(Math.hypot(wd(s.x,c.x,MW),wd(s.y,c.y,MH))<8){s.t=0;claim(p,'c',c.id);break}}
  p.myShots=p.myShots.filter(s=>s.t>0)}
-function claim(p,k,id){const e=[++p.shotSeq,k,id];p.hitLog.push(e);if(p.hitLog.length>10)p.hitLog.shift();if(!K.isClient())resolve(p,e);burst(0,0,0)}
+function claim(p,k,id){const e=[++p.shotSeq,k,id];p.hitLog.push(e);if(p.hitLog.length>10)p.hitLog.shift();if(!K.isClient())resolve(p,e)}
 // host: apply a hit someone called
 function resolve(p,[,k,id]){if(k==='p'){const o=planes[id];if(!o||!o.alive||o.inv>0)return;hurt(o,1,p)}
  else if(k==='f'){const f=foes.find(x=>x.id===id);if(!f)return;if(--f.hp<=0){f.dead=true;p.kills++;p.score+=f.baron?1000:200;boom(f.x,f.y,'#c03030');if(f.baron)say(f.x,f.y,'RED BARON DOWN!','#f8d040');maybeCrate(f.x,f.y,.35)}}
@@ -50,7 +50,6 @@ function maybeCrate(x,y,ch){if(K.S.items==='off'||Math.random()>ch)return;let k=
 function item(p,k){say(p.x,p.y-14,ITEMS[k].n,ITEMS[k].c);sfx('pick');const f=p.fx;if(k===1)f.twin=1200;else if(k===2)f.burn=600;else if(k===3)f.armor=2;else if(k===4)f.smoke=600;else if(k===5)p.hp=p.maxhp;
  else{const rv=planes.filter(o=>o!==p&&o.alive&&teamOf(o.i)!==teamOf(p.i));if(k===8){for(const o of rv)o.fx.wind=300;}else if(rv.length){const t=rv[Math.floor(Math.random()*rv.length)];if(k===6)t.fx.stall=360;else t.fx.oil=360;say(t.x,t.y-14,ITEMS[k].n+'!',ITEMS[k].c)}}}
 function boom(x,y,col){sfx('boom');for(let q=0;q<14;q++)parts.push({x,y,vx:(Math.random()-.5)*3,vy:(Math.random()-.5)*3,t:40,col:q%2?col:'#f8a030'});K.fx('x',Math.round(x),Math.round(y),col)}
-function burst(){}
 function say(x,y,s,col){texts.push({x,y,s,col,t:70});K.fx('t',Math.round(x),Math.round(y),s,col)}
 /* ---- host step */
 function step(){const S=K.S;

@@ -83,7 +83,7 @@ function route(from,code){const tg=boards.filter(o=>o!==from&&!o.out);if(!tg.len
 function outflow(b){// local boards: take what the board queued
  while(b.outq.length){const c=b.outq.shift();b.outSeq=(b.outSeq|0)+1;(b.outLog=b.outLog||[]).push([b.outSeq,c]);if(b.outLog.length>12)b.outLog.shift();if(!K.isClient())route(b,c)}}
 function step(){for(const b of boards){b.inSeq=b.inSeq|0;const s=K.seats[b.i];
-  if(s.ctrl==='net'){const d=K.remote(b.i);if(d){const wasOut=b.out;unpack(b,d);for(const e of d.oq||[]){if((e[0]|0)>(b.rSeen|0)){b.rSeen=e[0]|0;route(b,String(e[1]))}}if(!wasOut&&b.out)b.outAt=K.tick}continue}
+  if(s.ctrl==='net'){if(b.tagT>0)b.tagT--;const d=K.remote(b.i);if(d){const wasOut=b.out;unpack(b,d);for(const e of d.oq||[]){if((e[0]|0)>(b.rSeen|0)){b.rSeen=e[0]|0;route(b,String(e[1]))}}if(!wasOut&&b.out)b.outAt=K.tick}continue}
   if(b.tagT>0)b.tagT--;stepBoard(b,K.inp(b.i));outflow(b)}
  const alive=boards.filter(live),lim=K.S.len*3600;
  if(boards.length>1?alive.length<=1:!alive.length){K.end(alive[0]?{i:alive[0].i}:null);return}

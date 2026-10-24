@@ -44,7 +44,7 @@ function newRound(){const sp=buildMap(men.length,K.seed+round*7919);bombs=[];fla
  if(K.mode===2){const n=Math.min(20,4+men.length*2+round*2);for(let k=0;k<n;k++){for(let t=0;t<100;t++){const x=1+Math.floor(Math.random()*(W-2)),y=1+Math.floor(Math.random()*(H-2));
    if(map[at(x,y)]===0&&!sp.some(p=>Math.abs(p[0]-x)+Math.abs(p[1]-y)<5)){creeps.push({x:x*TS+8,y:y*TS+8,d:Math.floor(Math.random()*4),hp:k%5===4?2:1,t:0});break}}}}
  round++;K.fx('r',round)}
-function start(seats,md,S,seed){men=seats.map((s,i)=>({i,name:s.name,col:md===1?TEAMC[i%2]:s.col,wins:0,kills:0,ko:0}));round=0;if(K.isClient()){buildMap(seats.length,seed);return}newRound()}
+function start(seats,md,S,seed){lastCoop=null;men=seats.map((s,i)=>({i,name:s.name,col:md===1?TEAMC[i%2]:s.col,wins:0,kills:0,ko:0}));round=0;if(K.isClient()){buildMap(seats.length,seed);return}newRound()}
 /* ---- movement with corner assist, like the original */
 const DX=[0,1,0,-1],DY=[-1,0,1,0];
 const solidAt=(tx,ty,m)=>{if(!inside(tx,ty))return true;const v=map[at(tx,ty)];if(v)return true;const b=bombs.find(b=>b.tx===tx&&b.ty===ty&&!b.air);
@@ -67,7 +67,7 @@ function land(b){let tx=b.gx,ty=b.gy;// wraps round the arena and bounces off bl
  b.tx=tx;b.ty=ty;b.air=0;sfx('bput');
  for(const m of men)if(m.alive&&Math.floor(m.x/TS)===tx&&Math.floor(m.y/TS)===ty){m.stun=40}}
 /* ---- explosions */
-function explode(b){if(b.done)return;b.done=true;sfx('kaboom');K.fx('b',b.tx,b.ty);addFlame(b.tx,b.ty,b.own,'c');
+function explode(b){if(b.done)return;b.done=true;sfx('kaboom');shake=4;K.fx('b',b.tx,b.ty);addFlame(b.tx,b.ty,b.own,'c');
  for(let d=0;d<4;d++)for(let k=1;k<=b.fire;k++){const x=b.tx+DX[d]*k,y=b.ty+DY[d]*k;if(!inside(x,y))break;const v=map[at(x,y)];
   if(v===1||v===3)break;
   const ob=bombs.find(o=>!o.done&&!o.air&&o.tx===x&&o.ty===y);if(ob){ob.t=Math.min(ob.t,3);}

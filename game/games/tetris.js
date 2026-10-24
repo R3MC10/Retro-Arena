@@ -86,7 +86,7 @@ function unpack(b,d){if(!d)return;if(typeof d.w==='string'&&d.w.length===CW*CH)b
  b.pendN=d.p|0;b.lines=d.l|0;b.score=d.s|0;b.kos=d.k|0;b.badges=d.bd|0;b.out=!!d.o;b.fxs=String(d.fx||'');if(d.t&&d.t!==b.tag){b.tag=d.t;b.tagT=60}}
 function start(seats,md,S,seed){boards=seats.map((s,i)=>newBoard(i,s.name,s.col))}
 function step(){for(const b of boards){const s=K.seats[b.i];
-  if(s.ctrl==='net'){const d=K.remote(b.i);if(d){const wasOut=b.out;unpack(b,d);for(const e of d.oq||[])if((e[0]|0)>b.rSeen){b.rSeen=e[0]|0;route(b,String(e[1]))}if(!wasOut&&b.out)b.outAt=K.tick}continue}
+  if(s.ctrl==='net'){if(b.tagT>0)b.tagT--;const d=K.remote(b.i);if(d){const wasOut=b.out;unpack(b,d);for(const e of d.oq||[])if((e[0]|0)>b.rSeen){b.rSeen=e[0]|0;route(b,String(e[1]))}if(!wasOut&&b.out)b.outAt=K.tick}continue}
   stepBoard(b,K.inp(b.i));outflow(b)}
  checkKOs();const al=boards.filter(b=>!b.out),lim=K.S.len*3600;
  if(boards.length>1?al.length<=1:!al.length){K.end(al[0]?{i:al[0].i}:null);return}
