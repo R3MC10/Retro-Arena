@@ -60,7 +60,11 @@ RA.register({id:'pacman',name:'PAC-MAN',kind:'Maze chase',players:'2-20 players'
 - Modern feel in every game: mouse aim, click to fire, sensible keys (Space jump, E switch), gamepad and touch.
 - Full-window play that scales cleanly to any resolution.
 - Each game has its own set of music tracks.
-- PS1 look and art style, in 2.5D: full colour, shaded pre-rendered-style sprites lit from the top left, dithered gradients (`RA.fx.gradient`), coloured light (`RA.fx.light`), scaled and spun sprites (`RA.fx.sprite`), textured perspective floors (`RA.fx.floor`), soft shadows (`RA.fx.shadow`), parallax layers. 3D originals become pseudo-3D (raycaster, scaling road, sprite scaling). The shared UI (blue gradient windows, metal buttons) comes from engine/ra.css. Up to 20 players.
+- Art style (owner's call, Oct 2026): hand-made retro pixel art, not shaded spheres. Draw into a low-res screen with
+  `RA.pix.screen()` (engine/pix.js), make sprites by hand as rows of palette letters (`RA.pix.sprite`, team colours with
+  `RA.pix.recolor`), tilt them with `RA.pix.rot`, and write text with the bitmap font `RA.pix.text`. `games/excite.js` is the example.
+  Play-test every game as a person would (hold the keys, read the screen) before calling it done.
+- Older note: PS1 look and art style, in 2.5D: full colour, shaded pre-rendered-style sprites lit from the top left, dithered gradients (`RA.fx.gradient`), coloured light (`RA.fx.light`), scaled and spun sprites (`RA.fx.sprite`), textured perspective floors (`RA.fx.floor`), soft shadows (`RA.fx.shadow`), parallax layers. 3D originals become pseudo-3D (raycaster, scaling road, sprite scaling). The shared UI (blue gradient windows, metal buttons) comes from engine/ra.css. Up to 20 players.
 
 `games/jewels.js` is the compact worked example (online rooms via `RA.rooms`, CPUs, power-ups, targeting). `games/worms.js` is the big one (weapons, physics, fog of war, camera).
 
