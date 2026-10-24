@@ -538,8 +538,10 @@ function stepProj(p){
  if(p.w.walker)return stepWalker(p);
  if(p.dug){if(--p.dg<=0||p.x<0||p.x>=W||p.y>=H){boom(p,p.x,p.y);return}p.x+=p.dx;p.y+=p.dy;if(p.dg%3===0)digAt(p.x,p.y,5);
   if(hitWorm(p.x,p.y,p.owner,99)){boom(p,p.x,p.y);return}return}
- if(p.w.home&&p.age>20&&p.tx!=null){const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy)||1,sp=Math.max(3.2,Math.hypot(p.vx,p.vy));
-  p.vx+=(dx/d*sp-p.vx)*.14;p.vy+=(dy/d*sp-p.vy)*.14-G;if(p.age%3===0)parts.push({x:p.x,y:p.y,vx:0,vy:0,t:12,col:'#bcbcbc',g:0})}
+ if(p.w.home&&p.age===1&&p.tx!=null){let best=null,bd=1e9;for(const u of players){if(!u.alive||u===p.owner||(M.mode==='teams'&&p.owner&&u.team===p.owner.team))continue;const d=Math.hypot(u.x-p.tx,u.y-5-p.ty);if(d<bd){bd=d;best=u}}p.lock=best}
+ if(p.w.home&&p.lock&&p.lock.alive){p.tx=p.lock.x;p.ty=p.lock.y-5}
+ if(p.w.home&&p.age>14&&p.tx!=null){const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy)||1,sp=Math.max(3.2,Math.min(5,Math.hypot(p.vx,p.vy)));
+  p.vx+=(dx/d*sp-p.vx)*.2;p.vy+=(dy/d*sp-p.vy)*.2-G;if(p.age%3===0)parts.push({x:p.x,y:p.y,vx:0,vy:0,t:12,col:'#bcbcbc',g:0})}
  p.vy+=G;if(p.w.wind)p.vx+=wind*.006;
  const sticky=p.w.fuse||p.w.mine;
  const steps=Math.ceil(Math.hypot(p.vx,p.vy))+1;
@@ -1393,6 +1395,6 @@ RA.register({id:'worms',name:'WORMS',kind:'Artillery',players:'2-20 players',rea
  onEsc(){if(panelOn){openPanel(false);return true}},
  onQuit(){if(NET.mode==='online'){leaveRoom();return}
   players=[];projs=[];crates=[];setSize(2);genTerrain((Math.random()*1e9)|0);showMenu()}});
-window.__gb={solid:(x,y)=>solid(x,y),get projs(){return projs},explodeAt:(x,y)=>explode(x,y,20,25,null),get cam(){return cam},get VW(){return VW},get VH(){return VH},get state(){return state},get players(){return players},get crates(){return crates},partyCrate:(p,i)=>{PARTY[i][1](p)},PARTYN:()=>PARTY.length,WLIST,spawnCrate,get M(){return M},get theme(){return THEME.n},update,newLocalGame,snapshot,applySnap,NET,
+window.__gb={solid:(x,y)=>solid(x,y),get projs(){return projs},explodeAt:(x,y)=>explode(x,y,20,25,null),get cam(){return cam},get VW(){return VW},get VH(){return VH},get state(){return state},get players(){return players},get crates(){return crates},fireW:(p)=>fire(p),partyCrate:(p,i)=>{PARTY[i][1](p)},PARTYN:()=>PARTY.length,WLIST,spawnCrate,get M(){return M},get theme(){return THEME.n},update,newLocalGame,snapshot,applySnap,NET,
  terrSum:()=>{let s=0;for(let i=0;i<terr.length;i++)if(terr[i])s=(s+i*7)%1000003;return s}};
 })();

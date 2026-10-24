@@ -6,7 +6,7 @@
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v31';
+RA.VERSION='v32';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -119,7 +119,7 @@ function blip(f){ensure();if(!AC)return;try{const now=AC.currentTime,o=AC.create
  g.gain.setValueAtTime(.06,now);g.gain.exponentialRampToValueAtTime(.001,now+.08);o.connect(g);g.connect(fxOut());o.start();o.stop(now+.09)}catch(e){}}
 RA.audio={ensure,sfx,blip,vol:VOL,setVol(k,v){VOL[k]=v;applyVol();try{localStorage.setItem('ra-sound',JSON.stringify(VOL))}catch(e){}},add:(name,fn)=>{SFX[name]=fn},get ctx(){return AC},get noise(){return noise}};
 
-/* ---------- music: every game has its own set of 8-bit tracks ---------- */
+/* ---------- music: every game has its own set of tracks, played on a PS1-style synth (warm pads, filtered leads, reverb) ---------- */
 // A track: 4 bars of 16th steps. mel = pulse lead ("-" holds, "." rests), ch = one chord per bar (drives bass + arpeggio),
 // dr = drum loop (k kick, s snare, h hat). Make one with RA.music.track(name, bpm, chords, drums, melody).
 const music=RA.music=(()=>{
@@ -129,28 +129,45 @@ const music=RA.music=(()=>{
  const chordOf=c=>{const m=/^([A-G][#b]?)(m?)$/.exec(c),r=NOTE[m[1].toLowerCase()];return[r,r+(m[2]?3:4),r+7]};
  const track=(n,bpm,ch,dr,mel)=>({n,bpm,ch,dr,mel:mel.trim().split(/\s+/)});
  const SETS={
-  menu:[track('Cartridge Select',112,['F','Dm','Bb','C'],'k.......s.......',
-   'a5 - - c6 - - a5 - g5 - f5 - - - c5 - d5 - f5 - a5 - - - g5 - f5 - d5 - - - bb4 - d5 - f5 - - - g5 - f5 - d5 - - . e5 - g5 - c6 - - - bb5 - a5 - g5 - - -')]};
+  menu:[track('Memory Card',84,['Am','F','C','G'],'k.....h.s.....h.',
+   'e5 - - - - - d5 - c5 - - - - - - - a4 - - - c5 - - - f5 - - - e5 - - - g5 - - - - - e5 - d5 - - - c5 - - - d5 - - - - - - - b4 - - - - - - -')]};
  let on=true;try{on=localStorage.getItem('ra-music')!=='off'}catch(e){}
  let cur=null,set='',idx=0,step=0,next=0,timer=0,gain=null,pulseW=null;
- function tone(f,t,d,type,v){const o=AC.createOscillator(),g=AC.createGain();if(type==='pulse')o.setPeriodicWave(pulseW);else o.type=type;o.frequency.value=f;
-  g.gain.setValueAtTime(v,t);g.gain.setValueAtTime(v,t+d*.7);g.gain.linearRampToValueAtTime(0,t+d);o.connect(g);g.connect(gain);o.start(t);o.stop(t+d+.02)}
+ let lpf=null;
+ // voice: detuned oscillators -> envelope -> optional lowpass -> bus. a = attack, rel = release (s)
+ function voice(f,t,d,types,v,{a=.01,rel=.12,cut=0,det=7,vib=0}={}){const g=AC.createGain();let out=g;
+  if(cut){const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=cut;lp.Q.value=.7;g.connect(lp);out=lp}
+  out.connect(gain);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+a);g.gain.setValueAtTime(v,t+Math.max(a,d-rel*.5));g.gain.linearRampToValueAtTime(0,t+d+rel);
+  types.forEach((ty,i)=>{const o=AC.createOscillator();o.type=ty;o.frequency.value=f;o.detune.value=(i-(types.length-1)/2)*det;
+   if(vib){const l=AC.createOscillator(),lg=AC.createGain();l.frequency.value=5;lg.gain.value=vib;l.connect(lg);lg.connect(o.detune);l.start(t+.15);l.stop(t+d+rel+.05)}
+   o.connect(g);o.start(t);o.stop(t+d+rel+.05)})}
+ function tone(f,t,d,type,v){
+  if(type==='pulse')return voice(f,t,d,['sawtooth','sawtooth'],v*.8,{a:.02,rel:.18,cut:2200,det:9,vib:9});   // lead
+  if(type==='triangle')return voice(f,t,d,['triangle','sine'],v,{a:.01,rel:.08,det:0});                    // bass
+  return voice(f,t,d*3,['sine'],v*1.3,{a:.005,rel:.35,det:0})}                                              // e-piano arp
+ function pad(c,t,d){for(const n of c)voice(midi(n+48),t,d,['sawtooth','sawtooth'],.018,{a:.5,rel:.8,cut:900,det:14})}
  function drum(k,t){
   if(k==='k'){const o=AC.createOscillator(),g=AC.createGain();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(40,t+.12);
    g.gain.setValueAtTime(.5,t);g.gain.exponentialRampToValueAtTime(.001,t+.14);o.connect(g);g.connect(gain);o.start(t);o.stop(t+.15);return}
-  const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain(),hh=k==='h';s.buffer=noise;f.type='highpass';f.frequency.value=hh?7000:1500;
-  g.gain.setValueAtTime(hh?.12:.3,t);g.gain.exponentialRampToValueAtTime(.001,t+(hh?.04:.12));s.connect(f);f.connect(g);g.connect(gain);s.start(t);s.stop(t+.15)}
+  const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain(),hh=k==='h';s.buffer=noise;f.type=hh?'highpass':'bandpass';f.frequency.value=hh?8000:1800;
+  if(!hh){const o=AC.createOscillator(),og=AC.createGain();o.type='triangle';o.frequency.setValueAtTime(190,t);o.frequency.exponentialRampToValueAtTime(120,t+.08);og.gain.setValueAtTime(.18,t);og.gain.exponentialRampToValueAtTime(.001,t+.1);o.connect(og);og.connect(gain);o.start(t);o.stop(t+.12)}
+  g.gain.setValueAtTime(hh?.05:.26,t);g.gain.exponentialRampToValueAtTime(.001,t+(hh?.04:.12));s.connect(f);f.connect(g);g.connect(gain);s.start(t);s.stop(t+.15)}
  function sched(){if(!cur||!AC)return;const sp=60/cur.bpm/4;
   if(next<AC.currentTime-.1)next=AC.currentTime+.02; // tab was asleep: skip ahead instead of a burst of notes
   while(next<AC.currentTime+.15){const t=next,L=cur.mel.length,i=step%L,tok=cur.mel[i];
    if(tok!=='.'&&tok!=='-'){let d=1;while(cur.mel[(i+d)%L]==='-'&&d<16)d++;tone(hz(tok),t,d*sp,'pulse',.07)}
    const c=chordOf(cur.ch[Math.floor(i/16)%cur.ch.length]),b=i%16;
-   if(b%2===0)tone(midi(c[0]+36+(b%4===2?12:0)),t,sp*1.8,'triangle',.22);
-   tone(midi(c[b%3]+60),t,sp*.6,'square',.022);
+   if(b===0)pad(c,t,sp*16);
+   if(b%4===0||b===6||b===14)tone(midi(c[0]+36+(b===6?12:0)),t,sp*(b%4?1.5:3),'triangle',.2);
+   if(b%2===0)tone(midi(c[(b>>1)%3]+72),t,sp*.5,'arp',.02);
    const dk=cur.dr[step%cur.dr.length];if(dk!=='.')drum(dk,t);
    step++;next+=sp}}
  function start(){if(!AC||!on||!set||!SETS[set])return;const list=SETS[set];cur=list[idx%list.length];step=0;next=AC.currentTime+.05;
-  if(!gain){gain=AC.createGain();gain.gain.value=.45;gain.connect(buses()?BUS.music:AC.destination);
+  if(!gain){gain=AC.createGain();gain.gain.value=.5;const dest=buses()?BUS.music:AC.destination;gain.connect(dest);
+   // small hall: generated impulse response + a soft echo, the PS1 "SPU reverb" feel
+   try{const len=AC.sampleRate*2.2|0,ir=AC.createBuffer(2,len,AC.sampleRate);for(let c=0;c<2;c++){const d=ir.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3)}
+    const cv=AC.createConvolver(),wet=AC.createGain();cv.buffer=ir;wet.gain.value=.32;gain.connect(cv);cv.connect(wet);wet.connect(dest);
+    const dl=AC.createDelay(1),fb=AC.createGain(),dw=AC.createGain();dl.delayTime.value=60/112*.75;fb.gain.value=.28;dw.gain.value=.16;gain.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(dw);dw.connect(dest)}catch(e){}
    const n=16,re=new Float32Array(n),im=new Float32Array(n);for(let k=1;k<n;k++)im[k]=2/(k*Math.PI)*Math.sin(k*Math.PI*.25);pulseW=AC.createPeriodicWave(re,im)}
   clearInterval(timer);timer=setInterval(sched,25);sched()}
  function stop(){clearInterval(timer);timer=0;cur=null}

@@ -251,7 +251,7 @@ body.playing .chat{top:10px;bottom:52px;opacity:.94}
 .raVer{position:fixed;top:max(3px,env(safe-area-inset-top,0px));left:max(5px,env(safe-area-inset-left,0px));z-index:20;pointer-events:none;user-select:none;font-family:var(--pixel);font-size:7px;letter-spacing:.08em;color:#fff;opacity:.45;text-shadow:1px 1px 0 #000}
 /* sound options (main menu) */
 .sound{display:flex;flex-direction:column;gap:6px}
-.sound h3{margin:0;font-size:12px;letter-spacing:2px;color:#f8d878}
+.sound h3{margin:0;font-family:var(--pixel);font-size:11px;letter-spacing:2px;color:#f8d878}
 .sound label{display:grid;grid-template-columns:84px 1fr 30px;align-items:center;gap:8px;font-size:11px}
 .sound input[type=range]{width:100%;accent-color:#f8b800;background:none;border:0;box-shadow:none;padding:0;height:18px;margin:0}
 .sound label{margin:0}
@@ -259,3 +259,25 @@ body.playing .chat{top:10px;bottom:52px;opacity:.94}
 .sndRow{display:flex;gap:6px;flex-wrap:wrap}
 .sndRow button{flex:1;font-size:11px;padding:6px 4px}
 .sndRow button.on{background:#d82800;color:#fff}
+
+/* ===== v32 menu facelift: PS1 boot-screen look (animated backdrop, glass windows, chrome title) ===== */
+body:not(.playing){background:#05061a}
+body:not(.playing)::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+ background:radial-gradient(120% 80% at 50% 0%,#2a2f8f 0%,#12134a 45%,#05061a 100%)}
+body:not(.playing)::after{content:"";position:fixed;left:-50%;right:-50%;bottom:-10%;height:55%;z-index:-1;pointer-events:none;
+ background:linear-gradient(transparent 0 96%,rgba(120,160,255,.35) 96%) 0 0/100% 40px,linear-gradient(90deg,transparent 0 97%,rgba(120,160,255,.28) 97%) 0 0/60px 100%;
+ transform:perspective(420px) rotateX(62deg);transform-origin:50% 100%;mask-image:linear-gradient(transparent,#000 70%);-webkit-mask-image:linear-gradient(transparent,#000 70%);
+ animation:raGrid 3.2s linear infinite}
+@keyframes raGrid{to{background-position:0 40px,0 0}}
+@media (prefers-reduced-motion:reduce){body:not(.playing)::after{animation:none}}
+.tv,.panel{background:linear-gradient(180deg,rgba(64,84,220,.82),rgba(16,22,92,.88));backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+ border:2px solid #e8ecff;box-shadow:0 0 0 2px #000,0 0 0 4px rgba(150,170,255,.45),0 18px 40px rgba(0,0,30,.6),inset 0 1px 0 rgba(255,255,255,.45)}
+.tv h1{background:linear-gradient(180deg,#fff 0%,#ffe9a0 30%,#f8b800 52%,#c06000 54%,#ffd060 80%,#fff 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+ text-shadow:none;filter:drop-shadow(3px 3px 0 #000) drop-shadow(0 0 12px rgba(248,184,0,.45));position:relative}
+.games button{border-radius:6px;transition:background .12s,transform .12s,box-shadow .12s}
+.games button:hover{background:rgba(255,255,255,.08);transform:translateX(3px)}
+.games .sel{background:linear-gradient(90deg,rgba(248,184,0,.28),rgba(248,184,0,.04));box-shadow:inset 3px 0 0 var(--hot),0 0 16px rgba(248,184,0,.18)}
+.games .soon{opacity:.62}
+button{border-radius:6px;background:linear-gradient(180deg,#4a4f8a,#24275a);border-color:#9aa4ff}
+.go{background:linear-gradient(180deg,#ff6a3c,#c81e00);border-color:#ffb08c}
+.pcard{backdrop-filter:blur(4px)}
