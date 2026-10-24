@@ -1,9 +1,6 @@
 /* Cartridges on the menu that are still being made. When one is built it gets its own games/<id>.js
    (see games/README.md) and its line here goes away. [name, kind, players, description, 10x10 icon] */
 [
- ['BLAST MAZE','Bomb maze','2-20 players',
-  'Drop bombs, trap rivals in the maze and grab power-ups.',
-  ['.......y..','......yr..','.....k....','...kkkk...','..kssskk..','.ksskkkkk.','.kskkkkkk.','.kkkkkkkk.','..kkkkkk..','...kkkk...']],
  ['TURBO KARTS','Racing','2-20 players',
   'Top-down kart races on tabletop tracks.',
   ['..........','....kkk...','...kwwk...','.kkrrrrkk.','krrrrrrrrk','krrkrrkrrk','kkkskkkskk','.kkk..kkk.','..........','..........']],
