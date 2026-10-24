@@ -173,8 +173,43 @@ function genTerrain(seed){
    if(below)c=c.map(v=>v*.45);else if(lit&&!grass)c=c.map(v=>Math.min(255,v*1.35+12));else if(airAt(x+1,y))c=c.map(v=>v*.6);
    setPix(i,c);
    depth++;}}
+ stampProps(R);
  tD=[0,0,W,H];tDirty=true;mmDirty=true;
 }
+// Armageddon landscapes: themed objects buried in the soil and standing on the surface, all part of the (destructible) land
+let PROPS=null;
+function getProps(){if(PROPS)return PROPS;const M=RA.fx.model,ball=(x,y,r,col,o)=>Object.assign({x,y,r,col},o||{}),
+ col=(x,y0,y1,r,c)=>{const n=Math.max(2,Math.round((y1-y0)/1.2));return Array.from({length:n},(_,i)=>ball(x,y0+(y1-y0)*i/(n-1),r,c))},
+ tree=(leaf,trunk)=>M(22,30,[...col(11,14,29,1.8,trunk),ball(11,9,6,leaf),ball(6,12,4.6,leaf),ball(16,12,4.6,leaf),ball(9,5,4,leaf),ball(14,5.5,4,leaf)]),
+ rock=c=>M(12,9,[ball(5,5,3.6,c),ball(8,5.5,3,c),ball(6.5,3.2,2.6,c)]),
+ bone=M(16,7,[...Array.from({length:6},(_,i)=>ball(3.5+i*1.8,3.5,1.3,'#e8e4d0')),ball(2,2.4,1.5,'#f0ecd8'),ball(2,4.8,1.5,'#f0ecd8'),ball(14,2.4,1.5,'#f0ecd8'),ball(14,4.8,1.5,'#f0ecd8')]),
+ skull=M(11,11,[ball(5.5,4.8,4.2,'#ece6d4'),ball(5.5,8.4,2.6,'#e0dac8'),ball(3.8,5,1.3,'#201814',{z:3}),ball(7.2,5,1.3,'#201814',{z:3})]),
+ tire=M(14,14,[...Array.from({length:12},(_,i)=>ball(7+Math.cos(i/12*6.283)*4.4,7+Math.sin(i/12*6.283)*4.4,2,'#26262c',{spec:6}))]),
+ pot=M(11,12,[ball(5.5,7.5,4,'#c06838'),ball(5.5,3,2,'#b05c30'),ball(5.5,1.6,2.4,'#c87040')]),
+ cactus=M(14,26,[...col(7,4,25,2.4,'#3c9c3c'),...col(3,9,15,1.6,'#3c9c3c'),ball(3,8,1.6,'#4cac4c'),ball(4.6,15,1.6,'#3c9c3c'),...col(11,6,13,1.6,'#3c9c3c'),ball(9.4,13,1.6,'#3c9c3c')]),
+ snowman=M(14,22,[ball(7,16,5.2,'#f4f8ff'),ball(7,8.6,3.8,'#f4f8ff'),ball(7,3.4,2.8,'#f4f8ff'),ball(9.4,3.6,.9,'#f08020',{z:2}),ball(6,2.8,.5,'#101010',{z:2.4}),ball(8,2.8,.5,'#101010',{z:2.4})]),
+ spike=M(10,22,[...Array.from({length:8},(_,i)=>ball(5,20-i*2.4,3.6-i*.42,'#b8e0ff',{spec:40,gloss:1}))]),
+ ice=M(12,10,[ball(5,5,3.6,'#a8d8f8',{spec:40,gloss:1}),ball(8,5.5,3,'#c8e8ff',{spec:40,gloss:1})]),
+ dead=M(20,28,[...col(10,10,27,1.6,'#2a1c18'),...Array.from({length:5},(_,i)=>ball(10-i*1.3,10-i*1.4,1,'#2a1c18')),...Array.from({length:5},(_,i)=>ball(10+i*1.4,12-i*1.2,1,'#2a1c18'))]),
+ lava=M(12,9,[ball(5,5,3.6,'#3c1410'),ball(8,5.5,3,'#4c1810'),ball(6,4.4,1.5,'#ff6020',{z:2,gloss:0})]),
+ lolly=M(14,28,[...col(7,12,27,.9,'#f4f0e8'),ball(7,6,5.4,'#ff60b0'),ball(7,6,3.4,'#ffffff',{z:2.2}),ball(7,6,1.6,'#ff60b0',{z:3.6})]),
+ candy=c=>M(10,10,[ball(5,5,3.8,c,{spec:40,gloss:1}),ball(4,4,1.2,'#ffffff',{z:3,gloss:0})]);
+ return PROPS={Meadow:{inn:[rock('#8c8890'),bone,tire,rock('#a09888')],top:[tree('#3c9c34','#6c4424'),tree('#4cac3c','#5c3c20'),M(10,8,[ball(5,5,3.4,'#3c8c2c'),ball(3,4,1.2,'#f04050',{z:3}),ball(7,3.6,1.2,'#f8e040',{z:3})])]},
+  Desert:{inn:[skull,pot,rock('#b08c60'),bone],top:[cactus,cactus,M(10,7,[ball(5,4.6,3.4,'#b89c68')])]},
+  Arctic:{inn:[ice,rock('#8090a8'),bone],top:[snowman,spike,spike]},
+  Hell:{inn:[skull,lava,bone,lava],top:[dead,dead,M(10,10,[ball(5,6,3.6,'#3c1410'),ball(5,3,1.6,'#ff8020',{gloss:0})])]},
+  Candy:{inn:[candy('#ff60b0'),candy('#60c0ff'),candy('#ffd040'),M(12,6,[...Array.from({length:5},(_,i)=>ball(2+i*2,3,2,i%2?'#ffffff':'#ff4060'))])],top:[lolly,lolly,M(12,12,[ball(6,8,4.4,'#a06030'),ball(6,4.4,3.8,'#ffb0d8'),ball(6,1.6,1.2,'#e02040',{z:2})])]}}}
+const propPix=new Map();
+function pixOf(m){let d=propPix.get(m);if(!d){d=m.getContext('2d').getImageData(0,0,m.width,m.height).data;propPix.set(m,d)}return d}
+function stamp(m,ox,oy,solid){const d=pixOf(m),w=m.width,h=m.height,o=tImg.data;
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){const q=(y*w+x)*4;if(d[q+3]<128)continue;const X=ox+x,Y=oy+y;if(X<1||X>=W-1||Y<1||Y>=WATER-2)continue;const i=Y*W+X;
+  if(!terr[i]){if(!solid)continue;terr[i]=1}
+  o[i*4]=d[q];o[i*4+1]=d[q+1];o[i*4+2]=d[q+2];o[i*4+3]=255}}
+function stampProps(R){const P=getProps()[THEME.n]||getProps().Meadow,r=(a,b)=>a+R()*(b-a);
+ for(let k=0,n=Math.round(W*H/7000);k<n;k++){const m=P.inn[Math.floor(R()*P.inn.length)],x=Math.floor(r(10,W-20)),y=Math.floor(r(H*.4,H-20));
+  if(terr[y*W+x]&&terr[Math.min(H-1,y+8)*W+x]&&terr[Math.max(0,y-6)*W+x])stamp(m,x-(m.width>>1),y-(m.height>>1),false)}
+ for(let x=Math.floor(r(20,60));x<W-30;x+=Math.floor(r(45,110))){let y=0;while(y<H&&!terr[y*W+x])y++;if(y>=WATER-6||y<20)continue;
+  const m=P.top[Math.floor(R()*P.top.length)];stamp(m,x-(m.width>>1),y-m.height+2,true)}}
 function markDirty(x0,y0,x1,y1){x0=Math.max(0,x0|0);y0=Math.max(0,y0|0);x1=Math.min(W,Math.ceil(x1));y1=Math.min(H,Math.ceil(y1));
  tD=tD?[Math.min(tD[0],x0),Math.min(tD[1],y0),Math.max(tD[2],x1),Math.max(tD[3],y1)]:[x0,y0,x1,y1];tDirty=true;mmDirty=true}
 function carve(cx,cy,r){
@@ -303,11 +338,11 @@ const MSET=[['mode','Mode',[['ffa','Free for all'],['teams','2 teams'],['sudden'
  ['lives','Lives',[[1,'1'],[2,'2'],[3,'3'],[5,'5']]],
  ['water','Water rises',[[30,'0:30'],[90,'1:30'],[150,'2:30'],[240,'4:00'],[0,'Never']]],
  ['len','Time limit',[[0,'None'],[5,'5 min'],[10,'10 min']]],
- ['fog','Fog of war',[[1,'Normal'],[2,'Wide'],[0,'Off']]],
+ ['fog','Fog of war',[[0,'Off (classic)'],[1,'Normal'],[2,'Wide']]],
  ['drops','Spectator crates',[[1,'On'],[0,'Off']]],
  ['party','Party crates',[[1,'On'],[0,'Off']]],
  ['wset','Weapons',[[0,'All weapons'],[1,'Preset 1'],[2,'Preset 2'],[3,'Preset 3']]]];
-let CFG={mode:'ffa',lives:3,water:150,len:0,fog:1,drops:1,party:1,wset:0};
+let CFG={mode:'ffa',lives:3,water:150,len:0,fog:0,drops:1,party:1,wset:0};
 try{Object.assign(CFG,JSON.parse(localStorage.getItem('ra-worms-mset')||'{}'))}catch(e){}
 let M={...CFG};   // settings of the match being played
 const TEAMC=['#f04848','#4890f8'],TEAMN=['RED TEAM','BLUE TEAM'];
@@ -876,14 +911,18 @@ const SKIN={Golden:['#f0c040',40,.95],Zombie:['#7ca05c',6,.2],Chrome:['#c4ccd8',
 function lookOf(p){if(!p)return{};if(NET.mode==='online'){if(!p.peer)return{};const pe=NET.room&&NET.room.peers().find(q=>q.peer===p.peer);return RA.look.clean(pe&&pe.presence&&pe.presence.lk)}
  return p.ctrl&&p.ctrl!=='cpu'?RA.look('worms'):{}}
 function wormSprite(col,f,flash,skin){const sk=SKIN[skin],key=col+f+(flash?1:0)+(sk?skin:'');if(WSPR[key])return WSPR[key];
- const body=flash?'#ffffff':sk?mix(sk[0],col,.15):mix('#f4a0b0',col,.38),balls=[],air=f===4,ph=f*Math.PI/2;
- for(let i=0;i<=9;i++){const t=i/9,st=t<.3?0:t>1?1:(t-.3)/.7,ss=st*st*(3-2*st);
-  const x=air?3.5+4*t:2+9*t-(t>.55?(t-.55)*5:0),y=air?18-14*t:18.4-12.5*ss-(t<.6&&!air?Math.max(0,Math.sin(t*9+ph))*2.2:0);
-  balls.push({x,y,z:0,r:2.1+2.5*t,col:body,spec:sk?sk[1]:12,gloss:sk?sk[2]:.55})}
- const hx=balls[9].x,hy=balls[9].y;
- balls.push({x:hx+1.8,y:hy-1.6,z:3.6,r:1.75,col:'#ffffff',spec:30,gloss:.9},{x:hx+3.2,y:hy-1.4,z:3.2,r:1.55,col:'#ffffff',spec:30,gloss:.9});
- balls.push({x:hx+2.5,y:hy-1.2,z:5.1,r:1,col:'#101010',gloss:.9},{x:hx+3.9,y:hy-1,z:4.6,r:.9,col:'#101010',gloss:.9});
- return WSPR[key]=RA.fx.model(18,21,balls,{amb:.28})}
+ const body=flash?'#ffffff':sk?mix(sk[0],col,.15):mix('#f4a0b0',col,.25),belly=flash?'#ffffff':mix(body,'#fff4f0',.35),balls=[],air=f===4,ph=f*Math.PI/2,N=14;
+ // Armageddon worm: tail lying flat behind, S-curved neck rising to a big round head, two big goggle eyes looking forward
+ for(let i=0;i<N;i++){const t=i/(N-1);let x,y;
+  if(air){x=3+9*t;y=19-15*t}
+  else if(t<.34){const v=t/.34;x=1.6+6.6*v;y=19.3-Math.pow(1-v,2)*1.6-Math.max(0,Math.sin(v*6+ph))*.9}
+  else{const u=(t-.34)/.66;x=8.2+Math.sin(u*Math.PI*.95)*2+u*1.4;y=19.3-u*12.6}
+  const r=1.3+2.4*Math.min(1,t/.45)+(t>.78?(t-.78)*5:0);
+  balls.push({x,y,z:0,r,col:body,spec:sk?sk[1]:14,gloss:sk?sk[2]:.5});
+  if(!air&&t>.38&&t<.85)balls.push({x:x+r*.45,y:y+.3,z:r*.55,r:r*.6,col:belly,spec:8,gloss:.3})}
+ const hx=balls[balls.length-1].x,hy=balls[balls.length-1].y;
+ for(const[ex,ey]of[[1.6,-1.9],[3.9,-1.6]]){balls.push({x:hx+ex,y:hy+ey,z:4.2,r:1.9,col:'#ffffff',spec:40,gloss:1});balls.push({x:hx+ex+.8,y:hy+ey+.2,z:5.9,r:.85,col:'#080808',spec:60,gloss:1})}
+ return WSPR[key]=RA.fx.model(20,21,balls,{amb:.3})}
 const shade={};
 function grubCols(c,flash){
  if(flash)return{k:'#000',b:'#fcfcfc',l:'#fcfcfc',d:'#fcfcfc',w:'#fcfcfc',p:'#fcfcfc'};
