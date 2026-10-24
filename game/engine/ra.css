@@ -359,3 +359,4 @@ input,select{font-family:var(--font);background:#06070c;border:1px solid #5a6276
 .tab.on{background:linear-gradient(180deg,#bff6ff 0%,#38e8ff 50%,#0aa8c8 51%,#58ecff 100%)!important;color:#001018!important;box-shadow:0 0 10px rgba(56,232,255,.5)}
 .overlay h1{background:linear-gradient(180deg,#fff 0%,#dfe6f2 40%,#4a5264 50%,#c4cede 58%,#fff 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 2px 0 #222)drop-shadow(0 0 10px rgba(56,232,255,.55))}
 .brand{color:var(--rl)}.brand b{color:var(--rl2)}
+.ra-legend{transition:opacity .8s}.ra-legend.fade{opacity:0}

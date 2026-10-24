@@ -6,7 +6,7 @@
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v40';
+RA.VERSION='v41';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -31,8 +31,15 @@ const FONT={0:'111101101101111',1:'010110010010111',2:'111001111100111',3:'11100
  A:'010101111101101',B:'110101110101110',C:'011100100100011',D:'110101101101110',E:'111100110100111',F:'111100110100100',G:'011100101101011',H:'101101111101101',I:'111010010010111',
  J:'001001001101010',K:'101101110101101',L:'100100100100111',M:'101111111101101',N:'110101101101101',O:'010101101101010',P:'110101110100100',Q:'010101101110011',R:'110101110101101',
  S:'011100010001110',T:'111010010010010',U:'101101101101111',V:'101101101101010',W:'101101111111101',X:'101101010101101',Y:'101101010010010',Z:'111001010100111','+':'000010111010000','-':'000000111000000','!':'010010010000010'};
+// PS1-style HUD text: chunky bold face, black outline, lit-to-shaded gradient; centred on x, y = top. Falls back to the 3x5 font if canvas text fails.
+const lite=(h,a)=>{try{return RA.util.mix(h,'#ffffff',a)}catch(e){return h}},dark=(h,a)=>{try{return RA.util.mix(h,'#000000',a)}catch(e){return h}};
+function text(c,str,x,y,col){const s=String(str).toUpperCase();
+ try{c.save();c.font='8px "Russo One","Arial Black",Impact,sans-serif';c.textAlign='center';c.textBaseline='top';
+  const g=c.createLinearGradient(0,y-1,0,y+7);g.addColorStop(0,lite(col,.55));g.addColorStop(.5,col);g.addColorStop(1,dark(col,.35));
+  c.lineJoin='round';c.lineWidth=2;c.strokeStyle='#000';c.strokeText(s,x+.5,y-1.5);c.fillStyle=g;c.fillText(s,x+.5,y-1.5);c.restore();return}catch(e){try{c.restore()}catch(_){}}
+ text3(c,s,x,y,col)}
 // 3x5 pixel font with a drop shadow, centred on x
-function text(c,str,x,y,col){
+function text3(c,str,x,y,col){
  const s=String(str).toUpperCase(),ox=Math.round(x-(s.length*4-1)/2);
  for(const pass of[1,0]){let px=ox;c.fillStyle=pass?'#000':col;
   for(const ch of s){const g=FONT[ch];if(g)for(let i=0;i<15;i++)if(g[i]==='1')c.fillRect(px+i%3+pass,y+(i/3|0)+pass,1,1);px+=4}}
@@ -231,7 +238,11 @@ const glyph=(t,pad)=>{const e=RA.util.esc(t);return pad&&GLY[t]?'<span class="gl
 RA.legend=(root,L)=>{const scr=root.querySelector('.screen')||root;let el=scr.querySelector('.ra-legend');
  if(!el){el=document.createElement('div');el.className='ra-legend';scr.appendChild(el)}
  const draw=d=>{const pad=d==='pad',rows=(pad?L.pad:L.kb)||[];el.innerHTML=rows.map(r=>'<span>'+r[0].split(' ').map(t=>glyph(t,pad)).join('')+'<em>'+RA.util.esc(r[1])+'</em></span>').join('')};
- devFns.push(draw);draw(lastDev);return{el,show:v=>{el.hidden=!v}}};
+ // shows for 10 s when a match starts or the player switches device, then fades so it never hides the game
+ let ft=0,was=false;const wake=()=>{el.classList.remove('fade');clearTimeout(ft);ft=setTimeout(()=>el.classList.add('fade'),10000)};
+ devFns.push(d=>{draw(d);wake()});draw(lastDev);wake();
+ setInterval(()=>{const on=document.body.classList.contains('playing')&&!root.hidden;if(on&&!was)wake();was=on},500);
+ return{el,show:v=>{el.hidden=!v},wake}};
 // Touch buttons: any element with data-k="name" becomes a held button touchK[name].
 function bindButtons(root){root.querySelectorAll('[data-k]').forEach(b=>{const k=b.dataset.k;
  const on=e=>{e.preventDefault();ensure();RA.util.buzz();touchK[k]=true;b.classList.add('down');try{b.setPointerCapture(e.pointerId)}catch(_){}};
