@@ -85,7 +85,7 @@ const root=RA.mount(`
   </div>
 </div>
 `);
-const G=0.12,MAXP=20;
+let G=0.12;const G0=0.12,MAXP=20;
 let W=320,H=200,WATER=188;
 const cv=$('cv'),ctx=cv.getContext('2d');
 const tCan=document.createElement('canvas'),tCtx=tCan.getContext('2d');
@@ -220,6 +220,22 @@ const DEF={
  teleport:{n:'Teleport',teleport:1,cd:60,target:1,start:2,crate:2},
  girder:{n:'Girder',girder:1,cd:30,target:1,start:2,crate:2},
  armageddon:{n:'Armageddon',armageddon:1,cd:120,crate:.4},
+ // more from the Worms series
+ sheepl:{n:'Sheep Launcher',desc:'charge · lands a sheep',charge:1,speed:6,lands:'sheep',cd:70,start:1,crate:2,spr:8,cam:1},
+ madcow:{n:'Mad Cows',desc:'three cows',walker:1,herd:3,speed:.8,r:20,dmg:35,cd:80,fuse:330,crate:2,spr:14,cam:1},
+ skunk:{n:'Skunk',desc:'poison gas',walker:1,speed:1,r:12,dmg:20,poison:1,cd:60,fuse:300,start:1,crate:2,spr:18,cam:1},
+ pigeon:{n:'Homing Pigeon',home:1,speed:3.4,r:18,dmg:40,cd:70,target:1,crate:2,spr:15,cam:1},
+ mole:{n:'Mole Bomb',desc:'digs then blows',charge:1,speed:5,dig:60,r:20,dmg:40,cd:60,start:1,crate:2,spr:17,cam:1},
+ vase:{n:'Ming Vase',drop:1,r:22,dmg:35,cd:50,fuse:240,split:6,piece:'shard',crate:2,spr:16},
+ longbow:{n:'Longbow',desc:'instant · knockback',ray:1,r:2,dmg:16,push:1,cd:40,start:2,crate:3},
+ flamer:{n:'Flamethrower',flamer:1,cd:60,start:1,crate:2},
+ torch:{n:'Blow Torch',desc:'digs a tunnel',torch:1,dmg:12,cd:40,start:2,crate:2},
+ mailstrike:{n:'Mail Strike',strike:'letter',cd:90,target:1,crate:2},
+ minestrike:{n:'Mine Strike',strike:'mineP',cd:90,target:1,crate:2},
+ sheepstrike:{n:'Sheep Strike',strike:'sheepP',cd:100,target:1,crate:1},
+ quake:{n:'Earthquake',quake:1,cd:120,crate:1},
+ scales:{n:'Scales of Justice',desc:'everyone shares health',scales:1,cd:120,crate:.6},
+ nuke:{n:'Nuclear Test',desc:'water rises, all poisoned',nuke:1,cd:150,crate:.4},
  // pieces that weapons spawn
  bomblet:{r:9,dmg:16,fuse:50,bounce:.45,spr:2},
  shard:{r:8,dmg:14,spr:6},
@@ -228,12 +244,17 @@ const DEF={
  napbomb:{r:5,dmg:6,fire:8,spr:7},
  donkeyP:{r:22,dmg:40,donkey:6,spr:11},
  meteor:{r:16,dmg:30,spr:12},
- flame:{flame:1,spr:13}
+ flame:{flame:1,spr:13},
+ letter:{r:10,dmg:18,spr:19},
+ mineP:{mine:1,r:16,dmg:40,spr:10},
+ sheepP:{r:20,dmg:35,spr:8}
 };
-const WLIST=['bazooka','homing','mortar','grenade','cluster','banana','holy','petrol','sheep','oldwoman','shotgun','handgun','uzi','minigun','punch','bat','prod','kamikaze','dynamite','mine','airstrike','napalm','donkey','rope','jetpack','parachute','teleport','girder','armageddon'];
+const WLIST=['bazooka','homing','mortar','grenade','cluster','banana','holy','petrol','sheep','oldwoman','shotgun','handgun','uzi','minigun','punch','bat','prod','kamikaze','dynamite','mine','airstrike','napalm','donkey','rope','jetpack','parachute','teleport','girder','armageddon','sheepl','madcow','skunk','pigeon','mole','vase','longbow','flamer','torch','mailstrike','minestrike','sheepstrike','quake','scales','nuke'];
 const DEFAULTS=['bazooka','grenade','shotgun','uzi'];
 const CRATES=WLIST.filter(id=>DEF[id].crate);
-const startAmmo=()=>WLIST.map(id=>DEF[id].inf?-1:(DEF[id].start|0));
+let ALLOW=null;   // weapons the host allowed this match (preset), null = all
+const okW=id=>id==='bazooka'||!ALLOW||ALLOW.includes(id);
+const startAmmo=()=>WLIST.map(id=>!okW(id)?0:DEF[id].inf?-1:(DEF[id].start|0));
 const ammoOf=(p,id)=>p.ammo?p.ammo[WLIST.indexOf(id)]:-1;
 const hasW=(p,id)=>{const a=ammoOf(p,id);return a<0||a>0};
 function selectW(p,k){const id=WLIST[k];if(!id||!hasW(p,id)||p.charging||p.wpn===id)return;p.wpn=id;if(!isClient())sfx('sel')}
@@ -281,8 +302,10 @@ const MSET=[['mode','Mode',[['ffa','Free for all'],['teams','2 teams'],['sudden'
  ['water','Water rises',[[30,'0:30'],[90,'1:30'],[150,'2:30'],[240,'4:00'],[0,'Never']]],
  ['len','Time limit',[[0,'None'],[5,'5 min'],[10,'10 min']]],
  ['fog','Fog of war',[[1,'Normal'],[2,'Wide'],[0,'Off']]],
- ['drops','Spectator crates',[[1,'On'],[0,'Off']]]];
-let CFG={mode:'ffa',lives:3,water:150,len:0,fog:1,drops:1};
+ ['drops','Spectator crates',[[1,'On'],[0,'Off']]],
+ ['party','Party crates',[[1,'On'],[0,'Off']]],
+ ['wset','Weapons',[[0,'All weapons'],[1,'Preset 1'],[2,'Preset 2'],[3,'Preset 3']]]];
+let CFG={mode:'ffa',lives:3,water:150,len:0,fog:1,drops:1,party:1,wset:0};
 try{Object.assign(CFG,JSON.parse(localStorage.getItem('ra-worms-mset')||'{}'))}catch(e){}
 let M={...CFG};   // settings of the match being played
 const TEAMC=['#f04848','#4890f8'],TEAMN=['RED TEAM','BLUE TEAM'];
@@ -297,7 +320,8 @@ const isClient=()=>NET.mode==='online'&&!NET.host;
 const ownsW=p=>!!p&&(isClient()?!!p.mine:p.ctrl!=='net');
 const SY=RA.sync({owns:i=>ownsW(players[i]),host:()=>NET.mode==='online'&&NET.host,
  onHit:(i,k,v)=>{const u=players[i];if(!u||!u.alive)return;
-  if(k==='k'&&Array.isArray(v)){u.vx=(+v[0]||0)/100;u.vy=(+v[1]||0)/100;u.grounded=false;u.rope=u.rope&&Math.abs(u.vx)+Math.abs(u.vy)>3?null:u.rope}}});
+  if(k==='k'&&Array.isArray(v)){u.vx=(+v[0]||0)/100;u.vy=(+v[1]||0)/100;u.grounded=false;u.rope=u.rope&&Math.abs(u.vx)+Math.abs(u.vy)>3?null:u.rope}
+  if(k==='t'&&Array.isArray(v)){u.x=(+v[0]||0)/10;u.y=(+v[1]||0)/10;u.vx=u.vy=0;u.grounded=false;u.rope=u.hook=null}}});
 // knockback on a worm another device runs: tell its owner
 const kicked=u=>{if(NET.mode==='online'&&!ownsW(u))SY.hit(u.i,'k',[Math.round(u.vx*100),Math.round(u.vy*100)])};
 const LOCALW=w=>!!(w.rope||w.jet||w.para||w.teleport);   // these only move your own worm, so they run on your PC
@@ -316,9 +340,10 @@ function spawn(p){
 function startMatch(list,seed){
  setSize(list.length);genTerrain(seed);projs=[];parts=[];texts=[];crates=[];feedView=[];
  M={...CFG};if(M.mode==='sudden')M.lives=1;
+ ALLOW=M.wset?wPreset(M.wset).w:null;list.forEach(d=>{if(!okW(d.weapon))d.weapon='bazooka'});
  players=list.map((d,i)=>({i,col:M.mode==='teams'?TEAMC[i%2]:COLORS[i][1],team:M.mode==='teams'?i%2:i,lives:M.lives,kills:0,prev:{},ammo:startAmmo(),wpn:d.weapon,...d}));
  players.forEach(spawn);
- wind=0;tick=0;matchT=0;crateT=240;windT=0;armT=0;armBy=null;graves=[];NET.xs=0;NET.xlog=[];NET.feed=[];NET.fs=0;NET.winner=-1;NET.wl='';NET.dt={};NET.saved=false;state='play';if(NET.mode==='online')SY.reset();
+ wind=0;tick=0;matchT=0;crateT=240;windT=0;armT=0;armBy=null;graves=[];NET.xs=0;NET.xlog=[];NET.feed=[];NET.fs=0;NET.winner=-1;NET.wl='';NET.dt={};NET.lowG=0;G=G0;memClear();NET.saved=false;state='play';if(NET.mode==='online')SY.reset();
  showGame();
 }
 function newLocalGame(){
@@ -384,6 +409,8 @@ function stepWorm(u){
  if(u.inv>0)u.inv--;
  if(u.flash>0)u.flash--;
  if(u.reveal>0)u.reveal--;
+ if(u.hide>0&&!isClient())u.hide--;
+ if(u.poison>0&&!isClient()){u.poison--;if(u.poison%40===0&&u.hp>1){u.hp--;if(u.poison%120===0)texts.push({x:u.x,y:u.y-17,n:3,t:40,col:'#a8f048'})}}
  if(u.hook){const h=u.hook;
   for(let s=0;s<4;s++){h.x+=h.vx/4;h.y+=h.vy/4;
    if(solid(h.x,h.y)){u.rope={x:h.x,y:h.y,len:Math.max(10,Math.hypot(h.x-u.x,h.y-(u.y-5)))};u.hook=null;u.grounded=false;u.chute=0;sfx('sel');break}}
@@ -453,13 +480,32 @@ function splash(x){for(let i=0;i<8;i++)parts.push({x:x+rnd(-3,3),y:WATER,vx:rnd(
 function boom(p,x,y){
  const w=p.w;
  if(w.donkey){p.n=(p.n==null?w.donkey:p.n)-1;explode(x,y,w.r,w.dmg,p.owner);if(p.n>0){p.y=y+2;p.vy=1.6;p.vx=0;return}p.dead=true;return}
+ if(w.lands){p.dead=true;const sw=DEF[w.lands];projs.push({x,y:y-3,vx:0,vy:-1,w:sw,dir:p.vx<0?-1:1,fuse:sw.fuse,age:0,owner:p.owner,ground:false,bump:0,cam:1});return}
+ if(w.dig&&!p.dug){p.dug=1;p.dg=w.dig;const d=Math.hypot(p.vx,p.vy)||1;p.dx=p.vx/d*1.3;p.dy=p.vy/d*1.3;return}
  p.dead=true;
+ if(w.poison)for(const u of players)if(u.alive&&Math.hypot(u.x-x,u.y-y)<w.r+34)u.poison=600;
  if(w.holy)sfx('holy');
  if(w.r)explode(x,y,w.r,w.dmg,p.owner);
  if(w.fire)for(let i=0;i<w.fire;i++)projs.push({x,y:y-3,vx:rnd(-1.5,1.5),vy:rnd(-2.6,-.6),w:DEF.flame,t:rnd(150,240)|0,age:0,owner:p.owner});
  if(w.split){const pc=DEF[w.piece],k=w.banana||w.piece==='bananalet'?1.35:1;
   for(let i=0;i<w.split;i++)projs.push({x,y:y-2,vx:rnd(-1.6,1.6)*k,vy:rnd(-3,-1.5)*k,w:pc,fuse:pc.fuse?rnd(35,65):undefined,age:99,owner:p.owner})}
 }
+// tunnels (mole, blow torch, quake): carve and tell everyone, no damage
+function digAt(x,y,r){x=Math.round(x);y=Math.round(y);carve(x,y,r);if(NET.host){NET.xlog.push([++NET.xs,x,y,r]);if(NET.xlog.length>16)NET.xlog.shift()}}
+// place a worm somewhere (its owner's device is told when another PC runs it)
+function place(u,x,y){u.x=x;u.y=y;u.vx=u.vy=0;u.grounded=false;if(NET.mode==='online'&&!ownsW(u))SY.hit(u.i,'t',[Math.round(x*10),Math.round(y*10)])}
+// Party crates (survey: wild party / troll items). Purple "?" crates, the host rolls one of these.
+const PARTY=[
+ ['LOW GRAVITY',p=>{NET.lowG=900}],
+ ['SWAP!',p=>{const o=players.filter(u=>u.alive&&u!==p);if(!o.length)return;const u=o[Math.floor(Math.random()*o.length)],a=[p.x,p.y];place(p,u.x,u.y);place(u,a[0],a[1])}],
+ ['SHEEP RAIN',p=>{for(const u of players.filter(u=>u.alive&&u!==p).slice(0,5))projs.push({x:u.x+rnd(-20,20),y:-10,vx:0,vy:1,w:DEF.sheepP,age:99,owner:p})}],
+ ['DISCO!',p=>{for(const u of players)if(u.alive){u.vx=rnd(-1.5,1.5);u.vy=-3;u.grounded=false;kicked(u)}}],
+ ['INVISIBLE',p=>{p.hide=600}],
+ ['SHIELD',p=>{p.inv=420}],
+ ['WEAPON STORM',p=>{const pool=CRATES.filter(okW);for(let i=0;i<3&&pool.length;i++){const k=WLIST.indexOf(pool[Math.floor(Math.random()*pool.length)]);if(p.ammo[k]>=0)p.ammo[k]=Math.min(9,p.ammo[k]+1)}}],
+ ['STINK BOMB',p=>{for(const u of players)if(u.alive&&u!==p&&Math.abs(u.x-p.x)<160)u.poison=600}],
+ ['GOTCHA!',p=>{explode(p.x,p.y-4,14,22,null)}]];
+function partyCrate(p){const e=PARTY[Math.floor(Math.random()*PARTY.length)];e[1](p);texts.push({x:p.x,y:p.y-24,s:e[0],t:90,col:'#c878f8'});sfx('holy')}
 // Fire from petrol and napalm: falls, sticks to the ground, burns whoever stands in it.
 function stepFlame(p){
  if(--p.t<=0||p.y>WATER||p.x<0||p.x>=W){p.dead=true;return}
@@ -490,6 +536,8 @@ function stepProj(p){
  p.age++;
  if(p.w.flame)return stepFlame(p);
  if(p.w.walker)return stepWalker(p);
+ if(p.dug){if(--p.dg<=0||p.x<0||p.x>=W||p.y>=H){boom(p,p.x,p.y);return}p.x+=p.dx;p.y+=p.dy;if(p.dg%3===0)digAt(p.x,p.y,5);
+  if(hitWorm(p.x,p.y,p.owner,99)){boom(p,p.x,p.y);return}return}
  if(p.w.home&&p.age>20&&p.tx!=null){const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy)||1,sp=Math.max(3.2,Math.hypot(p.vx,p.vy));
   p.vx+=(dx/d*sp-p.vx)*.14;p.vy+=(dy/d*sp-p.vy)*.14-G;if(p.age%3===0)parts.push({x:p.x,y:p.y,vx:0,vy:0,t:12,col:'#bcbcbc',g:0})}
  p.vy+=G;if(p.w.wind)p.vx+=wind*.006;
@@ -568,10 +616,15 @@ function fire(p){
  else if(w.armageddon){armT=480;armBy=p;sfx('holy')}
  else if(w.strike){const tx=Math.max(10,Math.min(W-10,p.tx)),pc=DEF[w.strike];
   if(w.strike==='donkeyP')projs.push({x:tx,y:-20,vx:0,vy:1.6,w:pc,age:99,owner:p});
-  else{const n=w.strike==='napbomb'?3:2;for(let i=-n;i<=n;i++)projs.push({x:tx+i*8,y:-10-Math.abs(i)*6,vx:p.dir*.35,vy:2,w:pc,age:99,owner:p})}
+  else{const n=w.strike==='napbomb'||w.strike==='letter'?3:2;for(let i=-n;i<=n;i++)projs.push({x:tx+i*8,y:-10-Math.abs(i)*6,vx:p.dir*.35,vy:2,w:pc,age:99,owner:p})}
   sfx('shot')}
+ else if(w.flamer){for(let i=0;i<10;i++)projs.push({x:p.x+cx*6,y:p.y-5+cy*6,vx:cx*rnd(2,3.4)+rnd(-.3,.3),vy:cy*rnd(2,3.4)+rnd(-.3,.3),w:DEF.flame,t:rnd(120,200)|0,age:0,owner:p});sfx('shot')}
+ else if(w.torch){for(let i=1;i<=9;i++){const x=p.x+cx*i*5,y=p.y-5+cy*i*5;digAt(x,y,6);const u=hitWorm(x,y,p,0);if(u&&u.inv<=0){u.hp-=w.dmg;u.flash=6;u.lastBy=p}}sfx('shot')}
+ else if(w.quake){shake=14;for(const u of players)if(u.alive&&u!==p){u.vx=rnd(-2,2);u.vy=rnd(-3.4,-1.6);u.grounded=false;kicked(u)}for(let i=0;i<6;i++)digAt(rnd(10,W-10),WATER-rnd(2,30),8);sfx('boom',30)}
+ else if(w.scales){const al=players.filter(u=>u.alive),avg=Math.round(al.reduce((a,u)=>a+u.hp,0)/Math.max(1,al.length));for(const u of al){u.hp=avg;u.flash=6}sfx('holy')}
+ else if(w.nuke){WATER=Math.max(Math.round(H*.4),WATER-24);for(const u of players)if(u.alive&&u!==p)u.poison=900;shake=20;sfx('holy')}
  else if(w.drop)projs.push({x:p.x,y:p.y-4,vx:p.dir*.6,vy:-1,w,fuse:w.fuse,age:0,owner:p});
- else if(w.walker)projs.push({x:p.x+p.dir*5,y:p.y-2,vx:p.dir*1.2,vy:-1.6,w,dir:p.dir,fuse:w.fuse,age:0,owner:p,ground:false,bump:0,cam:1});
+ else if(w.walker)for(let i=0;i<(w.herd||1);i++)projs.push({x:p.x+p.dir*5,y:p.y-2,vx:p.dir*(1.2+i*.5),vy:-1.6-i*.4,w,dir:p.dir,fuse:w.fuse+i*25,age:0,owner:p,ground:false,bump:0,cam:i?0:1});
  else{
   const sp=w.speed*(w.charge?Math.max(.15,p.power):1);
   projs.push({x:p.x+cx*5,y:p.y-5+cy*5,vx:cx*sp,vy:cy*sp,w,fuse:w.fuse,age:0,owner:p,tx:p.tx,ty:p.ty,cam:w.cam});
@@ -587,8 +640,10 @@ function fire(p){
 function spawnCrate(force){
  if(!force&&crates.length>=Math.max(4,Math.round(W/220)))return;
  const hp=Math.random()<.3;
- let id=null;if(!hp){let t=Math.random()*CRATES.reduce((a,k)=>a+DEF[k].crate,0);id=CRATES.find(k=>(t-=DEF[k].crate)<0)||'homing'}
- crates.push({x:Math.round(rnd(12,W-12)),y:-8,hp,id,landed:false});
+ const party=!hp&&M.party&&Math.random()<.3,pool=CRATES.filter(okW);
+ let id=null;if(!hp&&pool.length){let t=Math.random()*pool.reduce((a,k)=>a+DEF[k].crate,0);id=pool.find(k=>(t-=DEF[k].crate)<0)||pool[0]}
+ if(!hp&&!party&&!id)return;
+ crates.push({x:Math.round(rnd(12,W-12)),y:-8,hp,id,party,landed:false});
 }
 function stepCrate(c){
  c.landed=solid(c.x,c.y+1)||solid(c.x-3,c.y+1)||solid(c.x+3,c.y+1);
@@ -596,7 +651,7 @@ function stepCrate(c){
  if(c.y>WATER){c.gone=true;return}
  for(const p of players){if(!p.alive||Math.abs(p.x-c.x)>6||Math.abs(p.y-c.y)>8)continue;
   c.gone=true;sfx('pick');
-  if(c.hp){p.hp=Math.min(150,p.hp+35);texts.push({x:p.x,y:p.y-17,n:35,t:50,col:'#58d854'})}
+  if(c.party)partyCrate(p);else if(c.hp){p.hp=Math.min(150,p.hp+35);texts.push({x:p.x,y:p.y-17,n:35,t:50,col:'#58d854'})}
   else{const k=WLIST.indexOf(c.id);if(p.ammo[k]>=0)p.ammo[k]=Math.min(9,p.ammo[k]+1);texts.push({x:p.x,y:p.y-24,s:'+'+DEF[c.id].n.toUpperCase(),t:70,col:'#f8b800'})}
   break;}
 }
@@ -783,6 +838,7 @@ function update(){
  projs.forEach(stepProj);projs=projs.filter(p=>!p.dead);
  crates.forEach(stepCrate);crates=crates.filter(c=>!c.gone);
  stepFx();
+ if(NET.lowG>0){NET.lowG--;G=.05}else G=G0;
  if(armT>0&&--armT%10===0)projs.push({x:rnd(10,W-10),y:-10,vx:rnd(-.6,.6),vy:3,w:DEF.meteor,age:99,owner:armBy});
  for(const p of players){
   if(p.alive&&p.hp<=0)die(p,true);
@@ -819,11 +875,14 @@ function drawWorm(u){
   ctx.fillStyle='#000';ctx.fillRect(Math.round(an.x)-1,Math.round(an.y)-1,3,3)}
  if(u.chute)blit(ctx,CHUTE,x-4,y-17,CR_COLS);
  if(u.jet>0){ctx.fillStyle='#000';ctx.fillRect(x-d*4-1,y-8,3,6);ctx.fillStyle='#bcbcbc';ctx.fillRect(x-d*4,y-7,1,4)}
- if(u.inv>0&&(tick>>2)%2)return drawLabel(u,x,y);
+ if(u.hide>0&&!humans().includes(u))return;
+ if(u.hide>0)ctx.globalAlpha=.35;
+ if(u.inv>0&&(tick>>2)%2){ctx.globalAlpha=1;return drawLabel(u,x,y)}
  if(u.grounded!==false)RA.fx.shadow(ctx,x,y+1,5,.35);
  const art=GRUB[u.grounded===false?1:(Math.round(u.x/2)&1)],cols=grubCols(u.col,u.flash>0&&(u.flash&2));
  for(let r=0;r<10;r++)for(let i=0;i<9;i++){const ch=art[r][i];if(ch==='.')continue;
   ctx.fillStyle=cols[ch];ctx.fillRect(d>0?x-4+i:x+4-i,y-9+r,1,1)}
+ ctx.globalAlpha=1;if(u.poison>0&&(tick>>3)&1){ctx.fillStyle='#a8f048';ctx.fillRect(x-1,y-14,1,1);ctx.fillRect(x+2,y-16,1,1)}
  drawLabel(u,x,y);
  const[cx,cy]=aimVec(u),ax=Math.round(u.x+cx*13),ay=Math.round(u.y-5+cy*13);
  ctx.fillStyle='#000';ctx.fillRect(ax-2,ay-1,5,3);ctx.fillRect(ax-1,ay-2,3,5);
@@ -851,6 +910,7 @@ function preview(u){
   if(i%4===0){ctx.fillRect(Math.round(x),Math.round(y),1,1)}}
 }
 const CRATE_W=['kkkkkkkk','kLLLLLmk','kLmyymdk','kLmmymdk','kLmymmdk','kLmmmmdk','kLmymmdk','kkkkkkkk'];
+const CRATE_P=['kkkkkkkk','kppppppk','kpwwwwpk','kppppwpk','kpppwwpk','kppppppk','kpppwppk','kkkkkkkk'];
 const CRATE_H=['kkkkkkkk','kwwwwwwk','kwwrrwwk','kwrrrrwk','kwrrrrwk','kwwrrwwk','kgwwwwgk','kkkkkkkk'];
 const CHUTE=['..kkkkk..','.kwrwrwk.','kwrwrwrwk','k.......k','.k.....k.','..k...k..'];
 const CR_COLS={k:'#000',L:NES.dirtL,m:NES.dirt,d:NES.dirtD,y:'#fcfcfc',w:'#fcfcfc',r:'#d82800',g:'#bcbcbc'};
@@ -861,11 +921,16 @@ const PC={k:'#000',w:'#fcfcfc',g:'#00a800',y:'#f8b800',r:'#d82800',s:'#7c7c7c',l
 const SPR=[['kkkk','kwwk','kwwk','kkkk'],['.kk.','kggk','kggk','.kk.'],['kkk','kgk','kkk'],['..w.','.kk.','krrk','krrk','krrk','.kk.'],
  ['kk...','kyyk.','.kyyk','..kyk','...k.'],['..w..','.kyk.','kyyyk','kyyyk','.kkk.'],['kkk','ksk','kkk'],['.k.','kok','krk','.k.'],
  ['.kkkk..','kwwwwkk','kwwwwkw','kwwwwkk','.k..k..'],['.kk.','kllk','kppk','kppk','.kk.'],['.kr.','kkkk','.kk.'],
- ['.kk..kk.','kllkkllk','kllllllk','klkllklk','kllllllk','kllllllk','kkkkkkkk'],['.oo.','oyyo','oyyo','.oo.']];
+ ['.kk..kk.','kllkkllk','kllllllk','klkllklk','kllllllk','kllllllk','kkkkkkkk'],['.oo.','oyyo','oyyo','.oo.'],
+ ['kk......','kwkkkkkk','.kwwkwwk','.kwwwkwk','.kwwwwwk','..k.k.k.'],['..kk..','.kllk.','kllllk','.kkyk.','..k...'],['.kk.','kwpk','kppk','kwpk','.kk.'],
+ ['.kkk.','ksssk','ksssk','.kyk.'],['k.kkkk.','kkwwkkk','kkkkkkw','.k.k.k.'],['kkkkk','kwwwk','kwkwk','kkkkk']];
+// walkers waddle: their leg row shifts every few frames
+const WALKS=new Set([8,9,14,18]);
 const GRAVE=['.kkk.','kllwk','kwwwk','kllwk','kllsk','kllsk','kkkkk'];
 function drawProj(k,x,y){
  if(k===13){const c=['#f8b800','#e45c10','#d82800'];ctx.fillStyle=c[(x+tick>>2)%3];ctx.fillRect(x,y-1-((x+tick>>1)&1),1,2);ctx.fillStyle=c[(x+tick>>1)%3];ctx.fillRect(x+((tick>>2)&1?1:-1),y,1,1);return}
- const a=SPR[k]||SPR[0];
+ let a=SPR[k]||SPR[0];
+ if(WALKS.has(k)&&(tick>>3)&1){const l=a[a.length-1];a=a.slice(0,-1).concat(l.slice(-1)+l.slice(0,-1))}
  if(k===10&&(tick>>3)&1){blit(ctx,a.map(r=>r.replace('r','k')),x-2,y-1,PC);return}
  blit(ctx,a,x-(a[0].length>>1),y-(a.length>>1),PC);
 }
@@ -908,10 +973,15 @@ function camStep(){
 }
 const fogC=document.createElement('canvas');fogC.width=VW;fogC.height=VH;const fCtx=fogC.getContext('2d');
 const rowsCircle=RA.gfx.disc;
+// Fog memory (survey: "a little better"): ground you have explored stays dimly visible, unexplored stays dark.
+const MEMS=4,memC=document.createElement('canvas'),memX=memC.getContext('2d');
+function memClear(){memC.width=Math.ceil(W/MEMS);memC.height=Math.ceil(H/MEMS);memX.clearRect(0,0,memC.width,memC.height)}
 function drawFog(z,ox,oy){
+ memX.fillStyle='#000';for(const q of V.pts){memX.beginPath();memX.arc(q[0]/MEMS,q[1]/MEMS,visR()/MEMS,0,7);memX.fill()}
  fCtx.globalCompositeOperation='source-over';fCtx.clearRect(0,0,VW,VH);
- fCtx.fillStyle='rgba(0,0,28,.8)';fCtx.fillRect(0,0,VW,VH);
+ fCtx.fillStyle='rgba(0,0,28,.88)';fCtx.fillRect(0,0,VW,VH);
  fCtx.globalCompositeOperation='destination-out';
+ fCtx.globalAlpha=.5;fCtx.imageSmoothingEnabled=true;fCtx.drawImage(memC,-ox,-oy,memC.width*MEMS*z,memC.height*MEMS*z);fCtx.globalAlpha=1;fCtx.imageSmoothingEnabled=false;
  const R=Math.round(visR()*z);
  for(const q of V.pts){const x=q[0]*z-ox,y=q[1]*z-oy;
   fCtx.fillStyle='rgba(0,0,0,.45)';rowsCircle(fCtx,x,y,R+6);
@@ -948,7 +1018,7 @@ function render(){
  ctx.drawImage(tCan,0,0);
  for(const c of crates){const x=c.x-4,y=Math.round(c.y)-7;
   if(!c.landed)blit(ctx,CHUTE,x-1,y-7,CR_COLS);
-  blit(ctx,c.hp?CRATE_H:CRATE_W,x,y,CR_COLS);}
+  blit(ctx,c.party?CRATE_P:c.hp?CRATE_H:CRATE_W,x,y,CR_COLS);}
  for(const g of graves)blit(ctx,GRAVE,Math.round(g.x)-2,Math.round(g.y)-3,PC);
  for(const u of players)if(u.alive&&showWorm(u))drawWorm(u);
  for(const p of (isClient()?projs:projs.map(projView))){if(!seen(p.x,p.y))continue;const x=Math.round(p.x),y=Math.round(p.y);
@@ -1159,8 +1229,8 @@ function snapshot(){
   wd:Math.round(wind*5),wt:WATER,sd:sdLeft(),cf:[M.mode,M.fog,M.drops],wl:NET.wl||'',win:NET.winner,r:NET.mroster,
   p:players.map(p=>[Math.round(p.x*2),Math.round(p.y*2),Math.max(0,p.hp|0),p.lives,p.dir,Math.round(p.aim*100),p.alive?1:0,p.charging?Math.round(p.power*98)+1:0,
    WLIST.indexOf(p.wpn),(p.ammo||[]).map(a=>a<0?'i':Math.min(9,a)).join(''),p.kami>0?1:0,p.kills,p.inv>0?1:0,p.grounded?1:0,p.reveal>0?1:0,
-   (p.rope||p.hook)?Math.round((p.rope||p.hook).x):-1,(p.rope||p.hook)?Math.round((p.rope||p.hook).y):-1,(p.chute?1:0)|(p.jet>0?2:0),p.life|0]),hx:SY.pack(),
-  c:crates.map(c=>[c.x,Math.round(c.y),c.hp?1:0,c.landed?1:0]),f:NET.feed,
+   (p.rope||p.hook)?Math.round((p.rope||p.hook).x):-1,(p.rope||p.hook)?Math.round((p.rope||p.hook).y):-1,(p.chute?1:0)|(p.jet>0?2:0),p.life|0,p.hide>0?1:0,p.poison>0?1:0]),hx:SY.pack(),lg:NET.lowG|0,
+  c:crates.map(c=>[c.x,Math.round(c.y),c.party?2:c.hp?1:0,c.landed?1:0]),f:NET.feed,
   x:NET.xlog,pr:projs.slice(0,30).map(q=>{const v=projView(q);return[Math.round(v.x),Math.round(v.y),v.k,v.f]})};
  while(JSON.stringify(g).length>3800&&g.pr.length)g.pr.pop();
  return g;
@@ -1180,7 +1250,7 @@ function applySnap(g){
  const n=Math.max(2,Math.min(MAXP,g.p.length));
  if(g.id!==NET.matchId){
   NET.matchId=g.id;NET.xs=0;NET.fseen=0;NET.saved=false;NET.late=(g.el|0)>2;SY.reset();NET.fq=[];NET.fqs=0;NET.fd=0;
-  setSize(n);genTerrain(g.seed|0);projs=[];crates=[];parts=[];texts=[];feedView=[];graves=[];
+  setSize(n);genTerrain(g.seed|0);memClear();projs=[];crates=[];parts=[];texts=[];feedView=[];graves=[];
   players=g.p.slice(0,n).map((a,i)=>({i,col:COLORS[i][1],hp:100,alive:true,lives:3,peer:'',wpn:'bazooka',ammo:startAmmo(),dir:1,aim:.5,x:0,y:0,vx:0,vy:0,kills:0,flash:0,prev:{},cd:0,power:0,burst:0,coy:0,jb:0,lastJ:-99,inv:0}));
   state='play';showGame();
   if(Array.isArray(g.f))for(const e of g.f)NET.fseen=Math.max(NET.fseen,e[2]|0);
@@ -1193,14 +1263,15 @@ function applySnap(g){
   if(p.alive&&!alive&&p.y<WATER)graves.push({x:p.x,y:p.y-4,vy:-1.5,col:p.col});
   const peer=typeof g.r[i]==='string'?g.r[i]:'',pe=all.find(q=>q.peer===peer);
   const mine=!!(pe&&pe.sameTab),life=a[18]|0,ammo=typeof a[9]==='string'?[...a[9]].slice(0,WLIST.length).map(c=>c==='i'?-1:(+c||0)):p.ammo;
-  Object.assign(p,{hp,lives:a[3]|0,alive,ammo,kills:a[11]|0,inv:a[12]?1:0,reveal:a[14]?1:0,peer,mine,ctrl:mine?'me':'net'});
+  Object.assign(p,{hp,lives:a[3]|0,alive,ammo,kills:a[11]|0,inv:a[12]?1:0,reveal:a[14]?1:0,hide:a[19]?1:0,poison:a[20]?1:0,peer,mine,ctrl:mine?'me':'net'});
   if(mine&&alive&&!a[10]&&p.life===life&&p.synced){if(!hasW(p,p.wpn))p.wpn='bazooka';return}   // my own worm runs here: keep my position, aim and weapon
   const fresh=!p.synced||p.life!==life||!!a[10];p.life=life;p.synced=1;p.kamiS=!!a[10];
   p.nx=a[0]/2;p.ny=a[1]/2;if(fresh||mine){p.x=p.nx;p.y=p.ny;p.vx=0;p.vy=0}
   Object.assign(p,{dir:a[4]<0?-1:1,aim:a[5]/100,charging:a[7]>0,power:Math.max(0,(a[7]-1)/98),
    wpn:WLIST[a[8]]||'bazooka',grounded:a[13]!==0,rope:a[15]>=0&&a[16]!=null?{x:a[15],y:a[16]}:null,hook:null,chute:(a[17]|0)&1,jet:(a[17]|0)&2?1:0})});
  projs=(g.pr||[]).map(a=>({x:a[0],y:a[1],k:a[2]|0,f:a[3]|0}));
- crates=(g.c||[]).map(a=>({x:a[0],y:a[1],hp:!!a[2],landed:!!a[3]}));
+ crates=(g.c||[]).map(a=>({x:a[0],y:a[1],hp:a[2]===1,party:a[2]===2,landed:!!a[3]}));
+ G=(g.lg|0)>0?.05:G0;
  wind=(g.wd|0)/5;WATER=Math.max(40,Math.min(H-2,g.wt|0));NET.sd=g.sd|0;
  if(Array.isArray(g.cf)){M.mode=g.cf[0];M.fog=g.cf[1]|0;M.drops=g.cf[2]|0;for(const p of players){p.team=M.mode==='teams'?p.i%2:p.i;if(M.mode==='teams')p.col=TEAMC[p.i%2]}}if(g.ph==='play'&&NET.sd===0)music.play('worms',4);
  for(const e of g.x||[])if(e[0]>NET.xs){NET.xs=e[0];if(e[3]<0){addGirder(e[1],e[2]);continue}carve(e[1],e[2],Math.min(48,e[3]));debris(e[1],e[2],e[3]);sfx('boom',e[3])}
@@ -1237,6 +1308,31 @@ for(const pre of['L','O'])$('mset'+pre).innerHTML=MSET.map(([k,t,o])=>'<label>'+
  o.map(([v,l])=>'<option value="'+v+'"'+(String(CFG[k])===String(v)?' selected':'')+'>'+l+'</option>').join('')+'</select></label>').join('');
 for(const[k]of MSET)for(const pre of['L','O'])$('m'+pre+k).addEventListener('change',e=>{const v=e.target.value;CFG[k]=isNaN(+v)?v:+v;
  for(const q of['L','O'])$('m'+q+k).value=v;try{localStorage.setItem('ra-worms-mset',JSON.stringify(CFG))}catch(_){}});
+/* ---------- weapon presets 1-3 (survey: host sets the allowed weapons per match) ---------- */
+const PRE=RA.presets('worms',{}),UTIL=['rope','jetpack','parachute','teleport','girder'];
+const PDEF={1:{name:'Classic',w:WLIST.filter(id=>!['armageddon','nuke','scales','donkey'].includes(id))},
+ 2:{name:'Boom Party',w:['bazooka','homing','mortar','grenade','cluster','banana','holy','petrol','sheep','oldwoman','dynamite','mine','airstrike','napalm','donkey','sheepl','madcow','pigeon','mole','vase','mailstrike','minestrike','sheepstrike','armageddon','rope','jetpack','parachute']},
+ 3:{name:'Close Combat',w:['shotgun','handgun','uzi','minigun','punch','bat','prod','kamikaze','longbow','flamer','torch','grenade','dynamite',...UTIL]}};
+function wPreset(n){const v=PRE.get(n)||{},d=PDEF[n];return{name:v.name||d.name,w:Array.isArray(v.w)?v.w.filter(id=>DEF[id]):d.w}}
+function presetLabels(){for(const q of['L','O'])for(const o of $('m'+q+'wset').options)if(+o.value)o.textContent=o.value+'. '+wPreset(+o.value).name}
+const wpre=document.createElement('div');wpre.className='wpre';wpre.hidden=true;root.appendChild(wpre);
+let preSlot=1;
+function renderPre(){const P=wPreset(preSlot);
+ wpre.innerHTML='<div class="wpreBox"><h2>WEAPON PRESETS</h2><div class="row">'+[1,2,3].map(n=>'<button type="button" data-slot="'+n+'"'+(n===preSlot?' class="on"':'')+'>'+n+'. '+esc(wPreset(n).name)+'</button>').join('')+'</div>'+
+ '<label>Name <input id="preName" maxlength="16" value="'+esc(P.name)+'"></label><div class="wgrid">'+
+ WLIST.map(id=>'<label><input type="checkbox" data-id="'+id+'"'+(P.w.includes(id)||id==='bazooka'?' checked':'')+(id==='bazooka'?' disabled':'')+'>'+DEF[id].n+'</label>').join('')+
+ '</div><div class="row"><button type="button" id="preAll">ALL</button><button type="button" id="preNone">NONE</button><button type="button" id="preReset">RESET</button><button type="button" class="go" id="preDone">DONE</button></div></div>'}
+function savePre(){const w=[...wpre.querySelectorAll('input[data-id]')].filter(c=>c.checked).map(c=>c.dataset.id);PRE.set(preSlot,{name:($('preName').value||'').trim().slice(0,16)||PDEF[preSlot].name,w});presetLabels()}
+wpre.addEventListener('change',savePre);
+wpre.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.slot){preSlot=+b.dataset.slot;renderPre();return}
+ if(b.id==='preAll'||b.id==='preNone'){wpre.querySelectorAll('input[data-id]').forEach(c=>{if(!c.disabled)c.checked=b.id==='preAll'});savePre()}
+ if(b.id==='preReset'){PRE.set(preSlot,{});renderPre();presetLabels()}
+ if(b.id==='preDone'){savePre();wpre.hidden=true}});
+for(const q of['L','O']){const b=document.createElement('button');b.type='button';b.textContent='EDIT PRESETS';b.className='wpEdit';
+ b.addEventListener('click',()=>{preSlot=CFG.wset||1;renderPre();wpre.hidden=false});$('mset'+q).appendChild(b)}
+presetLabels();
+
 /* ---------- spectator crates: worms that are out click the map to airdrop a crate (one per 25 s) ---------- */
 const DROPCD=25*60;let dropReady=0;
 function dropCrateAt(x,by){if(state!=='play'||!M.drops)return;
@@ -1297,6 +1393,6 @@ RA.register({id:'worms',name:'WORMS',kind:'Artillery',players:'2-20 players',rea
  onEsc(){if(panelOn){openPanel(false);return true}},
  onQuit(){if(NET.mode==='online'){leaveRoom();return}
   players=[];projs=[];crates=[];setSize(2);genTerrain((Math.random()*1e9)|0);showMenu()}});
-window.__gb={solid:(x,y)=>solid(x,y),get projs(){return projs},explodeAt:(x,y)=>explode(x,y,20,25,null),get cam(){return cam},get VW(){return VW},get VH(){return VH},get state(){return state},get players(){return players},get crates(){return crates},get M(){return M},get theme(){return THEME.n},update,newLocalGame,snapshot,applySnap,NET,
+window.__gb={solid:(x,y)=>solid(x,y),get projs(){return projs},explodeAt:(x,y)=>explode(x,y,20,25,null),get cam(){return cam},get VW(){return VW},get VH(){return VH},get state(){return state},get players(){return players},get crates(){return crates},partyCrate:(p,i)=>{PARTY[i][1](p)},PARTYN:()=>PARTY.length,WLIST,spawnCrate,get M(){return M},get theme(){return THEME.n},update,newLocalGame,snapshot,applySnap,NET,
  terrSum:()=>{let s=0;for(let i=0;i<terr.length;i++)if(terr[i])s=(s+i*7)%1000003;return s}};
 })();
