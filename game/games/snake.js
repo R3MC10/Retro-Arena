@@ -26,7 +26,7 @@ function occupied(x,y){if(!inside(x,y)||wall[at(x,y)])return true;for(const s of
 function freeSpot(m){for(let t=0;t<400;t++){const x=m+Math.floor(Math.random()*(W-2*m)),y=m+Math.floor(Math.random()*(H-2*m));if(!occupied(x,y)&&!food.some(f=>f.x===x&&f.y===y))return[x,y]}return[W>>1,H>>1]}
 function spawnSnake(s){for(let t=0;t<200;t++){const[x,y]=freeSpot(4),d=Math.floor(Math.random()*4);let ok=true;const body=[];
   for(let i=0;i<4;i++){const bx=x-DX[d]*i,by=y-DY[d]*i;if(occupied(bx,by)||occupied(x+DX[d]*(i+1),y+DY[d]*(i+1))){ok=false;break}body.push([bx,by])}
-  if(!ok)continue;Object.assign(s,{body,prev:body.map(b=>b.slice()),dir:d,want:d,grow:2,alive:true,mt:0,inv:90,fang:0,burrow:0,stun:0,charm:0,boostT:0});return}
+  if(!ok)continue;Object.assign(s,{body,prev:body.map(b=>b.slice()),dir:d,want:d,q:[],lastD:-1,grow:2,alive:true,mt:0,inv:90,fang:0,burrow:0,stun:0,charm:0,boostT:0});return}
  s.alive=false;s.respawn=30}
 const teamOf=i=>K.mode===1?i%2:i;
 const TEAMC=['#f04848','#4890f8'];
@@ -50,14 +50,15 @@ function use(s,k){const h=s.body[0];say(h,ITEMS[k].n,ITEMS[k].c);sfx('pick');K.f
  else if(k===8){const lead=snakes.filter(o=>o.alive&&o!==s).sort((a,b)=>b.body.length-a.body.length)[0];if(lead){const[x,y]=freeSpot(2);goose={x,y,tgt:lead.i,t:600,mt:0}}}
  else if(k===9)for(const o of snakes){if(o===s||!o.alive||teamOf(o.i)===teamOf(s.i))continue;const n=Math.floor(o.body.length/3);if(o.body.length-n>=3){o.body.length-=n;o.prev.length=o.body.length}}}
 function steer(s,inp){let d=-1;if(inp.up)d=0;else if(inp.right)d=1;else if(inp.down)d=2;else if(inp.left)d=3;
- if(d<0&&inp.aim!=null){const a=inp.aim,c=Math.cos(a),sn=Math.sin(a);if(Math.abs(c)>Math.abs(sn)*1.15)d=c>0?1:3;else if(Math.abs(sn)>Math.abs(c)*1.15)d=sn>0?2:0}
+
  if(d>=0&&s.charm>0)d=(d+2)%4;
- if(d>=0&&d!==(s.dir+2)%4)s.want=d}
+ // every new press is queued (up to 3) so a quick double turn is never lost or turned into a U-turn into yourself
+ const q=s.q||(s.q=[]);if(d>=0&&d!==s.lastD){const last=q.length?q[q.length-1]:s.dir;if(d!==last&&d!==(last+2)%4&&q.length<3)q.push(d)}s.lastD=d}
 function stepSnake(s){const inp=K.inp(s.i);steer(s,inp);
  const boost=K.S.boost==='on'&&inp.fire&&s.body.length>5;const iv=boost?3:Math.max(4,7-Math.floor(K.tick/3600));
  if(s.stun>0){s.stun--;return}if(++s.mt<iv)return;s.mt=0;
  if(boost&&++s.boostT%5===0){const t=s.body.pop();s.prev.pop();if(t)addFood(1,t[0],t[1])}
- s.dir=s.want;const h=s.body[0],nx=h[0]+DX[s.dir],ny=h[1]+DY[s.dir];s.prev=s.body.map(b=>b.slice());
+ if(s.q&&s.q.length)s.dir=s.q.shift();const h=s.body[0],nx=h[0]+DX[s.dir],ny=h[1]+DY[s.dir];s.prev=s.body.map(b=>b.slice());
  if(!inside(nx,ny)||wall[at(nx,ny)]===1&&s.burrow<=0){kill(s,null);return}
  if(wall[at(nx,ny)]===2){if(s.burrow<=0){kill(s,null);return}}
  if(s.burrow<=0&&s.inv<=0)for(const o of snakes){if(!o.alive)continue;const idx=o.body.findIndex((b,j)=>b[0]===nx&&b[1]===ny&&!(o===s&&j===o.body.length-1&&!s.grow));if(idx<0)continue;
@@ -113,7 +114,8 @@ function bot(i){const s=snakes[i];if(!s||!s.alive)return{};const h=s.body[0];
 const cam={x:0,y:0,z:1};
 function camFor(Wv,Hv){const fs=K.focus().map(i=>snakes[i]).filter(s=>s&&s.alive&&s.body.length);const ww=W*C,hh=H*C;
  let tx=ww/2,ty=hh/2,z=Math.min(Wv/ww,Hv/(hh+20));
- if(fs.length===1&&!K.demo){const p=fs[0].body[0];tx=p[0]*C;ty=p[1]*C;z=Math.max(z,Math.min(2.2,Hv/(22*C)))}
+ const hold=!fs.length&&!K.demo&&K.focus().length===1&&cam.lt;if(hold){tx=cam.lt[0];ty=cam.lt[1];z=Math.max(z,Math.min(2.2,Hv/(22*C)))}
+ if(fs.length===1&&!K.demo){const p=fs[0].body[0];cam.lt=[p[0]*C,p[1]*C];tx=p[0]*C;ty=p[1]*C;z=Math.max(z,Math.min(2.2,Hv/(22*C)))}
  cam.z+=(z-cam.z)*.1;const vw=Wv/cam.z,vh=Hv/cam.z,cl=(v,size,view)=>size<=view?(size-view)/2:Math.max(0,Math.min(size-view,v));
  cam.x+=(cl(tx-vw/2,ww,vw)-cam.x)*.15;cam.y+=(cl(ty-vh/2,hh,vh)-cam.y)*.15}
 function aim(i,fx,fy){const s=snakes[i];if(!s||!s.alive)return null;const h=s.body[0],wx=cam.x+fx*K.W/cam.z,wy=cam.y+fy*K.H/cam.z;
@@ -167,17 +169,17 @@ function render(g,Wv,Hv){camFor(Wv,Hv);buildFloor();
   g.fillText((s.name||'').slice(0,12),Wv-67,y);g.textAlign='right';g.fillText(s.alive?s.body.length:'—',Wv-7,y);g.textAlign='left'})}
 K=RA.kit({id:'snake',name:'SNAKE PIT',kind:'Snakes',players:'1-20 players',demo:6,
  desc:'Classic grid snake for up to 20 in one pit, top-down with raised walls. Eat, grow, cut rivals off. Snake-only power-ups: venom fang, burrow, rattle, molt, charm, mongoose.',
- blurb:'Steer with WASD, arrows or the mouse, hold click or Space to boost. Eat apples to grow, and make every other snake crash into you.',
- howto:'WASD / arrows steer, or point the mouse where your head should go. Click or Space boosts (costs tail). Gamepad: stick steers, A boosts.',
+ blurb:'Steer with WASD or the arrows, hold click or Space to boost. Eat apples to grow, and make every other snake crash into you.',
+ howto:'WASD / arrows steer. Click or Space boosts (costs tail). Gamepad: stick steers, A boosts.',
  icon:['..........','......kkk.','.....kgwgk','.....kgggk','..kkk.kgk.','.kgggkkgk.','kgkkkgggk.','kgk..kkk..','.kgkk.....','..kgk.....'],
  music:MUSIC,fireLabel:'BOOST',
  modes:[['FREE FOR ALL','Every snake for itself.'],['TEAMS','Red vs blue: teammates slide past each other, rivals crash.']],
  settings:[['hit','Body hit',[['die','Crash = out'],['bite','Bite through']]],['boost','Boost',[['on','On'],['off','Off']]],['lives','Lives',[[3,'3'],[1,'1'],[5,'5'],[0,'Endless']]],
   ['len','Time limit',[[3,'3 min'],[2,'2 min'],[5,'5 min'],[0,'None']]],['pow','Power-ups',[['on','Snake items'],['party','Wild party'],['off','Off']]],['arena','Arena',[['random','Random'],['open','Open'],['pillars','Pillars'],['maze','Maze']]]],
- kb:[['W A S D','steer'],['MOUSE','point head'],['LMB SPACE','boost'],['C','chat'],['ESC','menu']],pad:[['LS','steer'],['A','boost'],['BACK','chat'],['START','menu']],
+ kb:[['W A S D','steer'],['LMB SPACE','boost'],['C','chat'],['ESC','menu']],pad:[['LS','steer'],['A','boost'],['BACK','chat'],['START','menu']],
  ach:[{id:'first',name:'Hatchling',desc:'Finish your first match',test:s=>s.played>=1,unlock:'title:Hatchling'},{id:'win1',name:'King Cobra',desc:'Win a match',test:(s,m)=>m.won,unlock:'title:King Cobra'},
   {id:'long',name:'Anaconda',desc:'Grow to 40 long',test:(s,m)=>m.best>=40,unlock:'title:Anaconda'},{id:'ko5',name:'Constrictor',desc:'5 KOs in one match',test:(s,m)=>m.kills>=5,unlock:'title:Constrictor'}],
- alive:i=>!!snakes[i]&&snakes[i].alive&&!snakes[i].out,start,step,follow,snap,apply,render,aim,bot,onFx,teamOf,
+ alive:i=>!!snakes[i]&&snakes[i].alive&&!snakes[i].out,out:i=>!snakes[i]||snakes[i].out,start,step,follow,snap,apply,render,bot,onFx,teamOf,
  ranks:()=>snakes.slice().sort((a,b)=>(a.out-b.out)||b.best-a.best||b.score-a.score).map(s=>[s.name,s.col,'best '+s.best+' · '+s.kills+' KO']),
  result:(i,w)=>{const s=snakes[i];return{won:!!w&&(w.team!=null?teamOf(i)===w.team:w.i===i),kills:s.kills,best:s.best,bestScore:s.score}}});
 window.__sn={get snakes(){return snakes},get food(){return food},K};

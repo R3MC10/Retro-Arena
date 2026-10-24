@@ -562,13 +562,16 @@ function drawHud(){const txt=RA.gfx.text;
  ctx.fillRect(rx,ry,rw,1);ctx.fillRect(rx,ry+rh,rw,1);ctx.fillRect(rx,ry,1,rh);ctx.fillRect(rx+rw,ry,1,rh)}
 function camStep(){
  const fs=focusCrews().map(c=>c.tank).filter(Boolean);let pts=fs.length?fs:demo||!crews.length?tanks.filter(t=>!t.dead):[];
+ // focused crew between lives: hold the camera where it was instead of jumping to someone else
+ if(!pts.length&&!demo&&focusCrews().length&&cam.lt){pts=[cam.lt]}
  if(!pts.length&&fs.length===0&&!demo){const al=tanks.filter(t=>!t.dead&&t.crew>=0);pts=al.length?[al[(Math.floor(tick/600))%al.length]]:[]}
+ if(fs.length===1)cam.lt={x:fs[0].x,y:fs[0].y};
  const W=GW*TS,H=GH*TS,fitAll=Math.min(VW/(W+16),VH/(H+16));
  let tx=W/2,ty=H/2,tz=demo?Math.max(fitAll,.6):1;
  if(BS.cam==='whole'&&!demo&&state==='play'){pts=[];tz=Math.min(1.4,fitAll)}
  if(pts.length&&!(demo&&pts.length>2)){let a=1e9,b=-1e9,c=1e9,d=-1e9;for(const t of pts){a=Math.min(a,t.x);b=Math.max(b,t.x);c=Math.min(c,t.y);d=Math.max(d,t.y)}
   tx=(a+b)/2;ty=(c+d)/2;tz=Math.max(Math.min(fitAll,1),Math.min(1.2,VW/(b-a+200),VH/(d-c+150)));
-  const me=fs.length===1?fs[0]:null;if(me&&mouse.on&&!touchDev){tx+=(mouse.fx-.5)*VW/tz*.35;ty+=(mouse.fy-.5)*VH/tz*.35}}
+  const me=fs.length===1?fs[0]:null;if(me&&mouse.on&&!touchDev&&!spectating()){tx+=(mouse.fx-.5)*VW/tz*.35;ty+=(mouse.fy-.5)*VH/tz*.35}}
  else if(demo){tz=fitAll<.6?.6:fitAll;tx=W/2+Math.sin(tick*.003)*W*.25;ty=H/2+Math.cos(tick*.004)*H*.2}
  cam.z+=(tz-cam.z)*(cam.snap?1:.08);const vw=VW/cam.z,vh=VH/cam.z;
  const cl=(v,size,view)=>size+32<=view?(size-view)/2:Math.max(-16,Math.min(size-view+16,v));

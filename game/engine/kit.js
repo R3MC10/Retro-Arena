@@ -102,11 +102,11 @@ RA.kit=o=>{
  // ---- match flow
  K.fx=(k,...a)=>{if(hostOnline()&&!K.demo){NET.ev.push([++NET.es,k,...a]);if(NET.ev.length>30)NET.ev.shift()}};
  // spectating: watchers, and players who are out, follow one living player; ← → / Tab / click switch who
- const alive=i=>o.alive?o.alive(i):true;K.spec=-1;
- K.spectating=()=>!K.demo&&K.state!=='menu'&&(R.online?(NET.myIdx<0||!alive(NET.myIdx)):!K.seats.some((s,i)=>s.ctrl!=='cpu'&&alive(i)));
+ const alive=i=>o.alive?o.alive(i):true,gone=i=>o.out?o.out(i):!alive(i);K.spec=-1;
+ K.spectating=()=>!K.demo&&K.state!=='menu'&&(R.online?(NET.myIdx<0||gone(NET.myIdx)):!K.seats.some((s,i)=>s.ctrl!=='cpu'&&!gone(i)));
  K.cycle=d=>{const n=K.seats.length;if(!n)return;let j=K.spec;for(let k=0;k<n;k++){j=((j+d)%n+n)%n;if(alive(j)){K.spec=j;return}}};
  K.focus=()=>{if(K.spectating()){if(K.spec<0||!alive(K.spec))K.cycle(1);return K.spec>=0&&alive(K.spec)?[K.spec]:[]}
-  return R.online?[NET.myIdx]:K.seats.map((s,i)=>s.ctrl!=='cpu'&&alive(i)?i:-1).filter(i=>i>=0)};
+  return R.online?[NET.myIdx]:K.seats.map((s,i)=>s.ctrl!=='cpu'&&!gone(i)?i:-1).filter(i=>i>=0)};
  addEventListener('keydown',e=>{if(RA.menu.current&&RA.menu.current.id!==id||!K.spectating())return;
   if(e.code==='ArrowRight'||e.code==='Tab'||e.code==='KeyE'){K.cycle(1);e.preventDefault()}else if(e.code==='ArrowLeft'||e.code==='KeyQ'){K.cycle(-1);e.preventDefault()}});
  cv.addEventListener('pointerdown',()=>{if(K.spectating())K.cycle(1)});

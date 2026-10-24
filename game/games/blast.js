@@ -265,7 +265,7 @@ K=RA.kit({id:'blast',name:'BLAST MAZE',kind:'Bomb maze',players:'1-20 players',d
  kb:[['W A S D','move'],['LMB SPACE','bomb'],['RMB E','throw / detonate'],['C','chat'],['ESC','menu']],pad:[['LS','move'],['A','bomb'],['B','throw'],['BACK','chat'],['START','menu']],
  ach:[{id:'first',name:'Fuse Lit',desc:'Finish your first match',test:s=>s.played>=1,unlock:'title:Fuse Lit'},{id:'win1',name:'Bomb Master',desc:'Win a match',test:(s,m)=>m.won,unlock:'title:Bomb Master'},
   {id:'ko5',name:'Chain Reaction',desc:'5 KOs in one match',test:(s,m)=>m.kills>=5,unlock:'title:Chain Reaction'},{id:'flaw',name:'Untouchable',desc:'Win without being blown up',test:(s,m)=>m.won&&!m.ko,unlock:'title:Untouchable'}],
- alive:i=>!!men[i]&&men[i].alive,start,step,follow,snap,apply,render,bot,onFx,teamOf,
+ alive:i=>!!men[i]&&men[i].alive,out:i=>!men[i]||(!men[i].alive&&!men[i].ghost&&!(men[i].dead>0)),start,step,follow,snap,apply,render,bot,onFx,teamOf,
  ranks:()=>men.slice().sort((a,b)=>b.wins-a.wins||b.kills-a.kills).map(m=>[m.name,m.col,'★'+m.wins+' · '+m.kills+' KO']),
  result:(i,w)=>{const m=men[i];return{won:!!w&&(w.coop!=null?!!w.coop:w.team!=null?teamOf(i)===w.team:w.i===i),kills:m.kills,ko:m.ko,bestScore:m.wins}}});
 window.__bm={get men(){return men},get bombs(){return bombs},K};
