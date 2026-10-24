@@ -29,6 +29,12 @@
           <p class="needMsg">Pick a nickname to start playing. Everyone sees it in rooms and chat.</p>
           <div class="pstats" id="pstats"></div>
         </section>
+        <section class="pcard sound" id="sound" aria-label="Sound options"><h3>SOUND</h3>
+          <label>MASTER <input type="range" min="0" max="100" data-v="master"><output></output></label>
+          <label>MUSIC <input type="range" min="0" max="100" data-v="music"><output></output></label>
+          <label>EFFECTS <input type="range" min="0" max="100" data-v="sfx"><output></output></label>
+          <div class="sndRow"><button type="button" id="sndMute">MUTE ALL</button><button type="button" id="sndMus">MUSIC ON</button><button type="button" id="sndTest">TEST ♪</button></div>
+        </section>
         <div class="blurb" id="blurb" aria-live="polite"></div>
       </div>
       <ul class="games" id="games"></ul>

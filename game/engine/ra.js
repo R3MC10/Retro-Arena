@@ -6,7 +6,7 @@
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v28';
+RA.VERSION='v29';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -93,6 +93,12 @@ RA.screen=o=>{
 
 /* ---------- sound effects ---------- */
 let AC=null,noise=null,lastBoom=0;const SFX={};
+// Sound options (main menu): master / music / effects volume 0-100 + mute, saved per device
+const VOL={master:80,music:70,sfx:90,mute:false};try{Object.assign(VOL,JSON.parse(localStorage.getItem('ra-sound')||'{}'))}catch(e){}
+let BUS=null;   // {master,music,sfx} gain nodes, everything plays through these
+function buses(){if(!BUS&&AC){const m=AC.createGain(),mu=AC.createGain(),fx=AC.createGain();mu.connect(m);fx.connect(m);m.connect(AC.destination);BUS={master:m,music:mu,sfx:fx};applyVol()}return BUS}
+function applyVol(){if(!BUS)return;BUS.master.gain.value=VOL.mute?0:VOL.master/100;BUS.music.gain.value=VOL.music/100;BUS.sfx.gain.value=VOL.sfx/100}
+const fxOut=()=>buses()?BUS.sfx:AC.destination;
 function ensure(){
  if(AC){music.wake();return AC}
  try{AC=new(window.AudioContext||window.webkitAudioContext)();
@@ -101,17 +107,17 @@ function ensure(){
  music.wake();return AC;
 }
 // built in: boom (arg = blast size), shot, pick, sel; games add their own with RA.audio.add(name, fn)
-function sfx(t,r){if(!AC)return;try{const now=AC.currentTime,g=AC.createGain();g.connect(AC.destination);
+function sfx(t,r){if(!AC)return;try{const now=AC.currentTime,g=AC.createGain();g.connect(fxOut());
  if(SFX[t]){SFX[t](AC,now,g,r);return}
  if(t==='boom'){if(now-lastBoom<.05)return;lastBoom=now;const big=(r|0)>=20,s=AC.createBufferSource(),f=AC.createBiquadFilter();s.buffer=noise;f.type='lowpass';f.frequency.value=big?420:700;
   s.connect(f);f.connect(g);g.gain.value=big?.6:.45;s.start();
-  if(big){const o=AC.createOscillator(),v=AC.createGain();o.frequency.setValueAtTime(110,now);o.frequency.exponentialRampToValueAtTime(30,now+.35);v.gain.setValueAtTime(.5,now);v.gain.exponentialRampToValueAtTime(.001,now+.4);o.connect(v);v.connect(AC.destination);o.start();o.stop(now+.42)}}
+  if(big){const o=AC.createOscillator(),v=AC.createGain();o.frequency.setValueAtTime(110,now);o.frequency.exponentialRampToValueAtTime(30,now+.35);v.gain.setValueAtTime(.5,now);v.gain.exponentialRampToValueAtTime(.001,now+.4);o.connect(v);v.connect(fxOut());o.start();o.stop(now+.42)}}
  else if(t==='sel'){const o=AC.createOscillator();o.type='square';o.frequency.value=740;g.gain.setValueAtTime(.05,now);g.gain.exponentialRampToValueAtTime(.001,now+.06);o.connect(g);o.start();o.stop(now+.07)}
  else{const o=AC.createOscillator(),hi=t==='pick';o.type='square';o.frequency.setValueAtTime(hi?500:900,now);o.frequency.exponentialRampToValueAtTime(hi?1200:180,now+.1);
   g.gain.setValueAtTime(.08,now);g.gain.exponentialRampToValueAtTime(.001,now+.12);o.connect(g);o.start();o.stop(now+.13)}}catch(e){}}
 function blip(f){ensure();if(!AC)return;try{const now=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type='square';o.frequency.value=f;
- g.gain.setValueAtTime(.06,now);g.gain.exponentialRampToValueAtTime(.001,now+.08);o.connect(g);g.connect(AC.destination);o.start();o.stop(now+.09)}catch(e){}}
-RA.audio={ensure,sfx,blip,add:(name,fn)=>{SFX[name]=fn},get ctx(){return AC},get noise(){return noise}};
+ g.gain.setValueAtTime(.06,now);g.gain.exponentialRampToValueAtTime(.001,now+.08);o.connect(g);g.connect(fxOut());o.start();o.stop(now+.09)}catch(e){}}
+RA.audio={ensure,sfx,blip,vol:VOL,setVol(k,v){VOL[k]=v;applyVol();try{localStorage.setItem('ra-sound',JSON.stringify(VOL))}catch(e){}},add:(name,fn)=>{SFX[name]=fn},get ctx(){return AC},get noise(){return noise}};
 
 /* ---------- music: every game has its own set of 8-bit tracks ---------- */
 // A track: 4 bars of 16th steps. mel = pulse lead ("-" holds, "." rests), ch = one chord per bar (drives bass + arpeggio),
@@ -144,14 +150,14 @@ const music=RA.music=(()=>{
    const dk=cur.dr[step%cur.dr.length];if(dk!=='.')drum(dk,t);
    step++;next+=sp}}
  function start(){if(!AC||!on||!set||!SETS[set])return;const list=SETS[set];cur=list[idx%list.length];step=0;next=AC.currentTime+.05;
-  if(!gain){gain=AC.createGain();gain.gain.value=.45;gain.connect(AC.destination);
+  if(!gain){gain=AC.createGain();gain.gain.value=.45;gain.connect(buses()?BUS.music:AC.destination);
    const n=16,re=new Float32Array(n),im=new Float32Array(n);for(let k=1;k<n;k++)im[k]=2/(k*Math.PI)*Math.sin(k*Math.PI*.25);pulseW=AC.createPeriodicWave(re,im)}
   clearInterval(timer);timer=setInterval(sched,25);sched()}
  function stop(){clearInterval(timer);timer=0;cur=null}
  function label(){document.querySelectorAll('.ra-mus').forEach(m=>{m.classList.toggle('off',!on);m.textContent=on?'♪':'♪ OFF'});const c=$('cartMus');if(c)c.textContent=on?'♪ MUSIC ON':'♪ MUSIC OFF'}
  function show(){label();toast(on?'♪ '+(cur?cur.n.toUpperCase():'MUSIC ON'):'♪ MUSIC OFF')}
  const save=()=>{try{localStorage.setItem('ra-music',on?'on':'off')}catch(e){}};
- return{track,label,
+ return{track,label,get on(){return on},
   add(id,tracks){SETS[id]=tracks},
   play(s,i){if(s===set&&i===idx&&(cur||!on))return;set=s;idx=i;stop();start()},
   next(){if(!set)return;if(!on){on=true;save()}ensure();idx=(idx+1)%SETS[set].length;stop();start();show()},
@@ -547,7 +553,15 @@ RA.boot=()=>{
  document.querySelectorAll('#games canvas').forEach(c=>drawIcon(c,+c.dataset.ic));
  $('games').addEventListener('click',e=>{const b=e.target.closest('button');if(b)launch(+b.id.slice(1))});
  $('games').addEventListener('pointerover',e=>{const b=e.target.closest('button');if(b&&e.pointerType==='mouse')pick(+b.id.slice(1),true)});
- const cm=$('cartMus');if(cm){cm.addEventListener('click',()=>music.toggle());cm.addEventListener('mousedown',e=>e.preventDefault())}
+ {const box=$('sound');if(box){const V=RA.audio.vol;
+ const paint=()=>{box.querySelectorAll('input[data-v]').forEach(i=>{i.value=V[i.dataset.v];i.nextElementSibling.textContent=V[i.dataset.v]});
+  $('sndMute').textContent=V.mute?'UNMUTE':'MUTE ALL';$('sndMute').classList.toggle('on',V.mute);$('sndMus').textContent=music.on?'MUSIC ON':'MUSIC OFF'};
+ box.querySelectorAll('input[data-v]').forEach(i=>i.addEventListener('input',()=>{ensure();RA.audio.setVol(i.dataset.v,+i.value);paint()}));
+ box.querySelectorAll('input[data-v]').forEach(i=>i.addEventListener('change',()=>{if(i.dataset.v!=='music')blip(660)}));
+ $('sndMute').addEventListener('click',()=>{ensure();RA.audio.setVol('mute',!V.mute);paint()});
+ $('sndMus').addEventListener('click',()=>{music.toggle();setTimeout(paint,0)});
+ $('sndTest').addEventListener('click',()=>{ensure();sfx('boom',1)});paint()}}
+const cm=$('cartMus');if(cm){cm.addEventListener('click',()=>music.toggle());cm.addEventListener('mousedown',e=>e.preventDefault())}
  music.label();pick(0,false);showCart(true);requestAnimationFrame(loop);cardInit();chatInit();
  (function padLoop(){if(cartOn){const p=pad(0),pr=padPrev;
    if(p.up&&!pr.up)pick(sel-1,true);if(p.down&&!pr.down)pick(sel+1,true);

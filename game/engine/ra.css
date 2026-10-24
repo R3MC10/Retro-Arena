@@ -249,3 +249,13 @@ body.playing .chat{top:10px;bottom:52px;opacity:.94}
 .chatForm input:focus{outline:2px solid #f8c040}
 .chatForm button{font-family:var(--pixel);font-size:9px;padding:0 10px}
 .raVer{position:fixed;top:max(3px,env(safe-area-inset-top,0px));left:max(5px,env(safe-area-inset-left,0px));z-index:20;pointer-events:none;user-select:none;font-family:var(--pixel);font-size:7px;letter-spacing:.08em;color:#fff;opacity:.45;text-shadow:1px 1px 0 #000}
+/* sound options (main menu) */
+.sound{display:flex;flex-direction:column;gap:6px}
+.sound h3{margin:0;font-size:12px;letter-spacing:2px;color:#f8d878}
+.sound label{display:grid;grid-template-columns:84px 1fr 30px;align-items:center;gap:8px;font-size:11px}
+.sound input[type=range]{width:100%;accent-color:#f8b800;background:none;border:0;box-shadow:none;padding:0;height:18px;margin:0}
+.sound label{margin:0}
+.sound output{text-align:right}
+.sndRow{display:flex;gap:6px;flex-wrap:wrap}
+.sndRow button{flex:1;font-size:11px;padding:6px 4px}
+.sndRow button.on{background:#d82800;color:#fff}
