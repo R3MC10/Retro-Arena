@@ -290,3 +290,18 @@ button{border-radius:6px;background:linear-gradient(180deg,#4a4f8a,#24275a);bord
 .ctlCard{border:1px solid rgba(255,255,255,.35);border-radius:6px;padding:8px 10px;background:rgba(0,0,30,.35);margin-top:6px}
 .ctlCard b{font-family:var(--pixel);font-size:10px;color:#f8d878;letter-spacing:.08em}
 .ctlCard p{margin:4px 0 0;font-size:17px;line-height:1.25}
+
+/* achievements screen */
+.achBtn{all:unset;cursor:pointer;color:#f8d878;text-decoration:underline dotted}
+.pstats .ttl{color:#f8b800}
+.achModal{position:fixed;inset:0;z-index:80;background:rgba(0,0,20,.8);overflow:auto;padding:16px}
+.achModal[hidden]{display:none}
+.achBox{max-width:820px;margin:0 auto;padding:16px;background:linear-gradient(180deg,#2c3c9c,#101c5c);border:2px solid #e8ecff;border-radius:8px;box-shadow:0 0 0 2px #000}
+.achHead{display:flex;justify-content:space-between;align-items:center}.achHead h2{margin:0;color:#f8d878;font-family:var(--pixel);font-size:14px}
+.achTitles{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0}.achTitles b{font-family:var(--pixel);font-size:10px;color:#f8d878}
+.achTitles button.on{background:linear-gradient(180deg,#ffd860,#c88000);color:#000}
+.achBox section h3{margin:12px 0 4px;font-family:var(--pixel);font-size:11px;color:#fff}.achBox section h3 small{color:#9aa4ff}
+.achBox ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.achBox li{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,.25);opacity:.6}
+.achBox li.got{opacity:1;background:linear-gradient(90deg,rgba(248,184,0,.25),rgba(0,0,0,.2))}
+.achBox li .st{color:#f8b800;font-size:20px}.achBox li i{display:block;font-style:normal;color:#c8ccff;font-size:16px}.achBox li em{font-style:normal;font-size:14px;color:#f8d878;text-align:right}

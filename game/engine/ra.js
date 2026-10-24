@@ -6,7 +6,7 @@
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v35';
+RA.VERSION='v36';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -540,7 +540,21 @@ function cardInit(){const i=$('nickIn');if(!i)return;
 function card(){const el=$('pstats');if(!el)return;let a=0,t=0,pl=0;
  for(const g of GAMES){const ac=ACHS[g.id];if(ac){a+=ac.count();t+=ac.defs.length}if(g.ready)pl+=RA.save(g.id).stats.played|0}
  $('pcard').classList.toggle('need',!PLAYER.name);
- el.innerHTML='<span>★ '+a+'/'+t+' ACHIEVEMENTS</span><span>'+pl+' MATCHES</span>'+(CHAT.peers?'<span class="on">● '+CHAT.peers+' ONLINE</span>':'')}
+ const ti=RA.save('profile').data.title;
+ setH(el,'<button type="button" class="achBtn" id="achBtn">★ '+a+'/'+t+' ACHIEVEMENTS</button><span>'+pl+' MATCHES</span>'+(CHAT.peers?'<span class="on">● '+CHAT.peers+' ONLINE</span>':'')+(ti?'<span class="ttl">“'+RA.util.esc(ti)+'”</span>':''))}
+// Achievements & unlocks screen: every game's list, what you have, what it unlocked; pick a title to wear
+function achOpen(){let m=$('achModal');if(!m){m=document.createElement('div');m.id='achModal';m.className='achModal';document.body.appendChild(m);
+  m.addEventListener('click',e=>{if(e.target===m||e.target.id==='achX'){m.hidden=true;return}const b=e.target.closest('[data-title]');
+   if(b){const v=b.dataset.title;RA.save('profile').set({title:RA.save('profile').data.title===v?'':v});blip(880);achOpen();card()}})}
+ const cur=RA.save('profile').data.title||'';let titles=[];
+ const sec=GAMES.filter(g=>ACHS[g.id]).map(g=>{const A=ACHS[g.id],L=A.list();
+  return '<section><h3>'+RA.util.esc(g.name)+' <small>'+A.count()+'/'+L.length+'</small></h3><ul>'+L.map(d=>{const un=d.unlock?String(d.unlock):'',nm=un.split(':').pop();
+   if(d.got&&un.startsWith('title:'))titles.push(nm);
+   return '<li class="'+(d.got?'got':'')+'"><span class="st">'+(d.got?'★':'☆')+'</span><span><b>'+RA.util.esc(d.name)+'</b><i>'+RA.util.esc(d.desc||'')+'</i></span><em>'+(un?(d.got?'UNLOCKED: ':'REWARD: ')+RA.util.esc(nm):'')+(d.got?'<br>'+new Date(d.got).toLocaleDateString():'')+'</em></li>'}).join('')+'</ul></section>'}).join('');
+ m.innerHTML='<div class="achBox"><div class="achHead"><h2>ACHIEVEMENTS & UNLOCKS</h2><button id="achX">✕</button></div>'+
+  '<div class="achTitles"><b>YOUR TITLE</b> '+(titles.length?titles.map(t=>'<button type="button" data-title="'+RA.util.esc(t)+'"'+(t===cur?' class="on"':'')+'>'+RA.util.esc(t)+'</button>').join(''):'<span>Unlock titles by earning achievements.</span>')+'</div>'+sec+'</div>';
+ m.hidden=false}
+document.addEventListener('click',e=>{if(e.target&&e.target.id==='achBtn')achOpen()});
 
 /* ---------- multicart menu ---------- */
 const GAMES=[];let sel=0,cartOn=true,cur=null,soonT=0,padPrev={};
