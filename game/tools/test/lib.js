@@ -4,7 +4,8 @@ const {chromium}=require('playwright');
 const URL=process.env.RA_URL||'http://localhost:8765/index.html';
 async function browser(){return chromium.launch()}
 // open the page, sign in a nickname, open game <id> on its lobby
-async function openGame(b,id,{name='Tester',ctx=null}={}){const pg=await(ctx||b).newPage({viewport:{width:1280,height:720}});const errs=[];
+async function openGame(b,id,{name='Tester',ctx=null}={}){// VW / VH / DPR env vars test big monitors and Windows display scaling
+ const pg=await(ctx||b).newPage({viewport:{width:+process.env.VW||1280,height:+process.env.VH||720},deviceScaleFactor:+process.env.DPR||1});const errs=[];
  pg.on('pageerror',e=>errs.push('PAGEERR '+e.message+' '+(e.stack||'').split('\n')[1]));pg.on('console',m=>{if(m.type()==='error')errs.push('CONSOLE '+m.text());if(m.type()==='warning'&&/clashes/.test(m.text()))errs.push('WARN '+m.text())});
  await pg.goto(URL);await pg.waitForTimeout(600);await pg.evaluate(n=>RA.player.set(n),name);
  await pg.evaluate(id=>{for(const b of document.querySelectorAll('#games button')){b.click();if(RA.menu.current&&RA.menu.current.id===id)return;RA.menu.show()}},id);

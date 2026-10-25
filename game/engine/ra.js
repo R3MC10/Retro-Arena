@@ -6,7 +6,7 @@
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v77';
+RA.VERSION='v78';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -145,7 +145,9 @@ RA.screen=o=>{
   const nw=Math.max(160,Math.ceil(w/s)),nh=Math.max(120,Math.ceil(h/s));
   st.s=s;st.dpr=dpr;o.canvas.style.width=(nw*s/dpr)+'px';o.canvas.style.height=(nh*s/dpr)+'px';
   // o.res: render k x sharper than the game's logical pixels (text, shapes, models get the detail; game code is unchanged)
-  const k=Math.max(1,Math.min(o.res||1,s));
+  // ...but only by a factor that divides the screen scale: the browser then enlarges the canvas by a whole number and every
+  // game pixel stays an even square (k=3 on an 8x screen gave 2.67x - uneven pixels and unreadable text on big monitors)
+  let k=(o.res||1)>1?Math.min(s,6):1;while(k>1&&s%k)k--;
   if(nw===st.w&&nh===st.h&&k===st.k)return;
   st.w=nw;st.h=nh;st.k=k;o.canvas.width=nw*k;o.canvas.height=nh*k;hiCtx(o.canvas,k);if(o.onResize)o.onResize(nw,nh);
  }

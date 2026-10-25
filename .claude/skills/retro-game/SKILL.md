@@ -39,6 +39,14 @@ Ask these again at every milestone: *Does this make sense? Does it align with th
 - Text: `RA.pix.text(g, s, x, y, {col, outline, scale, align})` - the 5x7 bitmap font. HUD panels in the pixel style.
 - Backgrounds tell the place: crowds, ad boards, lights, parallax layers, themed variants (day / desert / night).
 - Keep the bottom ~9px of the frame free: the kit's control legend sits there.
+- **Test big monitors and Windows scaling:** `VW=2560 VH=1440 node shots.js ...` and `VW=1536 VH=864 DPR=1.25 ...`. The engine
+  scales game pixels by a whole number; the canvas resolution must divide that scale (a 3x canvas on an 8x screen gave
+  2.67x - uneven pixels and text testers couldn't read). Games that need a wider view raise baseH (Turbo Karts 270,
+  Worms 330) instead of shrinking sprites; the HUD text then stays 1x and gets smaller on screen.
+- Say what the game is and what to do now, in the game: a short intro panel (how a round works, how you win), a banner
+  per round, one status line for your situation (your turn / shot fired - take cover / waiting), a small event feed.
+  Testers said of the first Worms rebuild 'no idea what's going on' - controls in a legend are not enough.
+- Choices with many options get a menu (Worms weapons: a grid with icons and ammo, keyboard + mouse + pad), not a cycle key.
 
 ## 2. Animation and physics
 
@@ -107,6 +115,11 @@ Serve: `cd game && python3 -m http.server 8765`. Tools in `game/tools/test` (see
    Measure climbing with a script (a wall of height h, each move: walk / jump / double jump) - Worms could only jump onto 14 px
    ledges because a jump hit the wall and bounced off: press against walls in the air and catch the ledge instead.
    Add ledge forgiveness (step up when feet are within ~10px of a ledge top) and keep walls you must climb <= 3 tiles.
+   Team games: CPUs must never pick a shot that lands among their own team. Test the shot WITH its aim error, re-check it
+   just before firing, simulate with the same sub-steps as the real projectile (a coarse test shot skipped through thin
+   worms), and log friendly damage per match (Worms: 10% -> 2%). A CPU with no safe shot skips its go.
+   Watch animations tick by tick (log the pose each step): Worms 'walking' was really walk / fall / land every 3 steps
+   on any downhill, because one pixel forward put the worm in the air.
    Survival / swarm games: check a solo human with the WEAKEST starting kit survives the first minutes; contact damage
    that feels fine with a team kills a lone player in seconds. bot() must output key booleans too (test harness), not only ax/ay.
    Log every death with its cause and tile (why@x): clusters point straight at an impossible jump, an enemy you can't

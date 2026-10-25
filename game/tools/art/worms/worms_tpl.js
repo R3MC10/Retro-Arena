@@ -80,7 +80,7 @@ function applyOp(op){if(op[0]==='c'){const[,x,y,r]=op;const x0=Math.max(0,x-r-3|
 function addOp(op){ops.push(op);applyOp(op);opsDone=ops.length}
 const surfaceY=(x,from)=>{for(let y=from||0;y<WH;y++)if(solidAt(x,y))return y;return WH};
 /* ---------- match ---------- */
-function start(seats,md,S,seed){const rr=RA.util.mulberry(seed),n=seats.length,per=S.worms==null||S.worms==='auto'?(n<=4?3:n<=8?2:1):+S.worms;classic=S.turns==='classic';
+function start(seats,md,S,seed){const rr=RA.util.mulberry(seed),n=seats.length,per=S.worms==null||S.worms==='auto'?(n<=2?3:n<=6?2:1):+S.worms;classic=S.turns==='classic';
  turnT=(+S.time||20)*60;sdRound=+S.sd||8;W=Math.max(640,Math.min(1600,380+n*per*42));
  const th=S.map==null||S.map==='rnd'?Object.keys(THEMES)[Math.floor(rr()*4)]:S.map;TH=th;genMap(seed,th);
  ops=[];opsDone=0;proj=[];crates=[];fx=[];parts=[];texts=[];nextId=1;round=0;phase='settle';phT=0;water=WH-14;winT=0;turnTeam=0;
@@ -88,7 +88,7 @@ function start(seats,md,S,seed){const rr=RA.util.mulberry(seed),n=seats.length,p
  worms=[];const total=n*per,slots=[];for(let k=0;k<total;k++)slots.push((k+.5)/total);for(let k=slots.length-1;k>0;k--){const j=Math.floor(rr()*(k+1));[slots[k],slots[j]]=[slots[j],slots[k]]}
  let k=0;for(let i=0;i<n;i++)for(let j=0;j<per;j++){let x=Math.round(40+slots[k++]*(W-80)),y=surfaceY(x);for(let t=0;t<40&&(y>=water-6||y<20);t++){x=Math.round(40+rr()*(W-80));y=surfaceY(x)}
   worms.push({id:worms.length,seat:i,j,name:per>1?(s=>s)(['Boggy','Spadge','Clagnut','Chuck','Thrasher','Nobby','Wormy','Grub'][(i*3+j)%8]):seats[i].name,x,y,vx:0,vy:0,gr:false,face:x<W/2?1:-1,aim:-.5,hp:+S.hp||100,dead:false,pose:'idle1',dist:0,rope:null,pw:0,ch:false,ev:[],evSeq:0,evSeen:0,fall:0,shots:[],sseq:0,acted:false,kills:0,dmg:0,hurt:0})}
- active=teams.map(()=>-1);newRound()}
+ active=teams.map(()=>-1);startT=K.tick;newRound()}
 const liveWorms=s=>worms.filter(w=>w.seat===s&&!w.dead);
 const aliveTeams=()=>{const t=new Set();for(const w of worms)if(!w.dead)t.add(teamOf(w.seat));return t};
 function newRound(){round++;phase='round';phT=K.tick;wind=Math.round((Math.random()*2-1)*(round===1?.3:1)*10)/10;
@@ -114,8 +114,12 @@ function finish(at){const t=[...at][0];if(K.mode===1)K.end(t==null?null:{team:t,
 /* ---------- a worm: walk, jump, aim, fire, rope (runs on its owner's device) ---------- */
 function hitBox(x,y){return solidAt(x-3,y-1)||solidAt(x+3,y-1)||solidAt(x-3,y-8)||solidAt(x+3,y-8)||solidAt(x,y-10)||solidAt(x,y-1)||solidAt(x-4,y-5)||solidAt(x+4,y-5)}
 function control(w,inp,me){if(w.hurt>0)w.hurt--;
- const t=teams[w.seat],tap=k=>inp[k]&&!(w.prev&&w.prev[k]);
- if(me&&!w.acted&&!w.rope){if(tap('b3')){let k=t.wsel;for(let n=0;n<WP.length;n++){k=(k+1)%WP.length;if(t.ammo[k]!==0)break}t.wsel=k;sfx('tick')}}
+ const t=teams[w.seat],tap=k=>inp[k]&&!(w.prev&&w.prev[k]),done=()=>{phys(w);w.prev=Object.assign({},inp);w.pose=poseOf(w)};
+ // the weapon menu (Q): move through the grid with WASD / the stick / the mouse, Space or a click picks, Q closes
+ if(me&&t.menu){menuStep(w,t,inp,tap);done();return}
+ if(me&&!w.acted&&!w.rope&&phase==='round'&&tap('b3')){t.menu=1;t.mc=t.wsel;t.mT=K.tick;sfx('tick');done();return}
+ // your sheep is loose: E makes it jump, Space blows it up
+ const sh=me&&proj.find(p=>p.k==='sheep'&&p.own===w.id&&!p.gone);if(sh){if(tap('alt'))sheepCmd(w,sh,'sj');if(tap('fire'))sheepCmd(w,sh,'sd');done();return}
  const wp=WP[t.wsel];
  // aim: W / S (or the mouse), relative to where you face
  if(me){if(inp.aim!=null){const a=inp.aim,f=Math.cos(a)>=0?1:-1;if(!w.rope||true){w.face=f;w.aim=Math.max(-1.55,Math.min(1.55,f>0?a:Math.atan2(Math.sin(a),-Math.cos(a))))}}
@@ -123,8 +127,9 @@ function control(w,inp,me){if(w.hurt>0)w.hurt--;
  if(w.rope){ropeStep(w,inp,me);w.prev=Object.assign({},inp);return}
  // walking and jumping
  if(w.gr&&w.hurt<=0){let dir=me&&!w.ch?(inp.right?1:0)-(inp.left?1:0):0;if(inp.ax!=null&&Math.abs(inp.ax)>.3&&me&&!w.ch)dir=Math.sign(inp.ax);
-  if(dir){w.face=dir;w.walk=(w.walk||0)+.7;while(w.walk>=1){w.walk--;let moved=false;for(let up=0;up<=6;up++)if(!hitBox(w.x+dir,w.y-up)){w.x+=dir;w.y-=up;moved=true;break}if(!moved){w.blk=(w.blk|0)+1;break}w.blk=0;w.dist++}
-   while(!hitBox(w.x,w.y+1)&&w.y<WH&&solidAt(w.x,w.y+5)){w.y++}}
+  if(dir){w.face=dir;w.walk=(w.walk||0)+.7;while(w.walk>=1){w.walk--;let moved=false;for(let up=0;up<=6;up++)if(!hitBox(w.x+dir,w.y-up)){w.x+=dir;w.y-=up;moved=true;break}if(!moved){w.blk=(w.blk|0)+1;break}w.blk=0;w.dist++;w.wk=K.tick;
+    // walking downhill: settle onto the ground below (up to 8 px) instead of dropping into a fall every step
+    let d=0;while(d<8&&!hitBox(w.x,w.y+1)){w.y++;d++}if(!hitBox(w.x,w.y+1))w.y-=d}}
   if(w.blk>20&&dir)w.wallT=K.tick;            // pushing against a wall: the hint says how to get up
   if(me&&tap('alt')&&!w.ch){w.vx=w.face*1.6;w.vy=-3.4;w.gr=false;w.y-=1;w.jt=K.tick;w.flip=0;sfx('tick')}
   else if(me&&tap('b4')&&!w.ch)backflip(w)}
@@ -132,13 +137,23 @@ function control(w,inp,me){if(w.hurt>0)w.hurt--;
  else if(!w.gr&&w.hurt<=0&&me){if(tap('alt')&&!w.flip&&K.tick-(w.jt||-99)<22){backflip(w)}
   const dir=(inp.right?1:0)-(inp.left?1:0);if(dir&&!w.ch)w.vx=Math.max(-1.9,Math.min(1.9,w.vx+dir*.04))}
  // fire
- if(me&&!w.acted&&phase==='round'&&w.hurt<=0){
+ if(w.noFire){if(!inp.fire)w.noFire=0}
+ else if(me&&!w.acted&&phase==='round'&&w.hurt<=0){
   if(wp.ki==='c'){if(inp.fire&&t.ammo[t.wsel]!==0){w.ch=true;w.pw=Math.min(1,w.pw+1/55);if(w.pw>=1)release(w,t)}else if(w.ch)release(w,t)}
   else if(tap('fire')&&t.ammo[t.wsel]!==0)shoot(w,t,1)}
  else if(!inp.fire){w.ch=false}
  if(wp.k==='rope'&&me&&tap('fire'))ropeFire(w);
  phys(w);w.prev=Object.assign({},inp);w.pose=poseOf(w)}
 function backflip(w){w.vx=-w.face*.85;w.vy=-4.7;w.gr=false;w.y-=1;w.flip=1;w.jt=-99;sfx('tick')}
+function menuStep(w,t,inp,tap){const C=4;let m=t.mc;if(tap('left'))m--;if(tap('right'))m++;if(tap('up'))m-=C;if(tap('down'))m+=C;m=(m+WP.length)%WP.length;
+ const mo=RA.input.mouse;if(MENU.on&&mo.on&&localMouse(w.seat)&&(mo.fx!==t.mfx||mo.fy!==t.mfy)){t.mfx=mo.fx;t.mfy=mo.fy;const sx=mo.fx*SCR.w-MENU.x,sy=mo.fy*SCR.h-MENU.y,c=Math.floor(sx/MENU.cw),r=Math.floor(sy/MENU.ch);if(c>=0&&c<C&&r>=0&&r*C+c<WP.length)m=r*C+c}
+ if(m!==t.mc)sfx('tick');t.mc=m;
+ if(tap('fire')&&K.tick-t.mT>4){if(t.ammo[m]!==0){t.wsel=m;t.menu=0;w.pw=0;w.ch=false;w.noFire=1;sfx('pick')}else sfx('tick')}
+ else if(tap('b3')&&K.tick-t.mT>4)t.menu=0;
+ if(phase!=='round'||w.acted)t.menu=0}
+const localMouse=s=>K.isClient()?s===K.myIdx:K.seats[s]&&K.seats[s].ctrl==='mk';
+function sheepCmd(w,p,k){if(K.isClient())claim(w,[k,p.id,0,0,0]);else sheepDo(p,k)}
+function sheepDo(p,k){if(k==='sj'&&p.sgr){p.vy=-3.6;sfx('baa')}if(k==='sd')p.det=1}
 function release(w,t){shoot(w,t,Math.max(.12,w.pw));w.ch=false;w.pw=0}
 function shoot(w,t,pow){const wp=WP[t.wsel];if(wp.k==='rope'){ropeFire(w);return}if(t.ammo[t.wsel]>0)t.ammo[t.wsel]--;if(!wp.free){w.acted=true;w.actT=K.tick}
  const a=w.face>0?w.aim:Math.PI-w.aim,c=[wp.k,Math.round(w.x),Math.round(w.y-6),Math.round(a*100)/100,Math.round(pow*100)/100];
@@ -147,7 +162,7 @@ function shoot(w,t,pow){const wp=WP[t.wsel];if(wp.k==='rope'){ropeFire(w);return
  w.pose='aim';if(K.isClient())claim(w,c);else doShot(w,c)}
 function claim(w,c){const t=teams[w.seat];t.sseq=(t.sseq|0)+1;(t.shots||(t.shots=[])).push([t.sseq,w.id,...c]);if(t.shots.length>8)t.shots.shift()}
 function findTele(x,y){if(x<6||x>W-6)return null;for(let yy=Math.max(12,y);yy<water-4;yy++)if(!hitBox(x,yy)&&hitBox(x,yy+1))return yy;return null}
-function phys(w){if(w.x<-30||w.x>W+30||w.y>water+4){drown(w);return}if(w.gr){if(!hitBox(w.x,w.y+1)){w.gr=false;w.vy=0;w.vx=0}else return}
+function phys(w){if(w.x<-30||w.x>W+30||w.y>water+4){drown(w);return}if(w.gr){if(!hitBox(w.x,w.y+1)){let d=0;while(d<3&&!hitBox(w.x,w.y+1)){w.y++;d++}if(hitBox(w.x,w.y+1))return;w.y-=d;w.gr=false;w.vy=0;w.vx=0}else return}
  // pressed against a wall in the air: slide up it and catch the ledge as soon as it's within reach
  if(w.press){const d=w.press;let up=-1;for(let u=0;u<=10;u++)if(!hitBox(w.x+d,w.y-u)){up=u;break}if(up>=0){w.x+=d;w.y-=up;if(up===0)w.press=0}}
  w.vy=Math.min(9,w.vy+G*1.8);const n=Math.ceil(Math.max(Math.abs(w.vx),Math.abs(w.vy))*2)+1;
@@ -174,10 +189,10 @@ function ropeStep(w,inp,me){const r=w.rope;if(me&&(inp.up))r.len=Math.max(10,r.l
  const rel=me&&(inp.alt&&!(w.prev&&w.prev.alt)||inp.fire&&!(w.prev&&w.prev.fire));if(rel){w.rope=null;w.gr=false}
  if(w.y>water+4)drown(w);w.pose='rope'}
 function poseOf(w){if(w.rope)return'rope';if(!w.gr)return w.hurt>0||w.flip?'fly':'jump';if(w.hurt>0)return'hurt';if(w.ch||w.aimT>K.tick)return'aim';
- if(w.walkT===K.tick||w.lastD!==w.dist){w.lastD=w.dist;w.walkT=K.tick;return'walk'+(1+Math.floor(w.dist/3)%3)}return(K.tick>>5)&1?'idle1':'idle2'}
+ if(K.tick-(w.wk||-99)<8)return'walk'+[1,2,3,2][Math.floor(w.dist/3)%4];return(K.tick>>5)&1?'idle1':'idle2'}
 /* ---------- host: shots, projectiles, explosions, damage ---------- */
-function doShot(w,c){const[k,x,y,a,pow]=c;if(k==='fall'){damage(w,x,null);return}if(k==='drown'){kill(w,'drowned');return}if(k==='crate'){const cr=crates.find(q=>q.id===x);if(cr)openCrate(w,cr);return}
- const wp=WP[WI[k]];if(!wp)return;w.acted=true;w.actT=K.tick;const t=teams[w.seat];if(!K.isClient()&&ownerNet(w.seat)&&t.ammo[WI[k]]>0)t.ammo[WI[k]]--;
+function doShot(w,c){const[k,x,y,a,pow]=c;if(k==='fall'){damage(w,x,null);return}if(k==='drown'){kill(w,'drowned');return}if(k==='crate'){const cr=crates.find(q=>q.id===x);if(cr)openCrate(w,cr);return}if(k==='sj'||k==='sd'){const sp=proj.find(q=>q.id===x);if(sp)sheepDo(sp,k);return}
+ const wp=WP[WI[k]];if(!wp)return;w.acted=true;w.actT=K.tick;addFeed((teams[w.seat].name||'').slice(0,8)+': '+wp.n,teams[w.seat].col);const t=teams[w.seat];if(!K.isClient()&&ownerNet(w.seat)&&t.ammo[WI[k]]>0)t.ammo[WI[k]]--;
  const sp=(wp.ki==='c'?7.2:4)*pow,vx=Math.cos(a)*sp,vy=Math.sin(a)*sp;sfx('fire');
  if(wp.ki==='c'){const px=x+Math.cos(a)*9,py=y+Math.sin(a)*9;proj.push({id:nextId++,k,x:px,y:py,vx,vy,t:0,fuse:wp.fuse||0,own:w.id,spin:0})}
  else if(k==='shotgun'){for(let s=0;s<2;s++){const aa=a+(s?.03:-.03);let hx=x,hy=y;for(let d=8;d<240;d+=2){hx=x+Math.cos(aa)*d;hy=y+Math.sin(aa)*d;const hit=worms.find(o=>!o.dead&&o!==w&&Math.abs(o.x-hx)<5&&hy>o.y-11&&hy<o.y);if(hit){damage(hit,wp.dmg,w);knock(hit,Math.cos(aa)*2.4,-1.6);break}if(solidAt(hx,hy)){addOp(['c',Math.round(hx),Math.round(hy),7]);break}}fx.push({k:'tr',x0:x,y0:y,x1:hx,y1:hy,t:8})}sfx('bang')}
@@ -188,7 +203,14 @@ function doShot(w,c){const[k,x,y,a,pow]=c;if(k==='fall'){damage(w,x,null);return
 function projStep(p){const wp=WP[WI[p.k]]||{r:20,dmg:26};p.t++;
  if(p.k==='mine'){if(!p.gr){p.vy=Math.min(5,p.vy+G);if(!solidAt(p.x,p.y+3)){p.y+=p.vy;p.x+=p.vx}else{p.gr=1;p.vy=0;p.vx=0}}else if(!solidAt(p.x,p.y+3))p.gr=0;
   if(!p.trig&&p.t>90&&worms.some(o=>!o.dead&&Math.hypot(o.x-p.x,o.y-5-p.y)<20)){p.trig=K.tick;sfx('tick')}if(p.trig&&K.tick-p.trig>50)explode(p,wp);if(p.y>water)p.gone=1;return}
- if(p.k==='sheep'){p.vy=Math.min(5,p.vy+G*1.6);if(solidAt(p.x,p.y+3)){p.vy=0;const f=p.face;if(solidAt(p.x+f*4,p.y)&&!solidAt(p.x+f*4,p.y-8)){p.y-=2}else if(solidAt(p.x+f*4,p.y-1)){if(Math.random()<.5)p.vy=-2.6;else p.face=-f}p.x+=f*.8;if(p.t%40===0)p.vy=-1.8}else p.y+=p.vy;p.y+=Math.min(0,p.vy);
+ if(p.k==='sheep'){const f=p.face,gr=solidAt(p.x,p.y+3);p.sgr=gr?1:0;
+  if(gr&&p.vy>=0){p.vy=0;
+   if(solidAt(p.x+f*4,p.y)){let up=0;for(let u=1;u<=6;u++)if(!solidAt(p.x+f*4,p.y-u)){up=u;break}   // a bump: walk up it, a wall: hop, then turn
+    if(up){p.y-=up;p.x+=f*.8}else if(!p.bonk){p.vy=-3.2;p.bonk=1}else{p.face=-f;p.bonk=0}}
+   else{p.x+=f*.8;p.bonk=0;if(!solidAt(p.x,p.y+3)){let d=0;while(d<6&&!solidAt(p.x,p.y+3)){p.y++;d++}}}
+   if(p.t%50===0&&p.vy===0){p.vy=-1.6}}
+  else{p.vy=Math.min(5,p.vy+G*1.6);if(!solidAt(p.x+f*4,p.y-2))p.x+=f*.9;const ny=p.y+p.vy;
+   if(p.vy>0&&solidAt(p.x,ny+3)){let y=Math.floor(ny);while(solidAt(p.x,y+3)&&y>p.y-8)y--;p.y=y;p.vy=0}else if(p.vy<0&&solidAt(p.x,ny-5))p.vy=0;else p.y=ny}
   if(p.t>420||p.det)explode(p,wp);if(p.y>water)p.gone=1;return}
  if(p.k==='dynamite'){p.vy=Math.min(5,p.vy+G*1.4);if(!solidAt(p.x,p.y+4))p.y+=p.vy;else p.vy=0;if(p.t%20===0)sfx('tick');if(p.t>=p.fuse)explode(p,wp);if(p.y>water)p.gone=1;return}
  p.vy+=G;if(wp.wind||p.k==='strike')p.vx+=wind*.006;
@@ -210,16 +232,17 @@ function boom(x,y,r,dmg,by){addOp(['c',x,y,r]);K.fx('b',x,y,r);burst(x,y,r);
  for(const o of worms){if(o.dead)continue;const dx=o.x-x,dy=o.y-5-y,d=Math.hypot(dx,dy),R=r*1.35;if(d>R)continue;const f=1-d/R,dm=Math.round(dmg*Math.max(.15,f));damage(o,dm,by);const nd=d||1;knock(o,dx/nd*f*dmg*.11,dy/nd*f*dmg*.11-1.6*f)}
  for(const p of proj){if(p.k==='mine'&&!p.gone&&Math.hypot(p.x-x,p.y-y)<r+6){p.trig=p.trig||K.tick-30}}
  for(const c of crates)if(Math.hypot(c.x-x,c.y-y)<r+4)c.gone=1}
-function damage(o,d,by){if(o.dead||d<=0)return;o.hp=Math.max(0,o.hp-d);o.dmgT=K.tick;texts.push({x:o.x,y:o.y-18,s:'-'+d,col:teams[o.seat].col,t:80});if(by&&by!==o){teams[by.seat].dmg=(teams[by.seat].dmg|0)+d}
+function damage(o,d,by){if(o.dead||d<=0)return;o.hp=Math.max(0,o.hp-d);o.dmgT=K.tick;texts.push({x:o.x,y:o.y-18,s:'-'+d,col:teams[o.seat].col,t:80});if(by&&by!==o){if(teamOf(by.seat)===teamOf(o.seat)){teams[by.seat].ff=(teams[by.seat].ff|0)+d}else teams[by.seat].dmg=(teams[by.seat].dmg|0)+d}
  if(o.hp<=0)setTimeout0(()=>kill(o,'blown up',by))}
 const later=[];const setTimeout0=f=>later.push(f);
 function kill(o,why,by){if(o.dead)return;o.dead=true;o.hp=0;if(by&&by!==o&&teamOf(by.seat)!==teamOf(o.seat))teams[by.seat].kills=(teams[by.seat].kills|0)+1;
- if(!o.drown){boomSmall(o)}texts.push({x:o.x,y:o.y-24,s:(o.name||'').toUpperCase()+' '+(why==='drowned'?'SANK':'IS OUT'),col:'#ffffff',t:110});K.fx('k',o.id)}
+ if(!o.drown){boomSmall(o)}texts.push({x:o.x,y:o.y-24,s:(o.name||'').toUpperCase()+' '+(why==='drowned'?'SANK':'IS OUT'),col:'#ffffff',t:110});addFeed((o.name||'').slice(0,8)+(why==='drowned'?' SANK':' IS OUT'),'#fff07c');K.fx('k',o.id)}
 function boomSmall(o){addOp(['c',Math.round(o.x),Math.round(o.y-4),10]);burst(o.x,o.y-4,10)}
 function knock(o,vx,vy){if(isMine(o)){o.vx=vx;o.vy=vy;o.gr=false;o.rope=null;o.hurt=40;o.y-=1}else{o.evSeq++;o.ev.push([o.evSeq,Math.round(vx*100),Math.round(vy*100)]);if(o.ev.length>6)o.ev.shift()}}
 function burst(x,y,r){sfx('boom');fx.push({k:'ex',x,y,r,t:0});for(let k=0;k<18;k++){const a=Math.random()*Math.PI*2,s=1+Math.random()*2.5;parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,t:30+Math.random()*20,col:k%3?TH&&THEMES[TH].soil[k%4]:'#fff07c',g:.12})}
  for(let k=0;k<6;k++)parts.push({x:x+(Math.random()-.5)*r,y:y+(Math.random()-.5)*r,vx:(Math.random()-.5)*.3,vy:-.4-Math.random()*.4,t:50,col:'#9a94a8',smoke:1})}
 function fxAt(x,y,k){fx.push({k,x,y,t:0})}
+const feed=[];function addFeed(s,col){feed.push({s,col,t:K.tick});if(feed.length>5)feed.shift();if(!K.isClient())K.fx('f',s,col)}
 function say(w,s,col){texts.push({x:w?w.x:null,y:w?w.y-20:0,s,col,t:120,big:!w})}
 function vis(){while(later.length)later.shift()();
  for(const p of parts){p.x+=p.vx;p.y+=p.vy;if(p.g)p.vy+=p.g;p.t--}parts=parts.filter(p=>p.t>0);if(parts.length>400)parts.splice(0,parts.length-400);
@@ -250,29 +273,36 @@ function apply(g){wind=g.wd;water=g.wa;phase=g.pz?'settle':'round';phT=g.pt;turn
  const cm=new Map(crates.map(c=>[c.id,c]));crates=(g.cr||[]).map(r=>Object.assign(cm.get(r[0])||{},{id:r[0],k:r[1],x:r[2],y:r[3],w:r[4]}))}
 function ghostStep(p){if(p.tx!=null){p.x+=(p.tx-p.x)*.3;p.y+=(p.ty-p.y)*.3;p.tx+=p.vx;p.ty+=p.vy}p.spin=(p.spin||0)+p.vx*.2}
 function follow(){for(const w of worms){if(w.seat===K.myIdx||w.tx==null)continue;const ox=w.x;w.x+=(w.tx-w.x)*.35;w.y+=(w.ty-w.y)*.35;w.dist=(w.dist||0)+Math.abs(w.x-ox)}if(K.myIdx<0){for(const p of proj)ghostStep(p);vis()}}
-function onFx(k,a){if(k==='b'){const[x,y,r]=a;if(K.isClient())burst(x,y,r)}else if(k==='h')sfx('holy');else if(k==='r')sfx('pick');else if(k==='k')sfx('splash')}
+function onFx(k,a){if(k==='f'){feed.push({s:a[0],col:a[1],t:K.tick});if(feed.length>5)feed.shift();return}if(k==='b'){const[x,y,r]=a;if(K.isClient())burst(x,y,r)}else if(k==='h')sfx('holy');else if(k==='r')sfx('pick');else if(k==='k')sfx('splash')}
 /* ---------- CPU worms ---------- */
 // fly a test shot with the real physics: where does it land?
 function sim(x,y,a,pow,k){const wp=WP[WI[k]],sp=7.2*pow;let px=x+Math.cos(a)*9,py=y+Math.sin(a)*9,vx=Math.cos(a)*sp,vy=Math.sin(a)*sp;
- for(let t=0;t<400;t++){vy+=G;if(wp.wind)vx+=wind*.006;px+=vx;py+=vy;if(px<0||px>=W||py>water)return{x:px,y:py,lost:1};if(solidAt(px,py))return{x:px,y:py,t};
-  for(const o of worms)if(!o.dead&&o.cpuSelf!==1&&t>3&&Math.abs(o.x-px)<5&&py>o.y-11&&py<o.y)return{x:px,y:py,t,hit:o}}return{x:px,y:py,lost:1}}
-function bot(i){const w=activeOf(i);if(!w||w.dead||phase!=='round'||w.acted)return{};const t=teams[i],lvl=i===meIdx()?2:K.cpu,b=w.bt&&w.bt.r===round?w.bt:(w.bt={r:round,st:'think',T:K.tick+[150,70,35][lvl]+Math.random()*40});const o={};
+ // the same sub-steps as the real projectile, so it can't skip past a thin worm or wall the real shot would hit
+ for(let t=1;t<400;t++){vy+=G;if(wp.wind)vx+=wind*.006;const n=Math.ceil(Math.max(Math.abs(vx),Math.abs(vy)))+1;
+  for(let k=0;k<n;k++){px+=vx/n;py+=vy/n;if(px<0||px>=W||py>water)return{x:px,y:py,lost:1};if(solidAt(px,py))return{x:px,y:py,t};
+   if(t>3)for(const o of worms)if(!o.dead&&o.cpuSelf!==1&&Math.abs(o.x-px)<5&&py>o.y-11&&py<o.y)return{x:px,y:py,t,hit:o}}}return{x:px,y:py,lost:1}}
+function safeShot(w,i,a,pow,k){const wp=WP[WI[k]];if(!wp||!wp.r)return true;w.cpuSelf=1;const r=sim(w.x,w.y-6,a,pow,k);w.cpuSelf=0;if(r.lost)return true;
+ if(r.hit&&teamOf(r.hit.seat)===teamOf(i))return false;const far=Math.hypot(r.x-w.x,r.y-w.y)*.03;return worms.every(f=>f.dead||teamOf(f.seat)!==teamOf(i)||Math.hypot(r.x-f.x,r.y-f.y+5)>wp.r*1.6+(k==='grenade'?44:14)+far)}
+function bot(i){const w=activeOf(i);if(!w||w.dead||phase!=='round'||w.acted)return{};const t=teams[i],lvl=i===meIdx()?2:K.cpu,b=w.bt&&w.bt.r===round?w.bt:(w.bt={r:round,st:'think',T:K.tick+[100,60,35][lvl]+Math.random()*30});const o={};
  if(K.tick<b.T)return o;
  if(b.st==='think'){const enemies=worms.filter(e=>!e.dead&&teamOf(e.seat)!==teamOf(i));if(!enemies.length)return o;let best=null;
   // shotgun when there's a clear line; otherwise search bazooka / grenade shots
-  for(const e of enemies){const dx=e.x-w.x,dy=e.y-w.y,d=Math.hypot(dx,dy);if(d<170){let clear=true;for(let s=8;s<d-4;s+=3)if(solidAt(w.x+dx/d*s,w.y-6+dy/d*s)){clear=false;break}if(clear&&(!best||d<best.d)){best={k:'shotgun',a:Math.atan2(dy,dx),pow:1,d,sc:d*.5}}}}
-  w.cpuSelf=1;const near=enemies.slice().sort((a,c)=>Math.hypot(a.x-w.x,a.y-w.y)-Math.hypot(c.x-w.x,c.y-w.y)).slice(0,3);
+  for(const e of enemies){const dx=e.x-w.x,dy=e.y-w.y,d=Math.hypot(dx,dy);if(d<170){let clear=true;for(let s=8;s<d-4;s+=3){const px=w.x+dx/d*s,py=w.y-6+dy/d*s;if(solidAt(px,py)||worms.some(f=>f!==w&&!f.dead&&teamOf(f.seat)===teamOf(i)&&Math.abs(f.x-px)<6&&py>f.y-12&&py<f.y+1)){clear=false;break}}if(clear&&(!best||d<best.d)){best={k:'shotgun',a:Math.atan2(dy,dx),pow:1,d,sc:d*.5}}}}
+  w.cpuSelf=1;const friends=worms.filter(f=>!f.dead&&teamOf(f.seat)===teamOf(i)),near=enemies.slice().sort((a,c)=>Math.hypot(a.x-w.x,a.y-w.y)-Math.hypot(c.x-w.x,c.y-w.y)).slice(0,3);
   for(const k of['bazooka','grenade'])for(let a=-Math.PI+.1;a<0;a+=.1)for(let pow=.35;pow<=1;pow+=.08){const r=sim(w.x,w.y-6,a,pow,k);if(r.lost)continue;
+   const safe=friends.every(f=>Math.hypot(r.x-f.x,r.y-f.y+5)>WP[WI[k]].r*1.6+(k==='grenade'?44:14)+Math.hypot(r.x-w.x,r.y-w.y)*.03);if(!safe||r.hit&&teamOf(r.hit.seat)===teamOf(i))continue;
    for(const e of near){const d=Math.hypot(r.x-e.x,r.y-e.y+5),self=Math.hypot(r.x-w.x,r.y-w.y+5);if(self<40)continue;const sc=d+(k==='grenade'?14:0);if(!best||sc<best.sc)best={k,a,pow,sc}}}
   w.cpuSelf=0;if(!best||best.sc>60){// nothing good: walk towards the nearest enemy for a bit
-   b.st='walk';b.dir=near[0]&&near[0].x>w.x?1:-1;b.T=K.tick;b.end=K.tick+60;b.tries=(b.tries|0)+1;if(b.tries>2&&best){b.st='aim';b.plan=best}else if(b.tries>2){b.st='aim';b.plan={k:'bazooka',a:-.8+(b.dir<0?-1.5:0),pow:.7}}return o}
-  const err=[.26,.1,.03][lvl];best.a+=(Math.random()-.5)*err*2;best.pow=Math.max(.2,Math.min(1,best.pow+(Math.random()-.5)*err));b.plan=best;b.st='aim';return o}
+   b.st='walk';b.dir=near[0]&&near[0].x>w.x?1:-1;b.T=K.tick;b.end=K.tick+60;b.tries=(b.tries|0)+1;if(b.tries>2&&best){b.st='aim';b.plan=best}else if(b.tries>2){w.acted=true;w.actT=K.tick;addFeed((teams[i].name||'').slice(0,8)+' SKIPS','#9a94a8');b.st='done'}   /* no safe shot anywhere: skip the go, like a player would */return o}
+  const err=[.26,.1,.03][lvl];let pa=best.a,pp=best.pow;for(let tr=0;tr<6;tr++){const na=best.a+(Math.random()-.5)*err*2*(1-tr/6),np=Math.max(.2,Math.min(1,best.pow+(Math.random()-.5)*err*(1-tr/6)));if(best.k==='shotgun'||safeShot(w,i,na,np,best.k)){pa=na;pp=np;break}}
+  best.a=pa;best.pow=pp;b.plan=best;b.st='aim';return o}
  if(b.st==='walk'){if(K.tick>b.end){b.st='think';return o}o[b.dir>0?'right':'left']=true;if(w.blk>6||K.tick%40===20){if(K.tick%40===20||K.tick%40===27)o.alt=true}return o}   // blocked: jump, and jump again for the back-flip
- if(b.st==='aim'){const pl=b.plan,want=WI[pl.k];if(t.wsel!==want&&t.ammo[want]!==0){if(K.tick%6===0)o.b3=true;return o}
+ if(b.st==='aim'){const pl=b.plan,want=WI[pl.k];if(t.wsel!==want&&t.ammo[want]!==0){const ph=K.tick%10<2;if(!t.menu){if(ph&&K.tick-(b.mq|0)>20){o.b3=true;b.mq=K.tick}return o}const C=4,cr=Math.floor(t.mc/C),cc=t.mc%C,tr=Math.floor(want/C),tc=want%C;
+   if(ph){if(cr<tr)o.down=true;else if(cr>tr)o.up=true;else if(cc<tc)o.right=true;else if(cc>tc)o.left=true;else o.fire=true}return o}
   const f=Math.cos(pl.a)>=0?1:-1;if(w.face!==f){o[f>0?'right':'left']=true;return o}const rel=f>0?pl.a:Math.atan2(Math.sin(pl.a),-Math.cos(pl.a));
-  if(rel<w.aim-.03)o.up=true;else if(rel>w.aim+.03)o.down=true;else{b.st=WP[want].ki==='c'?'charge':'fire'}return o}
+  if(rel<w.aim-.015)o.up=true;else if(rel>w.aim+.015)o.down=true;else{const a=w.face>0?w.aim:Math.PI-w.aim;if(WP[want].ki==='c'&&!safeShot(w,i,a,pl.pow,pl.k)){b.st='think';b.T=K.tick+10;return o}b.st=WP[want].ki==='c'?'charge':'fire'}return o}
  if(b.st==='fire'){o.fire=true;b.st='done';return o}
- if(b.st==='charge'){if(w.pw<b.plan.pow-.01){o.fire=true;return o}b.st='done';return o}
+ if(b.st==='charge'){if(w.pw<b.plan.pow-.01){o.fire=true;return o}const a=w.face>0?w.aim:Math.PI-w.aim;if(!safeShot(w,i,a,w.pw,b.plan.k)){if(w.pw<1){o.fire=true;return o}}b.st='done';return o}
  return o}
 /* ---------- drawing ---------- */
 const IMG=new Map(),img=(k,f)=>{let v=IMG.get(k);if(!v){v=f();IMG.set(k,v)}return v};
@@ -294,6 +324,7 @@ function view(g,focusW,vx,vy,vw,vh,ci){let cam=cams[ci];const fp=focusProj(focus
   g.drawImage(im,Math.round(p.x-im.width/2),Math.round(p.y-im.height/2));
   if((p.k==='bazooka'||p.k==='homing')&&K.tick%2===0)parts.push({x:p.x,y:p.y,vx:0,vy:-.2,t:18,col:'#c8c4d8',smoke:1});
   if(wp&&wp.fuse&&p.k!=='cbit'&&p.k!=='bbit'){const s=Math.max(0,Math.ceil((wp.fuse-p.t)/60));X.text(g,s+'',p.x,p.y-12,{col:'#ffffff',align:'center',outline:P.k})}
+  if(p.k==='sheep'){const sl=Math.max(0,Math.ceil((420-p.t)/60));X.text(g,sl+'',p.x,p.y-14,{col:sl<=2?'#f05050':'#ffffff',align:'center',outline:P.k})}
   if(p.k==='mine'&&p.trig&&(K.tick>>2)&1){g.fillStyle='#f05050';g.fillRect(Math.round(p.x)-1,Math.round(p.y)-4,2,2)}}
  for(const w of worms){if(w.dead){const gi=thing('grave');g.drawImage(gi,Math.round(w.x-4),Math.round(Math.min(w.y,surfaceY(Math.round(w.x),Math.max(0,Math.round(w.y-12))))-9));continue}
   const col=teams[w.seat].col,im=wormImg(w.pose,col,w.face),x=Math.round(w.x-im.width/2),y=Math.round(w.y-im.height+1);
@@ -316,43 +347,71 @@ function view(g,focusW,vx,vy,vw,vh,ci){let cam=cams[ci];const fp=focusProj(focus
  g.restore();hud(g,me,vx,vy,vw,vh)}
 function focusProj(w){if(!w)return null;const p=proj.find(p=>p.own===w.id&&p.k!=='mine');return p||null}
 function hud(g,me,vx,vy,vw,vh){g.save();g.beginPath();g.rect(vx,vy,vw,vh);g.clip();hud2(g,me,vx,vy,vw,vh,vw<240);g.restore()}
-function hud2(g,me,vx,vy,vw,vh,small){const TX=(s,x,y,o)=>X.text(g,s,x,y,Object.assign({outline:P.k},o||{}));
- if(K.demo){TX('WORMS',vx+vw/2,vy+vh-16,{col:'#fff07c',align:'center',scale:2});return}
+// weapon icons for the menu and the weapon bar (the art's sprites, centred in a cell)
+const ICON={bazooka:'bazooka',grenade:'grenade',shotgun:'shotgun',cluster:'cluster',homing:'missile',dynamite:'dynamite',mine:'mine',sheep:'sheep',bat:'bat',punch:'punch',tele:'tele',air:'strike',banana:'banana',holy:'holy'};
+function iconImg(k){return img('ic'+k,()=>{const c=X.mk(16,12),g=c.getContext('2d');
+ if(k==='rope'){g.fillStyle='#c8c4d8';for(let i=0;i<9;i++)g.fillRect(3+i,9-i,1,1);g.drawImage(thing('hook'),11,0)}
+ else if(k==='girder'){const gs=thing('girder');g.drawImage(gs,0,0,16,5,0,4,16,5)}
+ else{const im=thing(ICON[k]);const sc=Math.min(1,14/im.width,11/im.height);g.drawImage(im,Math.round(8-im.width*sc/2),Math.round(6-im.height*sc/2),Math.round(im.width*sc),Math.round(im.height*sc))}return c})}
+const MENU={on:false,x:0,y:0,cw:38,ch:30};let startT=0;
+function hud2(g,me,vx,vy,vw,vh,small){const TX=(s,x,y,o)=>X.text(g,s,x,y,Object.assign({outline:P.k},o||{})),cxm=vx+vw/2;
+ if(K.demo){TX('WORMS',cxm,vy+vh-16,{col:'#fff07c',align:'center',scale:2});return}
  // wind
- const wx=small?vx+vw-44:vx+vw/2,wy=small?vy+44:vy+26;g.fillStyle='rgba(16,12,24,.8)';g.fillRect(wx-34,wy-2,68,9);g.fillStyle='#5c566c';g.fillRect(wx,wy-1,1,7);const wl=Math.round(wind*30);g.fillStyle=wind<0?'#60a0ff':'#f05050';g.fillRect(Math.min(wx,wx+wl),wy+1,Math.abs(wl),3);if(!small)TX('WIND',wx-38,wy-1,{col:'#c8c4d8',align:'right'});
+ const wx=small?vx+vw-44:cxm,wy=small?vy+44:vy+26;g.fillStyle='rgba(16,12,24,.8)';g.fillRect(wx-34,wy-2,68,9);g.fillStyle='#5c566c';g.fillRect(wx,wy-1,1,7);const wl=Math.round(wind*30);g.fillStyle=wind<0?'#60a0ff':'#f05050';g.fillRect(Math.min(wx,wx+wl),wy+1,Math.abs(wl),3);
+ if(!small)TX('WIND',wx-38,wy-1,{col:'#c8c4d8',align:'right'});
  // round and timer
  const left=phase==='round'?Math.max(0,Math.ceil((turnT-(K.tick-phT))/60)):0;TX(phase==='round'?left+'':'',vx+vw-6,vy+12,{col:left<=5&&phase==='round'?'#f05050':'#ffffff',align:'right',scale:2});TX('ROUND '+round,vx+vw-6,vy+30,{col:'#a0f0ff',align:'right'});
- if(classic&&phase==='round'){const t=teams[turnTeam];TX((t.name||'').slice(0,10)+"'S TURN",vx+vw/2,vy+28,{col:t.col,align:'center'})}
- // teams: health totals
-if(!small){const list=teams.map((t,s)=>({t,s,hp:worms.filter(w=>w.seat===s&&!w.dead).reduce((a,w)=>a+w.hp,0)})).sort((a,b)=>b.hp-a.hp).slice(0,Math.min(teams.length,6));
- list.forEach((e,j)=>{const y=vy+16+j*8;g.fillStyle=P.k;g.fillRect(vx+3,y-1,64,7);g.fillStyle=e.t.col;g.fillRect(vx+4,y,Math.max(0,Math.round(e.hp/((+K.S.hp||100)*Math.max(1,worms.filter(w=>w.seat===e.s).length))*26)),5);TX((e.t.name||'').slice(0,5),vx+32,y-1,{col:e.hp?'#ffffff':'#5c566c',outline:false,shadow:P.k})})}
- // big messages
- for(const t of texts)if(t.big)TX(t.s,vx+vw/2,vy+vh*.3,{col:t.col,align:'center'});
- if(!me)return;const t=teams[me.seat],wp=WP[t.wsel],am=t.ammo[t.wsel];
- g.fillStyle='rgba(16,12,24,.85)';g.fillRect(vx+vw/2-Math.min(60,vw/2-4),vy+vh-20,Math.min(120,vw-8),11);TX(wp.n+(am<0?'':' x'+am),vx+vw/2,vy+vh-18,{col:am===0?'#5c566c':'#fff07c',align:'center',outline:false});
- const act=activeOf(me.seat)===me;
- if(phase==='round'&&act&&!me.acted&&round<=2)TX(small?'W S AIM - SPACE FIRE':round===1?'A D WALK  E JUMP  E E BACK-FLIP  Q WEAPON':wp.ki==='c'?'W S AIM - HOLD SPACE FOR POWER, LET GO TO FIRE':wp.ki==='t'?'AIM AND SPACE: PICK THE SPOT (HOLD = FURTHER)':'W S AIM - SPACE USE - Q NEXT WEAPON',vx+vw/2,vy+vh-42,{col:'#ffffff',align:'center'});
- else if(act&&me.wallT>K.tick-90)TX(small?'E E: BACK-FLIP UP':'TOO STEEP? E JUMP - E AGAIN IN THE AIR: HIGH BACK-FLIP',vx+vw/2,vy+vh-42,{col:'#fff07c',align:'center'});
- else if(phase==='round'&&!act)TX(classic?'WAIT FOR YOUR TURN':'THIS WORM RESTS THIS ROUND',vx+vw/2,vy+vh-42,{col:'#a0f0ff',align:'center'});
- else if(phase==='round'&&me.acted)TX('RUN FOR COVER!',vx+vw/2,vy+vh-42,{col:'#fff07c',align:'center'})}
+ // teams: health left
+ if(!small){const list=teams.map((t,s)=>({t,s,hp:worms.filter(w=>w.seat===s&&!w.dead).reduce((a,w)=>a+w.hp,0)})).sort((a,b)=>b.hp-a.hp).slice(0,Math.min(teams.length,8));
+  list.forEach((e,j)=>{const y=vy+Math.max(16,Math.round(vh*.07))+j*8;g.fillStyle=P.k;g.fillRect(vx+3,y-1,70,7);g.fillStyle=e.t.col;g.fillRect(vx+4,y,Math.max(0,Math.round(e.hp/((+K.S.hp||100)*Math.max(1,worms.filter(w=>w.seat===e.s).length))*26)),5);TX((e.t.name||'').slice(0,6),vx+33,y-1,{col:e.hp?'#ffffff':'#5c566c',outline:false,shadow:P.k})})}
+ // what just happened (shots, worms out)
+ if(!small)feed.filter(f=>K.tick-f.t<360).forEach((f,j,a)=>{TX(f.s,vx+vw-6,vy+42+j*8,{col:f.col,align:'right'})});
+ for(const t of texts)if(t.big)TX(t.s,cxm,vy+vh*.3,{col:t.col,align:'center'});
+ // a new round: say what it is
+ const menuOpen=me&&teams[me.seat].menu;
+ if(phase==='round'&&K.tick-phT<90&&!menuOpen&&round>1){const t=teams[turnTeam];TX('ROUND '+round,cxm,vy+vh*.22,{col:'#ffffff',align:'center',scale:2});
+  TX(classic?((t.name||'').toUpperCase().slice(0,10)+"'S TURN"):'EVERY TEAM FIRES ONE SHOT',cxm,vy+vh*.22+18,{col:classic?t.col:'#fff07c',align:'center'})}
+ if(!me)return;const t=teams[me.seat],wp=WP[t.wsel],am=t.ammo[t.wsel],act=activeOf(me.seat)===me;
+ // the first seconds: how this game works
+ if(round===1&&K.tick-startT<480&&!small&&!menuOpen&&!me.acted){const lines=classic?['WORMS - CLASSIC TURNS','Teams take turns: one team at a time.','On your turn: aim, fire ONE shot, run.']:['WORMS - ALL AT ONCE','Every round each team fires ONE shot.','Everyone aims at the same time.'];
+  lines.push('Blast worms or knock them in the water.','Last team with a worm standing wins.');
+  const bw=Math.min(vw-150,250),bx=cxm-bw/2,by=vy+38;g.fillStyle='rgba(16,12,24,.78)';g.fillRect(bx,by,bw,18+(lines.length-1)*9);TX(lines[0],cxm,by+4,{col:'#fff07c',align:'center'});lines.slice(1).forEach((l,j)=>TX(l,cxm,by+16+j*9,{col:'#ffffff',align:'center',outline:false}))}
+ // the weapon bar: icon, name, ammo, how to change it
+ const bw=small?Math.min(vw-8,120):150,bx=cxm-bw/2,by=vy+vh-22;g.fillStyle='rgba(16,12,24,.88)';g.fillRect(bx,by,bw,14);g.drawImage(iconImg(wp.k),bx+3,by+1);
+ TX(wp.n+(am<0?'':' x'+am),bx+22,by+4,{col:am===0?'#5c566c':'#fff07c',outline:false});if(!small)TX('Q: WEAPONS',bx+bw-3,by+4,{col:'#a0f0ff',align:'right',outline:false});
+ // what to do now
+ let msg='',col='#ffffff';const sh=proj.find(p=>p.k==='sheep'&&p.own===me.id);
+ if(sh){msg='E: SHEEP JUMPS   SPACE: BAAA-BOOM!';col='#fff07c'}
+ else if(phase==='round'&&act&&!me.acted){if(me.wallT>K.tick-90){msg=small?'E E: BACK-FLIP UP':'TOO STEEP? E JUMP - E AGAIN IN THE AIR: HIGH BACK-FLIP';col='#fff07c'}
+  else if(round<=2)msg=small?'W S AIM - SPACE FIRE':wp.ki==='c'?'YOUR TURN: W S AIM - HOLD SPACE FOR POWER, LET GO':wp.ki==='t'?'YOUR TURN: AIM, HOLD SPACE FOR DISTANCE':'YOUR TURN: W S AIM - SPACE USE';else msg='YOUR TURN - '+left+' S';}
+ else if(phase==='round'&&act&&me.acted){msg='SHOT FIRED - RUN FOR COVER!';col='#fff07c'}
+ else if(phase==='round'&&!act){msg=classic?((teams[turnTeam].name||'').slice(0,10).toUpperCase()+' IS AIMING'):'THIS WORM RESTS THIS ROUND';col='#a0f0ff'}
+ else if(phase==='settle'){msg='WAITING FOR THE DUST TO SETTLE...';col='#a0f0ff'}
+ if(msg&&!menuOpen)TX(msg,cxm,vy+vh-34,{col,align:'center'});
+ // the weapon menu
+ MENU.on=!!t.menu;if(t.menu){const C=4,R=Math.ceil(WP.length/C),cw=MENU.cw,ch=MENU.ch,mw=C*cw,mh=R*ch,mx=Math.round(cxm-mw/2),my=Math.round(vy+vh/2-mh/2-6);MENU.x=mx;MENU.y=my;
+  g.fillStyle='rgba(16,12,24,.92)';g.fillRect(mx-6,my-16,mw+12,mh+34);TX('WEAPONS',cxm,my-12,{col:'#fff07c',align:'center'});
+  WP.forEach((w2,k)=>{const x=mx+(k%C)*cw,y=my+Math.floor(k/C)*ch,a=t.ammo[k],sel=k===t.mc;g.fillStyle=sel?'#3c3648':'#241e30';g.fillRect(x+1,y+1,cw-2,ch-2);if(sel){g.fillStyle='#fff07c';g.fillRect(x,y,cw,1);g.fillRect(x,y+ch-1,cw,1);g.fillRect(x,y,1,ch);g.fillRect(x+cw-1,y,1,ch)}
+   g.globalAlpha=a===0?.3:1;g.drawImage(iconImg(w2.k),x+3,y+4,32,24);g.globalAlpha=1;TX(a<0?'':a+'',x+cw-3,y+2,{col:a===0?'#5c566c':'#ffffff',align:'right'})});
+  const cur=WP[t.mc],ca=t.ammo[t.mc];TX(cur.n+(ca===0?(CRATE.includes(cur.k)?' - FIND IT IN CRATES':' - NONE LEFT'):''),cxm,my+mh+3,{col:ca===0?'#9a94a8':'#ffffff',align:'center',outline:false});TX('WASD / MOUSE: CHOOSE   SPACE: TAKE   Q: CLOSE',cxm,my+mh+11,{col:'#a0f0ff',align:'center',outline:false})}}
 function render(ctx,W2,H2){if(!SCR)SCR=X.screen();const g=SCR.size(W2,H2);g.fillStyle=P.k;g.fillRect(0,0,SCR.w,SCR.h);if(!tex||!worms.length){SCR.present(ctx,W2,H2);return}
  let fs=K.demo?[]:K.focus();let fw=fs.map(s=>activeOf(s)||liveWorms(s)[0]).filter(Boolean);
  if(!fw.length){const t=K.demo?teams[Math.floor(K.tick/600)%teams.length]:null;fw=[(t&&activeOf(t.i))||worms.find(w=>!w.dead&&activeOf(w.seat)===w)||worms.find(w=>!w.dead)||worms[0]]}
- fw=fw.slice(0,2);const h=SCR.h-(K.demo?0:9),w=SCR.w;if(fw.length===1)view(g,fw[0],0,0,w,h,0);else{const hw=w>>1;view(g,fw[0],0,0,hw,h,0);view(g,fw[1],hw,0,w-hw,h,1);g.fillStyle=P.k;g.fillRect(hw-1,0,2,h)}
+ fw=fw.slice(0,2);const h=SCR.h-(K.demo?0:Math.round(SCR.h*9/180)),w=SCR.w;if(fw.length===1)view(g,fw[0],0,0,w,h,0);else{const hw=w>>1;view(g,fw[0],0,0,hw,h,0);view(g,fw[1],hw,0,w-hw,h,1);g.fillStyle=P.k;g.fillRect(hw-1,0,2,h)}
  // minimap
  if(!K.demo){const mw=60,mh=Math.round(mw*WH/W),mx=w-mw-3,my=h-mh-3,mi=img('mini'+opsDone+W,()=>{const c=X.mk(mw,mh),gg=c.getContext('2d');gg.fillStyle='rgba(16,12,24,.7)';gg.fillRect(0,0,mw,mh);gg.fillStyle=THEMES[TH].soil[0];for(let y=0;y<mh;y++)for(let x=0;x<mw;x++)if(mask[Math.floor(y*WH/mh)*W+Math.floor(x*W/mw)])gg.fillRect(x,y,1,1);return c});
   g.drawImage(mi,mx,my);for(const wm of worms){if(wm.dead)continue;g.fillStyle=teams[wm.seat].col;g.fillRect(mx+Math.round(wm.x*mw/W)-1,my+Math.round(wm.y*mh/WH)-2,2,2)}g.fillStyle=THEMES[TH].water[1];g.fillRect(mx,my+Math.round(water*mh/WH),mw,1)}
  SCR.present(ctx,W2,H2)}
-K=RA.kit({id:'worms',name:'WORMS',kind:'Artillery',players:'1-20 players',demo:4,localFirst:true,baseH:180,minPlayers:1,
+K=RA.kit({id:'worms',name:'WORMS',kind:'Artillery',players:'1-20 players',demo:4,localFirst:true,baseH:330,minPlayers:1,
  desc:'Turn-based artillery on a destructible pixel island for up to 20: bazookas and grenades in the wind, cluster bombs, the sheep, the holy hand grenade and the ninja rope. Everyone takes their turn at once - or the classic way, one team at a time.',
- blurb:'A / D walk, E jump - press E again in the air for a high back-flip. W / S aim (or the mouse), hold SPACE for power and let go to fire, Q next weapon. One attack per round - then run!',
- howto:'A / D walk, E jump (E again in the air = high back-flip, Shift = back-flip from the ground), W / S or mouse aim, hold Space / left click for power and release to fire, Q next weapon. Crates drop in by parachute: walk into them. Water and long falls hurt.',
+ blurb:'A / D walk, E jump - press E again in the air for a high back-flip. W / S aim (or the mouse), hold SPACE for power and let go to fire, Q opens the weapon menu. One attack per round - then run!',
+ howto:'A / D walk, E jump (E again in the air = high back-flip, Shift = back-flip from the ground), W / S or mouse aim, hold Space / left click for power and release to fire, Q weapon menu (WASD or mouse to choose, Space to take). Sheep: E makes it jump, Space blows it up. Crates drop in by parachute: walk into them. Water and long falls hurt.',
  icon:['..........','...ppp....','..pWkpp...','..ppppp...','...ppp....','..ppp.....','.ppp...kk.','.pppp.kRRk','..pppp.kk.','...pppp...'],
  music:MUSIC,fireLabel:'FIRE',
  modes:[['FREE FOR ALL','Every player is a team: the last one with a worm standing wins.'],['TEAMS','Red vs blue: odd and even seats team up.']],
  settings:[['turns','Turns',[['all','All at once'],['classic','Classic (one team at a time)']]],['worms','Worms each',[['auto','Auto'],[1,'1'],[2,'2'],[3,'3']]],['map','Island',[['rnd','Random'],['meadow','Meadow'],['arctic','Arctic'],['desert','Desert'],['hell','Hell']]],
   ['time','Turn time',[[20,'20 s'],[15,'15 s'],[30,'30 s']]],['hp','Health',[[100,'100'],[150,'150'],[200,'200']]],['sd','Sudden death',[[8,'Round 8'],[5,'Round 5'],[12,'Round 12']]]],
- kb:[['A D','walk'],['W S','aim'],['SPACE','hold = power'],['Q','weapon'],['E','jump'],['E E','back-flip'],['C','chat'],['ESC','menu']],pad:[['LS','walk / aim'],['A','fire'],['B','jump'],['B B','back-flip'],['X','weapon'],['START','menu']],
+ kb:[['A D','walk'],['W S','aim'],['SPACE','hold = power'],['Q','weapons'],['E','jump'],['E E','back-flip'],['C','chat'],['ESC','menu']],pad:[['LS','walk / aim'],['A','fire'],['B','jump'],['B B','back-flip'],['X','weapons'],['START','menu']],
  aim:(i,fx,fy)=>{const w=activeOf(K.isClient()?K.myIdx:i);if(!w||!SCR)return null;const cam=cams[0];if(!cam)return null;const x=fx*SCR.w+cam.x,y=fy*SCR.h+cam.y;return Math.atan2(y-(w.y-7),x-w.x)},
  ach:[{id:'first',name:'Fresh Grub',desc:'Play your first match',test:s=>s.played>=1,unlock:'title:Grub'},{id:'win1',name:'Last Worm Standing',desc:'Win a match',test:(s,m)=>m.won,unlock:'title:Worm Lord'},
   {id:'k3',name:'Grave Digger',desc:'Take out 3 enemy worms in one match',test:(s,m)=>m.kills>=3,unlock:'title:Grave Digger'}],
