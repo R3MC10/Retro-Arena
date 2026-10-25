@@ -69,6 +69,9 @@ Ask these again at every milestone: *Does this make sense? Does it align with th
 
 - Each player's own character runs on their device; upload it, the host reads `K.remote(i)`. Shared things (items,
   places, eliminations) belong to the host; hits are sent to the victim's owner as events (seq numbers).
+- Guests see CPU seats as 'net' seats: send a CPU flag per seat in the snapshot if the game treats CPUs differently (name tags).
+- One-ended views (NES Tennis style): turn the court round for a local human playing the far end and flip their controls,
+  so everyone plays up the screen.
 - **snap() keys must not clash with the kit's:** ph id r md bs sd n t mt w rk e (the kit warns in the console).
 - Sync what others need to draw: pose, suspension, crash state, not just x/y.
 - Measure content against each other: track lengths / level sizes within ~20% of each other (Frosty Peaks was 2x).
@@ -98,6 +101,16 @@ Serve: `cd game && python3 -m http.server 8765`. Tools in `game/tools/test` (see
    hit (Jungle Force turrets sat inside solid rock, so bullets never reached them) or a respawn that walks you back
    into the same trap. Measure every obstacle against the real jump (height and reach) before trusting a level chunk.
    In co-op with CPU allies, the allies are backup: they respawn freely and the team falls when the humans do.
+   Ball/racket games (Centre Court): log every shot (kind, speed, flight ticks) and how each point ended. If points only end
+   in unforced errors, the defender covers too much ground: compare the distance a player covers while the ball is in flight
+   (minus reaction time) with how far a well-placed shot moves them - placement has to beat coverage or nobody hits winners.
+   Check that the riskier choice (aiming at the lines) actually pays off for the skilled brain; if it loses to "always hit
+   the middle", the error model punishes aiming too hard. With reach radii (normal + lunge), swing at the ball's closest
+   approach - otherwise the long-reach fallback fires first and everyone lunges.
+   Sprites are usually drawn taller than the ground scale: draw heights (ball, net) at the sprites' scale, or a head-high
+   toss looks like shoulder height.
+   Tournament formats (ladders, rounds): make sure a player can reach the top within the rounds from where they start
+   (humans start mid-ladder), and a human never sits out a round while a CPU plays.
    Rare moments (keeper dives, goals, crashes) won't show up in random frames: stage them - the frames.js input
    function can set game state at step n (put the ball on a shot path, then grab the next 40 steps).
 3. `node sim.js <id> <mode> 8` and with 20 players - every mode ends properly, results make sense, snapshot under 3 KB,
