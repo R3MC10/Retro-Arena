@@ -87,6 +87,9 @@ Serve: `cd game && python3 -m http.server 8765`. Tools in `game/tools/test` (see
    the brain needs look-ahead obstacle steering and a back-out-when-stuck rule.
    CPUs must never be faster than a clean human on Normal: rubber-band from the back, ease off when far ahead of every human.
    Team games: a lone human must always be in the play - auto-switch to the team mate nearest the ball (Pixel Kick).
+   Platformers: model a masher (holds right, taps jump on a rhythm) - if they loop-die at one obstacle, the respawn
+   is a trap: respawn on safe ground a few tiles back, and after two deaths at the same spot put them past it.
+   Add ledge forgiveness (step up when feet are within ~10px of a ledge top) and keep walls you must climb <= 3 tiles.
    Rare moments (keeper dives, goals, crashes) won't show up in random frames: stage them - the frames.js input
    function can set game state at step n (put the ball on a shot path, then grab the next 40 steps).
 3. `node sim.js <id> <mode> 8` and with 20 players - every mode ends properly, results make sense, snapshot under 3 KB,
