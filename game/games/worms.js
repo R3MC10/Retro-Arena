@@ -123,10 +123,14 @@ function control(w,inp,me){if(w.hurt>0)w.hurt--;
  if(w.rope){ropeStep(w,inp,me);w.prev=Object.assign({},inp);return}
  // walking and jumping
  if(w.gr&&w.hurt<=0){let dir=me&&!w.ch?(inp.right?1:0)-(inp.left?1:0):0;if(inp.ax!=null&&Math.abs(inp.ax)>.3&&me&&!w.ch)dir=Math.sign(inp.ax);
-  if(dir){w.face=dir;w.walk=(w.walk||0)+.7;while(w.walk>=1){w.walk--;let moved=false;for(let up=0;up<=4;up++)if(!hitBox(w.x+dir,w.y-up)){w.x+=dir;w.y-=up;moved=true;break}if(!moved)break;w.dist++}
+  if(dir){w.face=dir;w.walk=(w.walk||0)+.7;while(w.walk>=1){w.walk--;let moved=false;for(let up=0;up<=6;up++)if(!hitBox(w.x+dir,w.y-up)){w.x+=dir;w.y-=up;moved=true;break}if(!moved){w.blk=(w.blk|0)+1;break}w.blk=0;w.dist++}
    while(!hitBox(w.x,w.y+1)&&w.y<WH&&solidAt(w.x,w.y+5)){w.y++}}
-  if(me&&tap('alt')&&!w.ch){w.vx=w.face*1.7;w.vy=-3.1;w.gr=false;w.y-=1;sfx('tick')}
-  else if(me&&tap('b4')&&!w.ch){w.vx=-w.face*.7;w.vy=-4.4;w.gr=false;w.y-=1;w.flip=1}}
+  if(w.blk>20&&dir)w.wallT=K.tick;            // pushing against a wall: the hint says how to get up
+  if(me&&tap('alt')&&!w.ch){w.vx=w.face*1.6;w.vy=-3.4;w.gr=false;w.y-=1;w.jt=K.tick;w.flip=0;sfx('tick')}
+  else if(me&&tap('b4')&&!w.ch)backflip(w)}
+ // in the air: press jump again for a high back-flip (the classic double jump), and steer a little
+ else if(!w.gr&&w.hurt<=0&&me){if(tap('alt')&&!w.flip&&K.tick-(w.jt||-99)<22){backflip(w)}
+  const dir=(inp.right?1:0)-(inp.left?1:0);if(dir&&!w.ch)w.vx=Math.max(-1.9,Math.min(1.9,w.vx+dir*.04))}
  // fire
  if(me&&!w.acted&&phase==='round'&&w.hurt<=0){
   if(wp.ki==='c'){if(inp.fire&&t.ammo[t.wsel]!==0){w.ch=true;w.pw=Math.min(1,w.pw+1/55);if(w.pw>=1)release(w,t)}else if(w.ch)release(w,t)}
@@ -134,6 +138,7 @@ function control(w,inp,me){if(w.hurt>0)w.hurt--;
  else if(!inp.fire){w.ch=false}
  if(wp.k==='rope'&&me&&tap('fire'))ropeFire(w);
  phys(w);w.prev=Object.assign({},inp);w.pose=poseOf(w)}
+function backflip(w){w.vx=-w.face*.85;w.vy=-4.7;w.gr=false;w.y-=1;w.flip=1;w.jt=-99;sfx('tick')}
 function release(w,t){shoot(w,t,Math.max(.12,w.pw));w.ch=false;w.pw=0}
 function shoot(w,t,pow){const wp=WP[t.wsel];if(wp.k==='rope'){ropeFire(w);return}if(t.ammo[t.wsel]>0)t.ammo[t.wsel]--;if(!wp.free){w.acted=true;w.actT=K.tick}
  const a=w.face>0?w.aim:Math.PI-w.aim,c=[wp.k,Math.round(w.x),Math.round(w.y-6),Math.round(a*100)/100,Math.round(pow*100)/100];
@@ -143,14 +148,18 @@ function shoot(w,t,pow){const wp=WP[t.wsel];if(wp.k==='rope'){ropeFire(w);return
 function claim(w,c){const t=teams[w.seat];t.sseq=(t.sseq|0)+1;(t.shots||(t.shots=[])).push([t.sseq,w.id,...c]);if(t.shots.length>8)t.shots.shift()}
 function findTele(x,y){if(x<6||x>W-6)return null;for(let yy=Math.max(12,y);yy<water-4;yy++)if(!hitBox(x,yy)&&hitBox(x,yy+1))return yy;return null}
 function phys(w){if(w.x<-30||w.x>W+30||w.y>water+4){drown(w);return}if(w.gr){if(!hitBox(w.x,w.y+1)){w.gr=false;w.vy=0;w.vx=0}else return}
+ // pressed against a wall in the air: slide up it and catch the ledge as soon as it's within reach
+ if(w.press){const d=w.press;let up=-1;for(let u=0;u<=10;u++)if(!hitBox(w.x+d,w.y-u)){up=u;break}if(up>=0){w.x+=d;w.y-=up;if(up===0)w.press=0}}
  w.vy=Math.min(9,w.vy+G*1.8);const n=Math.ceil(Math.max(Math.abs(w.vx),Math.abs(w.vy))*2)+1;
  for(let k=0;k<n;k++){const nx=w.x+w.vx/n,ny=w.y+w.vy/n;
   if(hitBox(nx,ny)){if(w.vy>0&&!hitBox(w.x+w.vx/n,w.y)){w.x+=w.vx/n}
    const sp=Math.hypot(w.vx,w.vy);
    if(w.vy>0&&hitBox(w.x,w.y+1)){ // landing: fall damage from a long drop
     if(w.vy>6.2&&!w.rope){const d=Math.round((w.vy-6)*9);hurtSelf(w,d)}
-    if(w.hurt>0&&sp>2.2){w.vy*=-.3;w.vx*=.5;if(Math.abs(w.vy)<1.2){w.gr=true;w.vx=w.vy=0;w.flip=0}}else{w.gr=true;w.vx=0;w.vy=0;w.flip=0}}
-   else{w.vx*=-.35;if(w.vy<0)w.vy=0}break}
+    if(w.hurt>0&&sp>2.2){w.vy*=-.3;w.vx*=.5;if(Math.abs(w.vy)<1.2){w.gr=true;w.vx=w.vy=0;w.flip=0;w.press=0}}else{w.gr=true;w.vx=0;w.vy=0;w.flip=0;w.press=0}}
+   else{// a ledge just above your feet: climb onto it instead of bouncing off
+    if(w.hurt<=0&&!w.rope){let up=0;for(let u=1;u<=10;u++)if(!hitBox(nx,ny-u)){up=u;break}if(up){w.x=nx;w.y=ny-up;w.vy=Math.min(w.vy,0);continue}}
+    if(w.hurt<=0&&!w.rope){w.press=Math.sign(w.vx)||w.press;w.vx=0}else{w.vx*=-.35;if(w.vy<0)w.vy=0}}break}
   w.x=nx;w.y=ny}
  if(w.x<-30||w.x>W+30||w.y>water+4){drown(w)}}
 function hurtSelf(w,d){texts.push({x:w.x,y:w.y-16,s:'-'+d,col:'#f05050',t:70});if(!K.isClient())damage(w,d,null);else claim(w,['fall',d,0,0,0])}
@@ -258,7 +267,7 @@ function bot(i){const w=activeOf(i);if(!w||w.dead||phase!=='round'||w.acted)retu
   w.cpuSelf=0;if(!best||best.sc>60){// nothing good: walk towards the nearest enemy for a bit
    b.st='walk';b.dir=near[0]&&near[0].x>w.x?1:-1;b.T=K.tick;b.end=K.tick+60;b.tries=(b.tries|0)+1;if(b.tries>2&&best){b.st='aim';b.plan=best}else if(b.tries>2){b.st='aim';b.plan={k:'bazooka',a:-.8+(b.dir<0?-1.5:0),pow:.7}}return o}
   const err=[.26,.1,.03][lvl];best.a+=(Math.random()-.5)*err*2;best.pow=Math.max(.2,Math.min(1,best.pow+(Math.random()-.5)*err));b.plan=best;b.st='aim';return o}
- if(b.st==='walk'){if(K.tick>b.end){b.st='think';return o}o[b.dir>0?'right':'left']=true;if(K.tick%40===20)o.alt=true;return o}
+ if(b.st==='walk'){if(K.tick>b.end){b.st='think';return o}o[b.dir>0?'right':'left']=true;if(w.blk>6||K.tick%40===20){if(K.tick%40===20||K.tick%40===27)o.alt=true}return o}   // blocked: jump, and jump again for the back-flip
  if(b.st==='aim'){const pl=b.plan,want=WI[pl.k];if(t.wsel!==want&&t.ammo[want]!==0){if(K.tick%6===0)o.b3=true;return o}
   const f=Math.cos(pl.a)>=0?1:-1;if(w.face!==f){o[f>0?'right':'left']=true;return o}const rel=f>0?pl.a:Math.atan2(Math.sin(pl.a),-Math.cos(pl.a));
   if(rel<w.aim-.03)o.up=true;else if(rel>w.aim+.03)o.down=true;else{b.st=WP[want].ki==='c'?'charge':'fire'}return o}
@@ -322,9 +331,10 @@ if(!small){const list=teams.map((t,s)=>({t,s,hp:worms.filter(w=>w.seat===s&&!w.d
  if(!me)return;const t=teams[me.seat],wp=WP[t.wsel],am=t.ammo[t.wsel];
  g.fillStyle='rgba(16,12,24,.85)';g.fillRect(vx+vw/2-Math.min(60,vw/2-4),vy+vh-20,Math.min(120,vw-8),11);TX(wp.n+(am<0?'':' x'+am),vx+vw/2,vy+vh-18,{col:am===0?'#5c566c':'#fff07c',align:'center',outline:false});
  const act=activeOf(me.seat)===me;
- if(phase==='round'&&act&&!me.acted&&round<=2)TX(small?'W S AIM - SPACE FIRE':wp.ki==='c'?'W S AIM - HOLD SPACE FOR POWER - Q WEAPON - E JUMP':wp.ki==='t'?'AIM AND SPACE: PICK THE SPOT (HOLD = FURTHER)':'W S AIM - SPACE USE - Q NEXT WEAPON',vx+vw/2,vy+vh-30,{col:'#ffffff',align:'center'});
- else if(phase==='round'&&!act)TX(classic?'WAIT FOR YOUR TURN':'THIS WORM RESTS THIS ROUND',vx+vw/2,vy+vh-30,{col:'#a0f0ff',align:'center'});
- else if(phase==='round'&&me.acted)TX('RUN FOR COVER!',vx+vw/2,vy+vh-30,{col:'#fff07c',align:'center'})}
+ if(phase==='round'&&act&&!me.acted&&round<=2)TX(small?'W S AIM - SPACE FIRE':round===1?'A D WALK  E JUMP  E E BACK-FLIP  Q WEAPON':wp.ki==='c'?'W S AIM - HOLD SPACE FOR POWER, LET GO TO FIRE':wp.ki==='t'?'AIM AND SPACE: PICK THE SPOT (HOLD = FURTHER)':'W S AIM - SPACE USE - Q NEXT WEAPON',vx+vw/2,vy+vh-42,{col:'#ffffff',align:'center'});
+ else if(act&&me.wallT>K.tick-90)TX(small?'E E: BACK-FLIP UP':'TOO STEEP? E JUMP - E AGAIN IN THE AIR: HIGH BACK-FLIP',vx+vw/2,vy+vh-42,{col:'#fff07c',align:'center'});
+ else if(phase==='round'&&!act)TX(classic?'WAIT FOR YOUR TURN':'THIS WORM RESTS THIS ROUND',vx+vw/2,vy+vh-42,{col:'#a0f0ff',align:'center'});
+ else if(phase==='round'&&me.acted)TX('RUN FOR COVER!',vx+vw/2,vy+vh-42,{col:'#fff07c',align:'center'})}
 function render(ctx,W2,H2){if(!SCR)SCR=X.screen();const g=SCR.size(W2,H2);g.fillStyle=P.k;g.fillRect(0,0,SCR.w,SCR.h);if(!tex||!worms.length){SCR.present(ctx,W2,H2);return}
  let fs=K.demo?[]:K.focus();let fw=fs.map(s=>activeOf(s)||liveWorms(s)[0]).filter(Boolean);
  if(!fw.length){const t=K.demo?teams[Math.floor(K.tick/600)%teams.length]:null;fw=[(t&&activeOf(t.i))||worms.find(w=>!w.dead&&activeOf(w.seat)===w)||worms.find(w=>!w.dead)||worms[0]]}
@@ -335,14 +345,14 @@ function render(ctx,W2,H2){if(!SCR)SCR=X.screen();const g=SCR.size(W2,H2);g.fill
  SCR.present(ctx,W2,H2)}
 K=RA.kit({id:'worms',name:'WORMS',kind:'Artillery',players:'1-20 players',demo:4,localFirst:true,baseH:180,minPlayers:1,
  desc:'Turn-based artillery on a destructible pixel island for up to 20: bazookas and grenades in the wind, cluster bombs, the sheep, the holy hand grenade and the ninja rope. Everyone takes their turn at once - or the classic way, one team at a time.',
- blurb:'A / D walk, E jump, Shift back-flip. W / S aim (or the mouse), hold SPACE for power and let go to fire, Q next weapon. One attack per round - then run!',
- howto:'A / D walk, E jump, Shift back-flip, W / S or mouse aim, hold Space / left click for power and release to fire, Q next weapon. Crates drop in by parachute: walk into them. Water and long falls hurt.',
+ blurb:'A / D walk, E jump - press E again in the air for a high back-flip. W / S aim (or the mouse), hold SPACE for power and let go to fire, Q next weapon. One attack per round - then run!',
+ howto:'A / D walk, E jump (E again in the air = high back-flip, Shift = back-flip from the ground), W / S or mouse aim, hold Space / left click for power and release to fire, Q next weapon. Crates drop in by parachute: walk into them. Water and long falls hurt.',
  icon:['..........','...ppp....','..pWkpp...','..ppppp...','...ppp....','..ppp.....','.ppp...kk.','.pppp.kRRk','..pppp.kk.','...pppp...'],
  music:MUSIC,fireLabel:'FIRE',
  modes:[['FREE FOR ALL','Every player is a team: the last one with a worm standing wins.'],['TEAMS','Red vs blue: odd and even seats team up.']],
  settings:[['turns','Turns',[['all','All at once'],['classic','Classic (one team at a time)']]],['worms','Worms each',[['auto','Auto'],[1,'1'],[2,'2'],[3,'3']]],['map','Island',[['rnd','Random'],['meadow','Meadow'],['arctic','Arctic'],['desert','Desert'],['hell','Hell']]],
   ['time','Turn time',[[20,'20 s'],[15,'15 s'],[30,'30 s']]],['hp','Health',[[100,'100'],[150,'150'],[200,'200']]],['sd','Sudden death',[[8,'Round 8'],[5,'Round 5'],[12,'Round 12']]]],
- kb:[['A D','walk'],['W S','aim'],['SPACE','hold = power'],['Q','weapon'],['E','jump'],['SHIFT','back-flip'],['C','chat'],['ESC','menu']],pad:[['LS','walk / aim'],['A','fire'],['B','jump'],['X','weapon'],['Y','back-flip'],['START','menu']],
+ kb:[['A D','walk'],['W S','aim'],['SPACE','hold = power'],['Q','weapon'],['E','jump'],['E E','back-flip'],['C','chat'],['ESC','menu']],pad:[['LS','walk / aim'],['A','fire'],['B','jump'],['B B','back-flip'],['X','weapon'],['START','menu']],
  aim:(i,fx,fy)=>{const w=activeOf(K.isClient()?K.myIdx:i);if(!w||!SCR)return null;const cam=cams[0];if(!cam)return null;const x=fx*SCR.w+cam.x,y=fy*SCR.h+cam.y;return Math.atan2(y-(w.y-7),x-w.x)},
  ach:[{id:'first',name:'Fresh Grub',desc:'Play your first match',test:s=>s.played>=1,unlock:'title:Grub'},{id:'win1',name:'Last Worm Standing',desc:'Win a match',test:(s,m)=>m.won,unlock:'title:Worm Lord'},
   {id:'k3',name:'Grave Digger',desc:'Take out 3 enemy worms in one match',test:(s,m)=>m.kills>=3,unlock:'title:Grave Digger'}],
@@ -351,6 +361,6 @@ K=RA.kit({id:'worms',name:'WORMS',kind:'Artillery',players:'1-20 players',demo:4
  info:()=>TH?THEMES[TH].n+(classic?' · CLASSIC':''):'',
  ranks:()=>teams.map((t,s)=>({t,s,live:worms.filter(w=>w.seat===s&&!w.dead).length,hp:worms.filter(w=>w.seat===s&&!w.dead).reduce((a,w)=>a+w.hp,0)})).sort((a,b)=>b.live-a.live||b.hp-a.hp||(b.t.dmg|0)-(a.t.dmg|0)).map(e=>[e.t.name,e.t.col,e.live?e.hp+' hp':(e.t.kills|0)+' kills · '+(e.t.dmg|0)+' dmg']),
  result:(i,w)=>{const t=teams[i];return{won:!!w&&(w.team!=null?teamOf(i)===w.team:w.i===i),kills:t?t.kills|0:0}}});
-window.__wm={get worms(){return worms},get teams(){return teams},get proj(){return proj},get phase(){return phase},get round(){return round},get ops(){return ops},get active(){return active},K,bot:i=>bot(i),sim};
+window.__wm={get worms(){return worms},get mask(){return mask},get W(){return W},get teams(){return teams},get proj(){return proj},get phase(){return phase},get round(){return round},get ops(){return ops},get active(){return active},K,bot:i=>bot(i),sim};
 
 })();

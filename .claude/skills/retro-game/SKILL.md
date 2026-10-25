@@ -104,6 +104,8 @@ Serve: `cd game && python3 -m http.server 8765`. Tools in `game/tools/test` (see
    Team games: a lone human must always be in the play - auto-switch to the team mate nearest the ball (Pixel Kick).
    Platformers: model a masher (holds right, taps jump on a rhythm) - if they loop-die at one obstacle, the respawn
    is a trap: respawn on safe ground a few tiles back, and after two deaths at the same spot put them past it.
+   Measure climbing with a script (a wall of height h, each move: walk / jump / double jump) - Worms could only jump onto 14 px
+   ledges because a jump hit the wall and bounced off: press against walls in the air and catch the ledge instead.
    Add ledge forgiveness (step up when feet are within ~10px of a ledge top) and keep walls you must climb <= 3 tiles.
    Survival / swarm games: check a solo human with the WEAKEST starting kit survives the first minutes; contact damage
    that feels fine with a team kills a lone player in seconds. bot() must output key booleans too (test harness), not only ax/ay.
