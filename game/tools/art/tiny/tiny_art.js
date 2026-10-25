@@ -1,0 +1,1 @@
+const ART={"car": ["....kkkkk....", "...k11111k...", ".kk1YW1WY1kk.", "kKK1111111KKk", "kKK1122211KKk", "kKK1CCCCC3KKk", ".kk1CCCCC3kk.", "..k1222223k..", "..k1W222W3k..", "..k1222223k..", ".kk1CCCCC3kk.", "kKK1222223KKk", "kKK1222223KKk", "kKK1222223KKk", ".kk1333333kk.", "...kkkkkkk..."]};
