@@ -37,6 +37,29 @@ BEETLE=[["......LLLL....",".....LllllL...","....LlLLLLlL..","...LlLLllLLlL.","..
         ["......LLLL....",".....LllllL...","....LlLLLLlL..","...LlLLllLLlL.","...LlLLllLLlL.","...LlLllllLlL.","..sLlllllllll.",".sksLLLLLLLLL.",".ssssyyyyyyy..","..sss..yy.yy..","...ss..ss.ss..","......ss.ss..."]]
 SHELL=["....LLLLLL....","..LLlllllLL...",".LlLLLLLLLlL..",".LlLlllllLlL..",".LlLLLLLLLlL..","LLllllllllllL.","LwwwwwwwwwwwwL",".yyyyyyyyyyyy."]
 FLAG=["kkkkkkkkkkkk","WWWWWWWWWWWk",".WWLLLLWWWWk","..WWLLWWWWWk","...WWWWWWWWk","....WWWWWWWk",".....WWWWWWk","......WWWWWk",".......WWWWk","........kkkk"]
+
+# lava (2 frames): a glowing surface that ripples, darker swirls below. Not solid: you fall in.
+def lava(ph):
+    rows=[]
+    for y in range(16):
+        r=''
+        for x in range(16):
+            w=(x+ph)%8
+            if y==0: c='.' if w not in (2,3,4) else 'Y'
+            elif y==1: c='Y' if w in (1,2,3,4,5) else 'y'
+            elif y==2: c='y' if w in (0,6,7) else 'O'
+            else:
+                import math
+                a=math.sin(x*.7+y*.45+ph*.8)+math.sin(x*.31-y*.8+ph*.4)
+                c='r' if a>1.35 else 'O' if a<-1.45 and y<9 else 'o'
+            r+=c
+        rows.append(r)
+    return rows
+T['lava1']=lava(0);T['lava2']=lava(4)
+# moving platform (16 x 8 segment, repeated): a riveted girder lift
+LIFT=["kkkkkkkkkkkkkkkk","kWWWWWWWWWWWWWWk","kGwGGGGGGGGGGwGk","kGGGGGGGGGGGGGGk","kgggggggggggggggk"[:16],"kgKgggKggggKgggk","kKKKKKKKKKKKKKKk","kkkkkkkkkkkkkkkk"]
+# a firebar ball (outlined at export)
+FIREB=[".OOOO.","OYYYYO","OYWWYO","OYWWYO","OYYYYO",".OOOO."]
 if __name__=='__main__':
     PAL.update({'Q':'#88dc48','q':'#38a038','A':'#e8a070','a':'#c06838','Z':'#6c3018','F':'#d07040','f':'#a84c28','x':'#3c1c10','J':'#f0b030','j':'#a8641c','I':'#ffffff','h':'#5a3a20','u':'#1c2a7c'})
     sheet([T[k] for k in T],'tiles.png',z=6)

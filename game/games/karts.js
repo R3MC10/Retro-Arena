@@ -488,7 +488,7 @@ function hud(g,p,vx,vy,vw,vh,many){const f=p.fx||{},top=vy+(vy<4?14:3),TX=(s,x,y
 function render(ctx,W,H){if(!SCR)SCR=X.screen();const g=SCR.size(W,H);g.fillStyle=P.k;g.fillRect(0,0,SCR.w,SCR.h);
  if(!MAP){SCR.present(ctx,W,H);return}
  let fs=K.demo?[]:K.focus();if(!fs.length){const lead=karts.slice().sort((a,b)=>a.place-b.place).find(k=>!k.out)||karts[0];fs=lead?[K.demo?karts[(Math.floor(K.tick/600))%karts.length].i:lead.i]:[]}
- fs=fs.slice(0,4);const n=fs.length,w=SCR.w,h=SCR.h-(K.demo?0:9);
+ fs=fs.slice(0,4);const n=fs.length,w=SCR.w,h=SCR.h-(K.demo?0:Math.round(SCR.h*9/180));
  const rects=n<=1?[[0,0,w,h]]:n===2?[[0,0,w,h>>1],[0,h>>1,w,h-(h>>1)]]:[[0,0,w>>1,h>>1],[w>>1,0,w-(w>>1),h>>1],[0,h>>1,w>>1,h-(h>>1)],[w>>1,h>>1,w-(w>>1),h-(h>>1)]];
  fs.forEach((i,k)=>{const r=rects[k];view(g,karts[i],r[0],r[1],r[2],r[3],k,n>1)});
  if(n>1){g.fillStyle=P.k;if(n===2)g.fillRect(0,(h>>1)-1,w,2);else{g.fillRect((w>>1)-1,0,2,h);g.fillRect(0,(h>>1)-1,w,2)}}
@@ -503,7 +503,7 @@ function engineSound(){const AC=RA.audio.ctx,me=K.demo||K.state!=='play'?null:ka
  const V=RA.audio.vol,fl=flags(me),vol=V.mute?0:.03*V.master/100*V.sfx/100,fr=50+Math.abs(me.sp)*26+(fl&4?18:0)+(fl&8?6:0);
  engine.o.frequency.setTargetAtTime(fr,AC.currentTime,.06);engine.o2.frequency.setTargetAtTime(fr*.5,AC.currentTime,.06);engine.g.gain.setTargetAtTime(vol,AC.currentTime,.08)}
 let SCR=null;
-K=RA.kit({id:'karts',name:'TURBO KARTS',kind:'Kart racing',players:'1-20 players',demo:6,localFirst:true,baseH:180,
+K=RA.kit({id:'karts',name:'TURBO KARTS',kind:'Kart racing',players:'1-20 players',demo:6,localFirst:true,baseH:270,
  desc:'Pixel-art kart racing for up to 20 with a Mode 7 chase camera: drift through the bends for blue and orange mini-turbos, grab ? boxes, fire rockets and bouncers, or pop balloons in battle mode. Split screen for local players.',
  blurb:'Your kart accelerates by itself: A / D steer, S brakes, Shift / E drift (let go on orange sparks for a turbo), Space or click uses your item. Hold W as the lights go green for a rocket start.',
  howto:'The kart accelerates by itself. A / D steer, S brakes, W held at the green light = rocket start, Shift or E (right-click) drifts, Space or click uses an item (hold S to throw it back). Gamepad: stick steers, B / RB drift, A item.',

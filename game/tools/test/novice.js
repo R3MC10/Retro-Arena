@@ -12,5 +12,5 @@ const {browser,openGame,startLocal,arg}=require('./lib');
    for(const k in o){if(!o[k]||!KEY[k])continue;if(k==='fire'||k==='alt'||k==='b3'){if(miss[k]==null)miss[k]=Math.random()<drop;if(miss[k])continue}hold.add(KEY[k])}
    for(const k of['fire','alt','b3'])if(!o[k])miss[k]=null;G.step();if(over())break}
   const rk=document.getElementById(P+'Ranks').innerText.split('\n').filter(x=>x.trim());const names=rk.filter((x,i)=>i%3===1);
-  const ti=rk.indexOf('Tester');return{steps:n,over:over(),win:document.getElementById(P+'Win').textContent,place:names.indexOf('Tester')+1,of:names.length,me:rk[ti+1],best:rk[2]}},[P,delay,drop,max]);
+  const ti=rk.indexOf('Tester');return{steps:n,over:over(),win:document.getElementById(P+'Win').textContent,place:names.indexOf('Tester')+1,of:names.length,me:rk[ti+1],best:rk[2],x:window.__db?__db.heroes.map(h=>h.deaths+'d'+(h.dl||[]).join(',')):0}},[P,delay,drop,max]);
  console.log(id,JSON.stringify(r),errs.slice(0,2).join(' | ')||'');await b.close()})();

@@ -6,7 +6,7 @@
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v74';
+RA.VERSION='v75';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -100,13 +100,23 @@ let floorBuf=null,floorC=null;const floorCache=new WeakMap();
 // Sprites on the floor at world (x,z): f = -(x-v.x)*sin a + (z-v.z)*cos a (depth), s = fov/f, screen x = x0+w/2 + ((x-v.x)*cos a + (z-v.z)*sin a)*s,
 // screen y = y0+horizon + height*s, an object h tall reaches up h*s pixels.
 const f7={buf:null,cv:null,tex:new WeakMap()};
-RA.fx.floor7=(c,tex,v,x0,y0,w,h)=>{let T=f7.tex.get(tex);const S=tex.width,M=S-1,sh=Math.log2(S)|0;
- if(!T){T=new Uint32Array(tex.getContext('2d').getImageData(0,0,S,S).data.buffer);f7.tex.set(tex,T)}
+// Mipmaps: far rows read a texture shrunk by 2, 4, 8... (each texel the average of four), so distant ground stays calm
+// instead of breaking up into flickering pixel noise. v.mip=false turns it off.
+function f7mips(tex){const S=tex.width,L=[new Uint32Array(tex.getContext('2d').getImageData(0,0,S,S).data.buffer)];
+ for(let s=S>>1;s>=16;s>>=1){const P=L[L.length-1],ps=s<<1,o=new Uint32Array(s*s);
+  for(let y=0;y<s;y++)for(let x=0;x<s;x++){const a=P[(2*y)*ps+2*x],b=P[(2*y)*ps+2*x+1],c=P[(2*y+1)*ps+2*x],d=P[(2*y+1)*ps+2*x+1];
+   const ch=k=>((((a>>>k)&255)+((b>>>k)&255)+((c>>>k)&255)+((d>>>k)&255))>>2)<<k;o[y*s+x]=(ch(0)|ch(8)|ch(16)|(255<<24))>>>0}
+  L.push(o)}return L}
+RA.fx.floor7=(c,tex,v,x0,y0,w,h)=>{let T=f7.tex.get(tex);const S=tex.width,sh0=Math.log2(S)|0;
+ if(!T){T=f7mips(tex);f7.tex.set(tex,T)}
  const hor=Math.round(v.horizon),r0=Math.max(0,-hor),rows=h-hor-r0;if(rows<=0||w<=0)return;
  if(!f7.cv)f7.cv=document.createElement('canvas');if(!f7.buf||f7.buf.width!==w||f7.buf.height!==rows){f7.cv.width=w;f7.cv.height=rows;f7.buf=f7.cv.getContext('2d').createImageData(w,rows)}
- const out=new Uint32Array(f7.buf.data.buffer),a=v.angle||0,ca=Math.cos(a),sa=Math.sin(a),H=v.height||40,F=v.fov||120;let o=0;
+ const out=new Uint32Array(f7.buf.data.buffer),a=v.angle||0,ca=Math.cos(a),sa=Math.sin(a),H=v.height||40,F=v.fov||120,mip=v.mip!==false;let o=0;
  for(let r=r0;r<r0+rows;r++){const d=H*F/(r+1),rx=ca*d*w/F/2,rz=sa*d*w/F/2;let u=v.x-sa*d-rx,t=v.z+ca*d-rz;const du=2*rx/w,dt=2*rz/w;
-  for(let i=0;i<w;i++){out[o++]=T[(((t|0)&M)<<sh)|((u|0)&M)];u+=du;t+=dt}}
+  // texels covered by one screen pixel: across the row, and down to the next row
+  const step=Math.max(Math.hypot(du,dt),H*F/(r+1)-H*F/(r+2));let L=0;if(mip)while(L<T.length-1&&step>(1.5*(1<<L)))L++;
+  const TL=T[L],sh=sh0-L,M=(S>>L)-1,k=1/(1<<L);u*=k;t*=k;const du2=du*k,dt2=dt*k;
+  for(let i=0;i<w;i++){out[o++]=TL[(((t|0)&M)<<sh)|((u|0)&M)];u+=du2;t+=dt2}}
  f7.cv.getContext('2d').putImageData(f7.buf,0,0);c.drawImage(f7.cv,x0,y0+hor+r0)};
 
 function floorData(tex){let d=floorCache.get(tex);if(!d){d=tex.getContext('2d').getImageData(0,0,tex.width,tex.height).data;floorCache.set(tex,d)}return d}

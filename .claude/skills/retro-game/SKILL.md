@@ -121,6 +121,11 @@ Serve: `cd game && python3 -m http.server 8765`. Tools in `game/tools/test` (see
    toss looks like shoulder height.
    Tournament formats (ladders, rounds): make sure a player can reach the top within the rounds from where they start
    (humans start mid-ladder), and a human never sits out a round while a CPU plays.
+   Know the game's own end rules before reading a probe: an all-CPU race ends 5 s after the first finisher, so "everyone
+   stuck at x" can just mean "frozen when the race ended" - run probes with an idle human seat.
+   Moving hazards (lifts, firebars) on a clock (position = f(level tick)) need no sync; teach the CPU each one (wait for the
+   lift, ride it, time the bar) and measure deaths per level. A beginner model that drops 30% of presses is too harsh for
+   jump-critical games (10%); coyote time (jump a few frames after leaving an edge) helps beginners most.
    Rare moments (keeper dives, goals, crashes) won't show up in random frames: stage them - the frames.js input
    function can set game state at step n (put the ball on a shot path, then grab the next 40 steps).
 3. `node sim.js <id> <mode> 8` and with 20 players - every mode ends properly, results make sense, snapshot under 3 KB,

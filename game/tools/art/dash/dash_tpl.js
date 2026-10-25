@@ -9,6 +9,10 @@
    First seconds: hints show A / D run, Space / W jump (hold for higher), E / Shift fireball, S crouch.
    Online is lag-free (RA.kit localFirst): your hero, your blocks, coins and power-ups live on your device; the host runs
    the enemies, shells and smashed bricks and hands out finishing places.
+   Levels (tester feedback: more levels): six designed levels in six worlds - 1-1 Green Hills, 1-2 Underground, 1-3 Dusk Heights,
+   2-1 Snow Peaks (ice: slow to start, slow to stop), 2-2 Sky Bridges (lifts over gaps too wide to jump), 2-3 Lava Castle (lava
+   pits, spinning firebars). A match is a Cup of 4 (castle last), the Grand Tour of all 6, one level, or a shuffled course;
+   cup points 10-8-6-5-4-3-2-1 per level. Lifts and firebars move with the level clock, so all devices agree without syncing them.
    The sprites are painted in tools/art/dash (python), exported as ART below; edit dash_tpl.js there and run build.sh. */
 (()=>{
 const X=RA.pix,P=X.PAL;
@@ -30,6 +34,9 @@ const MUSIC=[TM('Overworld Dash',150,['C','F','G','C'],'k.s.k.s.k.s.k.ss','e5 e5
 const THEMES={
  over:{sky:['#5c94fc'],tile:{Q:'#88dc48',q:'#38a038',A:'#e8a070',a:'#c06838',Z:'#6c3018',F:'#d07040',f:'#a84c28',x:'#3c1c10',J:'#f0b030',j:'#a8641c',I:'#ffffff'},scen:1,mus:0},
  under:{sky:['#0c0818'],tile:{Q:'#80b0ff',q:'#3068d0',A:'#6890c8',a:'#2c4c88',Z:'#142870',F:'#4a78c8',f:'#2c4c88',x:'#0c1028',J:'#f0b030',j:'#a8641c',I:'#ffffff'},scen:0,mus:1,roof:1},
+ snow:{sky:['#7cb8f0','#a8d8ff','#d0ecff'],tile:{Q:'#ffffff',q:'#c8e8ff',A:'#a0c8f0',a:'#6890c8',Z:'#3c5a90',F:'#b0d0f0',f:'#7098c8',x:'#2c3c68',J:'#f0b030',j:'#a8641c',I:'#ffffff'},scen:1,mus:0,ice:1},
+ sky:{sky:['#4890e8','#70b0f8','#a0d0ff','#c8e8ff'],tile:{Q:'#ffffff',q:'#c8dcf0',A:'#f0c890',a:'#c89860',Z:'#7c5430',F:'#e8a070',f:'#c06838',x:'#3c1c10',J:'#f0b030',j:'#a8641c',I:'#ffffff'},scen:1,mus:2},
+ castle:{sky:['#0c0818','#1c0c18','#3c1018'],tile:{Q:'#9a94a8',q:'#5c566c',A:'#7c7890',a:'#5c566c',Z:'#2c2638',F:'#9a94a8',f:'#5c566c',x:'#2c2638',J:'#f0b030',j:'#a8641c',I:'#ffffff'},scen:0,mus:1,roof:1},
  dusk:{sky:['#f8b060','#f08858','#d86070','#a04878'],tile:{Q:'#6cc058',q:'#2a6a38',A:'#d89060',a:'#9c5030',Z:'#5a2414',F:'#c06040',f:'#8c3c24',x:'#2c1008',J:'#f0b030',j:'#a8641c',I:'#ffffff'},scen:1,mus:2}};
 
 /* ---------- the course: hand-made chunks strung together by the seed ---------- */
@@ -49,32 +56,66 @@ const CH={
  tunnel:["..................","..................","..................","..................","..................","..................",".BBBBBBBBBBBBBBBB.","..................","..o.o.o.o.o.o.o...","........g.........","##################","##################"],
  check:["............","............","............","............","............","............","............","............","............",".....!......","############","############"],
  end:["..............................","..............................","..............................","..............................","..............................","..............................","..........H...................",".........HH...................","........HHH...................",".......HHHH...................","##############################","##############################"]};
+Object.assign(CH,{
+ // snow: slippery ground (the theme makes it ice), short pits you must not slide into
+ icy:["..................","..................","..................","..................","..................","....ooo...........","..................","...........?......","..................","....g.........g...","#######..#########","#######..#########"],
+ icePits:["....................","....................","....................","....................","....................","...o....o....o......","....................","....................","....................","....................","###..####..####..###","###..####..####..###"],
+ // sky: lifts carry you over gaps too wide to jump (= rides side to side, ~ up and down)
+ lift1:["..................","..................","..................","..................","..................","......ooooo.......","..................","..................","..................","..................","####...===.....###","####...........###"],
+ liftUp:["..............","..............","..............","..............","..............",".......oo.....","..............","..............","..............","..............","####.~~~~..###","####.......###"],
+ // castle: lava where the pits were, firebars spinning round a block (X)
+ lavaPit:["..................","..................","..................","..................","..................",".....ooo..........","..................","..................","..................","..........g.......","####LLLL####LLL###","####LLLL####LLL###"],
+ firebar:["..................","..................","..................","..................","..................","..................","..................",".........X........","..................","..................","##################","##################"],
+ fireHall:["......................","......................","......................","......................","HHHHHHHHHHHHHHHHHHHHHH","......................","......................","....X.........X.......","......................","..........g...........","######################","######################"],
+ lavaLift:["..................","..................","..................","..................","..................","......ooooo.......","..................","..................","..................","..................","####LLL===LLLLL###","####LLLLLLLLLLL###"]});
+// the levels: a designed run of chunks each, in their own world
+const LEVELS=[{n:'1-1 GREEN HILLS',th:'over',ch:['blocks','pit2','pipes','high','check','beetles','steps','bricks','float']},
+ {n:'1-2 UNDERGROUND',th:'under',ch:['tunnel','pipes','bricks','pit2','check','tunnel','beetles','steps','blocks']},
+ {n:'1-3 DUSK HEIGHTS',th:'dusk',ch:['stairs','float','high','steps','check','pit2','float','stairs','high']},
+ {n:'2-1 SNOW PEAKS',th:'snow',ch:['icy','blocks','icePits','stairs','check','beetles','icy','steps','icePits']},
+ {n:'2-2 SKY BRIDGES',th:'sky',ch:['lift1','float','liftUp','high','check','lift1','steps','liftUp','lift1']},
+ {n:'2-3 LAVA CASTLE',th:'castle',ch:['lavaPit','firebar','lavaLift','fireHall','check','lavaPit','firebar','lavaLift','firebar']}];
 const POOL=['blocks','pit2','pipes','stairs','high','float','beetles','steps','bricks','tunnel'];
 const E_GRUMP=1,E_BEETLE=2,E_SHELL=3;
 let K,LV=null,heroes=[],enemies=[],parts=[],texts=[],finN=0,firstFin=0,lastHF=0,nextId=1,shake=0,champ=-1;
 const broken=new Set(),L={broken:new Map()};          // host: smashed bricks; guest: bricks I smashed but the host hasn't confirmed
 const teamOf=i=>K.mode===1?i%2:i,ownerNet=h=>K.seats[h.i]&&K.seats[h.i].ctrl==='net',isMine=h=>K.isClient()?h.i===K.myIdx:!ownerNet(h);
-function build(seed,S){const rr=RA.util.mulberry(seed),n=S.length==='short'?6:S.length==='long'?14:10,list=['start'];
- const bag=[];for(let k=0;k<n;k++){if(!bag.length)bag.push(...POOL.slice().sort(()=>rr()-.5));list.push(bag.pop());if(k===Math.floor(n/2)-1)list.push('check')}list.push('end');
+function build(seed,S,li){const rr=RA.util.mulberry(seed),n=S.length==='short'?6:S.length==='long'?14:10;let list=['start'];const lvl=li!=null&&LEVELS[li];
+ if(lvl)list=['start',...lvl.ch,'end'];else{const bag=[];for(let k=0;k<n;k++){if(!bag.length)bag.push(...POOL.slice().sort(()=>rr()-.5));list.push(bag.pop());if(k===Math.floor(n/2)-1)list.push('check')}list.push('end')}
  const rows=Array.from({length:LH},()=>'');for(const c of list)for(let r=0;r<LH;r++)rows[r]+=CH[c][r];
  const W=rows[0].length,tiles=new Uint8Array(W*LH),spawns=[],coins=[],checks=[TS*3];
- const code={'#':1,B:2,'?':3,M:4,H:5,'[':6,']':7,'{':8,'}':9};
- for(let r=0;r<LH;r++)for(let c=0;c<W;c++){const ch=rows[r][c];if(code[ch])tiles[r*W+c]=code[ch];else if(ch==='o')coins.push(r*W+c);else if(ch==='g'||ch==='k')spawns.push({c,r,k:ch==='g'?E_GRUMP:E_BEETLE});else if(ch==='!')checks.push(c*TS+8)}
- const flagC=W-18,castleC=W-11;const theme=S.world==='rnd'||!S.world?['over','under','dusk'][Math.floor(rr()*3)]:S.world;
+ const code={'#':1,B:2,'?':3,M:4,H:5,'[':6,']':7,'{':8,'}':9,L:10,X:5},lifts=[],bars=[];
+ for(let r=0;r<LH;r++)for(let c=0;c<W;c++){const ch=rows[r][c];
+  if((ch==='='||ch==='~')&&rows[r][c-1]!==ch){let e=c;while(rows[r][e+1]===ch)e++;const n2=e-c+1;lifts.push({cx:(c+n2/2)*TS,y:r*TS,hw:n2*TS/2,ax:ch==='='?'h':'v',A:ch==='='?40:36,P:ch==='='?220:200,ph:lifts.length*1.7})}
+  if(ch==='X')bars.push({x:c*TS+8,y:r*TS+8,dir:bars.length%2?-1:1,ph:bars.length*2.1});
+  if(code[ch])tiles[r*W+c]=code[ch];else if(ch==='o')coins.push(r*W+c);else if(ch==='g'||ch==='k')spawns.push({c,r,k:ch==='g'?E_GRUMP:E_BEETLE});else if(ch==='!')checks.push(c*TS+8)}
+ const flagC=W-18,castleC=W-11;const theme=lvl?lvl.th:['over','under','dusk'][Math.floor(rr()*3)];
  const scen=[];for(let c=2;c<W-20;c+=6+Math.floor(rr()*8))scen.push({k:rr()<.5?'cloud':'cloud',x:c*TS,y:16+Math.floor(rr()*40)});
- const ground=[];for(let c=2;c<W-20;c+=5+Math.floor(rr()*9))if(tiles[10*W+c]===1&&tiles[9*W+c]===0)ground.push({k:rr()<.5?'bush':'hill',x:c*TS});
- return{W,tiles,spawns,coins,checks,flagX:flagC*TS+8,castleX:castleC*TS,theme,th:THEMES[theme],scen,ground}}
+ const ground=[];if(theme!=='snow')for(let c=2;c<W-20;c+=5+Math.floor(rr()*9))if(tiles[10*W+c]===1&&tiles[9*W+c]===0)ground.push({k:rr()<.5?'bush':'hill',x:c*TS});
+ return{W,tiles,spawns,coins,checks,flagX:flagC*TS+8,castleX:castleC*TS,theme,th:THEMES[theme],scen,ground,lifts,bars,li,name:lvl?lvl.n:'',t0:0}}
+// lifts and firebars move with the level clock, so every device sees them in the same place with nothing to sync
+const liftPos=(l,t)=>{const s=Math.sin(t/l.P*Math.PI*2+l.ph);return l.ax==='h'?{x:l.cx+l.A*s,y:l.y}:{x:l.cx,y:l.y-l.A*(1+s)/2}};
+const barBalls=(b,t)=>{const a=t*.035*b.dir+b.ph,o=[];for(let k=1;k<6;k++)o.push({x:b.x+Math.cos(a)*k*8,y:b.y+Math.sin(a)*k*8});return o};
 const tileAt=(c,r)=>{if(c<0)return 5;if(c>=LV.W||r<0)return 0;if(r>=LH)return 0;const q=r*LV.W+c,v=LV.tiles[q];if(v===2&&(broken.has(q)||L.broken.has(q)))return 0;return v};
-const solid=v=>v>0;
+const solid=v=>v>0&&v!==10;
+let T0=0;const TK=()=>K.tick-T0;      // the level clock: the countdown and the times start again on every level of a cup
 /* ---------- heroes ---------- */
-function start(seats,md,S,seed){LV=build(seed,S);broken.clear();L.broken.clear();enemies=[];parts=[];texts=[];finN=0;firstFin=0;lastHF=0;nextId=1;champ=-1;cams.length=0;
+// a match is one level, a cup of 4 (the castle last) or the grand tour of all 6; points for every finishing place
+let SEED=0,cup=[0],ci=0,cupPts=[],cs='race',csT=0;const CPTS=[10,8,6,5,4,3,2,1];
+function cupList(S,seed){const v=S.level==null?'cup':S.level,rr=RA.util.mulberry(seed^0x5eed);
+ if(v==='cup'){const a=[0,1,2,3,4].sort(()=>rr()-.5).slice(0,3).sort();return[...a,5]}if(v==='tour')return[0,1,2,3,4,5];if(v==='rnd')return[Math.floor(rr()*LEVELS.length)];if(v==='mix')return[null];return[+v]}
+function loadLevel(i){LV=build(SEED+i*7919,K.S,cup[i]);broken.clear();L.broken.clear();parts=[];texts=[];finN=0;firstFin=0;lastHF=0;champ=-1;cams.length=0;T0=K.tick;
+ enemies=[];for(const sp of LV.spawns)enemies.push({id:nextId++,k:sp.k,x:sp.c*TS+8,y:(sp.r+1)*TS,vx:-.5,vy:0,st:0,t:0,on:0,spin:0,dead:0})}
+function resetHero(h){const i=h.i;Object.assign(h,{x:28+(i%5)*9,y:160,vx:0,vy:0,gr:true,face:1,big:0,fire:0,star:0,inv:0,dead:0,stun:0,run:0,held:0,jb:0,co:0,dash:0,ck:LV.checks[0],fin:0,ft:0,pole:0,
+ used:new Set(),got:new Set(),items:[],fb:[],bump:null,bubble:0,lift:null,sh:[],rep:0,lastD:null,grow:0,gx:null,tx:null,ty:null,bt:null})}
+function start(seats,md,S,seed){SEED=seed;cup=cupList(S,seed);ci=0;cs='race';csT=0;cupPts=seats.map(()=>0);nextId=1;T0=0;LV=build(seed,S,cup[0]);broken.clear();L.broken.clear();enemies=[];parts=[];texts=[];finN=0;firstFin=0;lastHF=0;champ=-1;cams.length=0;
  heroes=seats.map((s,i)=>({i,name:s.name,col:md===1?TEAMC[i%2]:s.col,x:28+(i%5)*9,y:160,vx:0,vy:0,gr:true,face:1,big:0,fire:0,star:0,inv:0,dead:0,stun:0,run:0,held:0,jb:0,co:0,jh:false,
   coins:0,dash:0,ck:LV.checks[0],fin:0,ft:0,pole:0,place:i+1,used:new Set(),got:new Set(),items:[],fb:[],bump:null,claims:[],cseq:0,cSeen:0,ev:[],evSeq:0,evSeen:0,pose:'stand',pAt:0,stomps:0,deaths:0,bubble:0}));
  for(const sp of LV.spawns)enemies.push({id:nextId++,k:sp.k,x:sp.c*TS+8,y:(sp.r+1)*TS,vx:-.5,vy:0,st:0,t:0,on:0,spin:0,dead:0})}
 const hH=h=>h.big?26:14,hW=6;     // half width 6, height small 14 / big 26
 function hitWall(x,y,h){const c0=Math.floor((x-hW)/TS),c1=Math.floor((x+hW-.01)/TS),r0=Math.floor((y-h)/TS),r1=Math.floor((y-.01)/TS);
  for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++)if(solid(tileAt(c,r)))return true;return false}
-function move(h,inp){if(K.tick<CD){h.vx=0;return}
+function move(h,inp){if(TK()<CD){h.vx=0;return}
  for(const k of['star','inv','dash'])if(h[k]>0)h[k]--;
  if(h.fin){h.vx=0;return}
  if(h.dead>0){h.dead--;h.vy=Math.min(FALL,h.vy+.25);h.y+=h.vy;if(h.dead===0)respawn(h);return}
@@ -86,19 +127,21 @@ function move(h,inp){if(K.tick<CD){h.vx=0;return}
  // momentum: walking speed at once, running speed after a short run-up
  if(dir&&h.gr&&Math.sign(h.vx)!==-dir)h.run=Math.min(40,h.run+1);else if(h.gr&&!dir)h.run=Math.max(0,h.run-2);else if(dir&&Math.sign(h.vx)===-dir&&h.gr)h.run=0;
  // CPUs run slower on the lower levels (testers found them too fast): Easy tops out below a beginner's pace
- const cpuF=!K.demo&&K.seats[h.i]&&K.seats[h.i].ctrl==='cpu'?[.74,.9,1][K.cpu]:1;
+ const cpuF=!K.demo&&K.seats[h.i]&&K.seats[h.i].ctrl==='cpu'?[.86,.93,1][K.cpu]:1;
  const top=(h.dash>0?DASH:h.run>=28?RUN:WALK+(RUN-WALK)*h.run/28)*cpuF;
- if(down)h.vx*=.95;
- else if(dir){if(h.gr&&h.vx*dir<0){h.vx+=dir*SKID;h.skid=1}else{h.skid=0;const a=h.gr?(Math.abs(h.vx)<WALK?ACC:ACCR):AIRA;if(h.vx*dir<top)h.vx=dir*Math.min(top,Math.abs(h.vx)*(h.vx*dir>0?1:-1)+a);else h.vx+=(dir*top-h.vx)*.05}h.face=h.gr?dir:h.face}
- else{h.skid=0;if(h.gr){const s=Math.sign(h.vx);h.vx-=s*FRIC;if(Math.sign(h.vx)!==s)h.vx=0}}
+ const ice=LV.th.ice&&h.gr,gi=ice?.5:1;   // snow worlds: ice takes longer to get going, stop and turn
+ if(down)h.vx*=ice?.99:.95;
+ else if(dir){if(h.gr&&h.vx*dir<0){h.vx+=dir*SKID*(ice?.3:1);h.skid=1}else{h.skid=0;const a=h.gr?(Math.abs(h.vx)<WALK?ACC:ACCR)*gi:AIRA;if(h.vx*dir<top)h.vx=dir*Math.min(top,Math.abs(h.vx)*(h.vx*dir>0?1:-1)+a);else h.vx+=(dir*top-h.vx)*.05}h.face=h.gr?dir:h.face}
+ else{h.skid=0;if(h.gr){const s=Math.sign(h.vx);h.vx-=s*FRIC*(ice?.15:1);if(Math.sign(h.vx)!==s)h.vx=0}}
  if(h.gr&&dir)h.face=dir;
  // jump: buffered press, coyote time, hold for height
  if(jump&&!h.jh)h.jb=6;else if(h.jb>0)h.jb--;h.jh=jump;
- if(h.gr)h.co=6;else if(h.co>0)h.co--;
+ if(h.gr)h.co=9;   // coyote time: you can still jump a few frames after running off an edgeelse if(h.co>0)h.co--;
  if(h.jb>0&&h.co>0&&!h.crouch){h.vy=-(JV+JVR*Math.min(1,Math.abs(h.vx)/RUN));h.gr=false;h.co=0;h.jb=0;sfx('jump')}
  h.vy=Math.min(FALL,h.vy+(h.vy<0&&jump?GH:GF));
  if((inp.alt||inp.b4)&&!h.fh&&h.fire&&h.fb.length<2){h.fb.push({x:h.x+h.face*8,y:h.y-hH(h)/2,vx:h.face*4,vy:1,t:90});sfx('shot')}h.fh=!!(inp.alt||inp.b4);
  const H=hH(h);
+ if(h.lift!=null){const L=LV.lifts[h.lift],p=L&&liftPos(L,TK()),q=L&&liftPos(L,TK()-1);if(L&&Math.abs(h.x-q.x)<=L.hw+hW-1&&Math.abs(h.y-q.y)<3&&h.vy>=0){h.x+=p.x-q.x;h.y=p.y}else h.lift=null}
  // horizontal, then vertical, against the tiles
  let nx=h.x+h.vx;
  // ledge forgiveness: pushing into a wall whose top is just above your feet steps you up onto it
@@ -110,8 +153,13 @@ function move(h,inp){if(K.tick<CD){h.vx=0;return}
   let fixed=false;for(const d of[-4,-3,-2,-1,1,2,3,4])if(!hitWall(h.x+d,ny,H)&&Math.abs(d)<=4){const cc=Math.floor((h.x+d+(d>0?-hW:hW))/TS);if(!hitWall(h.x+d,ny,H)){h.x+=d;fixed=true;break}}
   if(!fixed){const r=Math.floor((ny-H)/TS),c=Math.floor(h.x/TS),c2=solid(tileAt(c,r))?c:Math.floor((h.x+(h.x%TS<8?-hW:hW))/TS);bumpBlock(h,c2,r);ny=(r+1)*TS+H;h.vy=1}}
  h.y=ny;
- if(h.gr&&solid(tileAt(Math.floor((h.x-hW)/TS),Math.floor(h.y/TS)))&&solid(tileAt(Math.floor((h.x+hW)/TS),Math.floor(h.y/TS)))&&!enemies.some(e=>!e.dead&&!e.flat&&Math.abs(e.x-h.x)<40)){const sh=h.sh||(h.sh=[]);if(!sh.length||Math.abs(sh[sh.length-1].x-h.x)>12){sh.push({x:h.x,y:h.y});if(sh.length>24)sh.shift()}}
+ // landing on a lift (one-way: from above)
+ if(!h.gr&&h.vy>=0)for(let k=0;k<LV.lifts.length;k++){const L=LV.lifts[k],p=liftPos(L,TK()),q=liftPos(L,TK()-1);if(Math.abs(h.x-p.x)<L.hw+hW-2&&h.y>=p.y-1&&h.y-h.vy<=Math.max(p.y,q.y)+2){h.y=p.y;h.vy=0;h.gr=true;h.lift=k;break}}
+ if(!h.gr)h.lift=null;
+ if(h.gr&&h.lift==null&&solid(tileAt(Math.floor((h.x-hW)/TS),Math.floor(h.y/TS)))&&solid(tileAt(Math.floor((h.x+hW)/TS),Math.floor(h.y/TS)))&&!enemies.some(e=>!e.dead&&!e.flat&&Math.abs(e.x-h.x)<40)){const sh=h.sh||(h.sh=[]);if(!sh.length||Math.abs(sh[sh.length-1].x-h.x)>12){sh.push({x:h.x,y:h.y});if(sh.length>24)sh.shift()}}
  if(h.y>LH*TS+40){die(h,'pit');return}
+ if(tileAt(Math.floor(h.x/TS),Math.floor((h.y-3)/TS))===10){die(h,'lava');for(let k=0;k<8;k++)parts.push({x:h.x+(Math.random()-.5)*10,y:h.y-4,vx:(Math.random()-.5)*1.5,vy:-2-Math.random()*2,g:.15,t:30,col:k&1?'#fff07c':'#ffa040',sz:2});return}
+ for(const b of LV.bars)if(Math.abs(b.x-h.x)<52&&Math.abs(b.y-h.y+H/2)<60)for(const f of barBalls(b,TK()))if(Math.abs(f.x-h.x)<hW+2&&f.y>h.y-H-2&&f.y<h.y+2){hurt(h,f);break}
  // the flag
  if(h.x>=LV.flagX-4&&!h.pole&&!h.fin){h.pole=1;h.x=LV.flagX-5;h.vx=0;h.vy=0;h.poleY=h.y;sfx('power');claim(h,'pl',Math.round(160-h.y))}
  // checkpoints
@@ -144,7 +192,7 @@ function fireballs(h){for(const b of h.fb){b.t--;b.vy=Math.min(4,b.vy+.35);b.x+=
 // big heroes shrink; small ones are bowled over and lose a second (only pits and shells take a life)
 function hurt(h,src){if(h.star>0||h.inv>0||h.dead||h.fin||h.pole)return;if(h.big){h.big=0;h.fire=0;h.inv=110;sfx('die');say(h,'OUCH!','#f05050');return}
  if(src==='shell'){die(h,'shell');return}const d=src&&src.x!=null?Math.sign(h.x-src.x)||-1:-h.face;h.vx=d*2.2;h.vy=-3.5;h.gr=false;h.stun=40;h.inv=100;sfx('die');say(h,'BONK!','#f05050')}
-function die(h,why){if(h.dead)return;h.dx=h.x;h.dead=80;h.vy=-5;h.vx=0;h.big=0;h.fire=0;h.deaths++;sfx('die')}
+function die(h,why){if(h.dead)return;(h.dl||(h.dl=[])).push(Math.round(h.x)+why[0]);if(h.dl.length>12)h.dl.shift();h.dx=h.x;h.dead=80;h.vy=-5;h.vx=0;h.big=0;h.fire=0;h.deaths++;sfx('die')}
 // back on the last safe ground you stood on (a fall costs you about two seconds, it never sends you back a whole section)
 function respawn(h){const dx=h.dx||h.x,hist=h.sh||[];let s=null;for(let k=hist.length-1;k>=0;k--)if(hist[k].x<=dx-40){s=hist[k];break}if(!s)s=hist[0]||{x:h.ck,y:160};
  // died at the same place twice running: you're put just past it
@@ -178,7 +226,7 @@ function resolve(h,[,k,a,b]){
  else if(k==='kk'){const e=enemies.find(x=>x.id===a);if(e&&!e.dead&&e.k===E_SHELL&&!e.spin){e.spin=1;e.vx=(b||1)*4;e.own=h.i;e.kt=K.tick}}
  else if(k==='hs'){const o=heroes[a];if(o&&!o.dead&&!o.fin&&!(o.inv>0)&&!(o.star>0)){send(o,'stun',h.i);say(o,'SQUASHED!','#fff07c')}}
  else if(k==='pl'){if(isMine(h))return;sfx('power')}
- else if(k==='fin'&&!h.fin){h.fin=++finN;h.ft=K.tick-CD;if(finN===1)firstFin=K.tick;if(K.seats[h.i].ctrl!=='cpu')lastHF=K.tick;K.fx('f',h.i,h.fin);say(h,ord(h.fin)+' PLACE!','#fff07c')}}
+ else if(k==='fin'&&!h.fin){h.fin=++finN;h.ft=TK()-CD;if(finN===1)firstFin=K.tick;if(K.seats[h.i].ctrl!=='cpu')lastHF=K.tick;K.fx('f',h.i,h.fin);say(h,ord(h.fin)+' PLACE!','#fff07c')}}
 function send(o,kind,v){if(ownerNet(o)){o.evSeq++;o.ev.push([o.evSeq,kind,v|0]);if(o.ev.length>6)o.ev.shift()}else onEv(o,kind,v)}
 function onEv(h,kind,v){if(kind==='stun'){if(h.inv>0||h.star>0||h.dead)return;h.stun=45;h.inv=90;h.vx*=.2;if(h.i===meIdx())shake=3}else if(kind==='hit')hurt(h)}
 const onScreen=x=>heroes.some(h=>!h.fin&&x>h.x-260&&x<h.x+340);
@@ -195,6 +243,7 @@ function enemyStep(e,host){if(e.dead){e.vy+=.3;e.y+=e.vy;e.x+=e.vx;if(e.y>LH*TS+
  for(const o of enemies){if(o===e||o.dead||o.flat||!o.on)continue;if(Math.abs(o.x-e.x)<12&&Math.abs(o.y-e.y)<12){if(e.k===E_SHELL&&e.spin){o.dead=1;o.vy=-4;o.vx=Math.sign(e.vx);sfx('stomp')}else if(!(o.k===E_SHELL&&o.spin)&&e.k!==E_SHELL&&Math.sign(o.x-e.x)===Math.sign(e.vx)){e.vx=-e.vx}}}
  if(e.k===E_SHELL&&!e.spin){e.idle=(e.idle|0)+1;if(e.idle>420){e.k=E_BEETLE;e.vx=-.5;e.idle=0}}}
 function step(){const S=K.S;
+ if(cs==='between'){if(K.tick-csT>330)nextLevel();vis();return}
  for(const h of heroes){if(ownerNet(h)){const u=K.remote(h.i);if(u)readUp(h,u);continue}move(h,h.fin?{}:K.inp(h.i))}
  for(const e of enemies)enemyStep(e,true);enemies=enemies.filter(e=>!e.gone);
  // CPU heroes and the host's own humans against the enemies are handled in move(); guests check themselves and claim
@@ -203,10 +252,15 @@ function step(){const S=K.S;
 function bubbles(){if(K.isClient())return;const loc=heroes.filter(h=>K.seats[h.i].ctrl!=='cpu'&&K.seats[h.i].ctrl!=='net'&&!h.fin);if(loc.length<2)return;
  const lead=loc.reduce((a,b)=>b.x>a.x?b:a);for(const h of loc)if(h!==lead&&lead.x-h.x>250&&!h.bubble&&!h.dead){h.x=lead.x-40;h.y=lead.y-30;h.vx=h.vy=0;h.bubble=50;h.inv=90;h.ck=Math.max(h.ck,lead.ck)}}
 function places(){heroes.slice().sort((a,b)=>a.fin&&b.fin?a.fin-b.fin:a.fin?-1:b.fin?1:b.x-a.x).forEach((h,k)=>h.place=k+1)}
-function checkEnd(){const lim=K.S.len*3600,humans=heroes.filter(h=>K.seats[h.i].ctrl!=='cpu'&&!h.fin).length,all=heroes.every(h=>h.fin);
- if(all||finN&&humans===0&&K.tick-Math.max(firstFin,lastHF)>300||finN&&K.tick-firstFin>1800||lim&&K.tick>lim+CD){places();const w=heroes.find(h=>h.place===1);champ=w?w.i:-1;
+function checkEnd(){if(cs!=='race'||K.state!=='play')return;const lim=K.S.len*3600,humans=heroes.filter(h=>K.seats[h.i].ctrl!=='cpu'&&!h.fin).length,all=heroes.every(h=>h.fin);
+ if(all||finN&&humans===0&&K.tick-Math.max(firstFin,lastHF)>300||finN&&K.tick-firstFin>1800||lim&&TK()>lim+CD){places();const w=heroes.find(h=>h.place===1);champ=w?w.i:-1;
+  if(cup.length>1){for(const h of heroes)cupPts[h.i]+=h.place<=8?CPTS[h.place-1]:h.fin?1:0;
+   if(ci<cup.length-1){cs='between';csT=K.tick;return}
+   const best=heroes.slice().sort((a,b)=>cupPts[b.i]-cupPts[a.i]||a.place-b.place)[0];champ=best.i;
+   if(K.mode===1){const sc=[0,1].map(t=>heroes.filter(h=>h.i%2===t).reduce((a,h)=>a+cupPts[h.i],0));K.end(sc[0]===sc[1]?null:{team:sc[0]>sc[1]?0:1,name:TEAMN[sc[0]>sc[1]?0:1]})}else K.end({i:best.i});return}
   if(K.mode===1){const n=heroes.length,sc=[0,1].map(t=>heroes.filter(h=>h.i%2===t).reduce((a,h)=>a+(n-h.place+1),0));K.end(sc[0]===sc[1]?null:{team:sc[0]>sc[1]?0:1,name:TEAMN[sc[0]>sc[1]?0:1]})}
   else K.end(w?{i:w.i}:null)}}
+function nextLevel(){ci++;loadLevel(ci);for(const h of heroes)resetHero(h);cs='race'}
 const ord=n=>n+(n%100>10&&n%100<14?'TH':['TH','ST','ND','RD'][n%10]||'TH');
 function say(h,s,col){if(h.i!==meIdx()&&!(K.seats[h.i]&&K.seats[h.i].ctrl!=='cpu'&&!K.isClient()&&K.seats[h.i].ctrl!=='net'))return;texts.push({x:h.x,y:h.y-hH(h)-8,s,col,t:70,who:h.i})}
 function vis(){for(const p of parts){p.x+=p.vx;p.y+=p.vy;if(p.g)p.vy+=p.g;p.t--}parts=parts.filter(p=>p.t>0);if(parts.length>300)parts.splice(0,parts.length-300);
@@ -226,15 +280,16 @@ function animStep(h){h.anim=(h.anim||0)+Math.max(.08,Math.abs(h.vx)*.12);const p
  if(walk(p)&&walk(h.pose)&&K.tick-h.pAt<3&&p!==h.pose)return;if(p!==h.pose){h.pose=p;h.pAt=K.tick}}
 function flags(h){if(h.fl!=null&&(K.isClient()?h.i!==K.myIdx:ownerNet(h)))return h.fl;
  return(h.big?1:0)|(h.fire?2:0)|(h.star>0?4:0)|(h.inv>0?8:0)|(h.dead?16:0)|(h.stun>0?32:0)|(h.dash>0?64:0)|(h.bubble>0?128:0)|(h.face<0?256:0)}
-function local(i){const h=heroes[i];if(!h)return;move(h,h.fin?{}:K.inp(i));for(const e of enemies)enemyStep(e,false);for(const[q,t]of L.broken)if(K.tick-t>90)L.broken.delete(q)}
+function local(i){const h=heroes[i];if(!h)return;if(cs==='between'){vis();return}move(h,h.fin?{}:K.inp(i));for(const e of enemies)enemyStep(e,false);for(const[q,t]of L.broken)if(K.tick-t>90)L.broken.delete(q)}
 function upload(i){const h=heroes[i];if(!h)return null;return{x:Math.round(h.x*10)/10,y:Math.round(h.y*10)/10,vx:Math.round(h.vx*100)/100,vy:Math.round(h.vy*100)/100,p:POSES.indexOf(h.pose),
  fl:flags(h),co:h.coins,ck:h.ck,st:h.stomps,c:h.claims,fb:h.fb.map(b=>[Math.round(b.x),Math.round(b.y)])}}
 function readUp(h,u){if(typeof u.x!=='number')return;h.x=u.x;h.y=u.y;h.vx=u.vx;h.vy=u.vy;h.pose=POSES[u.p]||'stand';h.fl=u.fl|0;h.coins=u.co|0;h.ck=u.ck||h.ck;h.stomps=u.st|0;
  h.big=h.fl&1;h.dead=h.fl&16?1:0;h.star=h.fl&4?1:0;h.inv=h.fl&8?1:0;h.fbv=u.fb||[];
  for(const e of u.c||[])if((e[0]|0)>h.cSeen){h.cSeen=e[0]|0;resolve(h,e)}}
-function snap(){return{hs:heroes.map(h=>[Math.round(h.x),Math.round(h.y),Math.round(h.vx*10),POSES.indexOf(h.pose),flags(h),h.place,h.fin,h.ft,h.coins,ownerNet(h)?h.ev:0,h.fbv||h.fb.map(b=>[Math.round(b.x),Math.round(b.y)])]),
+function snap(){return{cl:ci,c0:T0,cz:cs==='between'?1:0,cpt:cupPts,hs:heroes.map(h=>[Math.round(h.x),Math.round(h.y),Math.round(h.vx*10),POSES.indexOf(h.pose),flags(h),h.place,h.fin,h.ft,h.coins,ownerNet(h)?h.ev:0,h.fbv||h.fb.map(b=>[Math.round(b.x),Math.round(b.y)])]),
  en:enemies.map(e=>[e.id,e.k,Math.round(e.x),Math.round(e.y),(e.flat>0?1:0)|(e.dead?2:0)|(e.spin?4:0)|(e.on?8:0),Math.round(e.vx*10)]),bk:[...broken].map(q=>q.toString(36)).join(',')}}
-function apply(g){broken.clear();for(const s of String(g.bk||'').split(','))if(s){const q=parseInt(s,36);broken.add(q);L.broken.delete(q)}
+function apply(g){if(typeof g.cl==='number'&&g.cl!==ci){ci=g.cl;loadLevel(ci);for(const h of heroes)resetHero(h)}if(typeof g.c0==='number')T0=g.c0;cs=g.cz?'between':'race';cupPts=g.cpt||cupPts;
+ broken.clear();for(const s of String(g.bk||'').split(','))if(s){const q=parseInt(s,36);broken.add(q);L.broken.delete(q)}
  (g.hs||[]).forEach((a,i)=>{const h=heroes[i];if(!h)return;h.place=a[5];h.fin=a[6];h.ft=a[7];
   if(i===K.myIdx){for(const e of a[9]||[])if((e[0]|0)>h.evSeen){h.evSeen=e[0]|0;onEv(h,e[1],e[2])}return}
   h.tx=a[0];h.ty=a[1];h.vx=a[2]/10;h.pose=POSES[a[3]]||'stand';h.fl=a[4];h.coins=a[8];h.big=h.fl&1;h.fbv=a[10]||[];if(h.gx==null){h.x=h.tx;h.y=h.ty;h.gx=1}});
@@ -248,16 +303,32 @@ function onFx(k,a){if(k==='f'){const h=heroes[a[0]];if(h&&h.i===meIdx())sfx('pow
 // how high a jump rises for a given hold time (worked out with the real physics, cached)
 const RISE=new Map();function riseFor(hold,v0){const k=hold+'_'+v0.toFixed(1);if(RISE.has(k))return RISE.get(k);let vy=-v0,y=0,best=0;for(let t=0;t<90;t++){vy=Math.min(FALL,vy+(vy<0&&t<hold?GH:GF));y+=vy;best=Math.min(best,y);if(vy>0)break}RISE.set(k,-best);return -best}
 function holdFor(rise,v0){for(let t=1;t<30;t++)if(riseFor(t,v0)>=rise)return t;return 30}
-function bot(i){const h=heroes[i];if(!h||h.dead||h.fin||h.pole||h.stun>0||K.tick<CD-20)return{};const o={right:true},lvl=K.cpu,b=h.bt||(h.bt={hold:0,stuck:0,lx:h.x,back:0,wait:0});
+function bot(i){const h=heroes[i];if(!h||h.dead||h.fin||h.pole||h.stun>0||TK()<CD-20)return{};const o={right:true},lvl=K.cpu,b=h.bt||(h.bt={hold:0,stuck:0,lx:h.x,back:0,wait:0});
  if(b.wait>0){b.wait--;return{}}
  if(b.back>0){b.back--;return{left:true}}
- if(K.tick%30===0){if(Math.abs(h.x-b.lx)<6&&K.tick>CD+40)b.stuck++;else b.stuck=0;b.lx=h.x;if(b.stuck>=2){b.back=22;b.stuck=0;return{left:true}}}
+ if(K.tick%30===0){if(Math.abs(h.x-b.lx)<6&&TK()>CD+40)b.stuck++;else b.stuck=0;b.lx=h.x;if(b.stuck>=2){b.back=22;b.stuck=0;return{left:true}}}
  if(b.hold>0){b.hold--;o.fire=true;return o}
- if(lvl===0&&Math.random()<.003)b.wait=20+Math.random()*30;
+ if(lvl===0&&Math.random()<.007)b.wait=25+Math.random()*40;   // Easy CPUs dither: they stop to look around now and then
  if(h.fire&&Math.random()<.02&&enemies.some(e=>!e.dead&&!e.flat&&e.x>h.x&&e.x-h.x<120&&Math.abs(e.y-h.y)<20))o.alt=(K.tick&1)>0;
  if(!h.gr)return o;
  const v0=JV+JVR*Math.min(1,Math.abs(h.vx)/RUN),c=Math.floor(h.x/TS),r=Math.floor((h.y-1)/TS),H=hH(h),body=Math.ceil(H/TS),reach=10+Math.abs(h.vx)*6,front=h.x+hW;
  const jumpNow=hold=>{b.hold=Math.max(1,hold-1);o.fire=true;return o};
+ // riding a lift: stay put until the far ledge is close, then hop off
+ if(h.lift!=null){const lf=LV.lifts[h.lift],lp=liftPos(lf,TK()),c0=Math.floor((h.x+hW)/TS),rr=Math.round(h.y/TS);let d=1e9;for(let cc=c0;cc<c0+14;cc++)if(solid(tileAt(cc,rr))&&!solid(tileAt(cc,rr-1))){d=cc*TS-(h.x+hW);break}
+  const room=lp.x+lf.hw-(h.x+hW);           // how much lift is left in front of you
+  if(d<22)return jumpNow(12);if(d<96){if(room<5)return jumpNow(18);return o}return{}}
+ // a gap only a lift can cross: brake early, wait for the lift to come to you, then step on
+ for(let dc=1;dc<=6;dc++){const col=c+dc,edge=col*TS-front;if(solid(tileAt(col,r+1))||solid(tileAt(col,r)))continue;let any=false;for(let k=r+1;k<LH;k++)if(solid(tileAt(col,k)))any=true;if(any)continue;
+  const lf=LV.lifts.find(l=>l.cx+l.hw+l.A+24>=col*TS&&l.cx-l.hw-l.A-24<=col*TS+TS*4);if(!lf)break;
+  // a side-to-side lift: hop on when its near end reaches the ledge; an up-and-down one sits 3 tiles out: a real jump, while it's low
+  const p=liftPos(lf,TK()),ready=lf.ax==='h'?p.x-lf.hw<=col*TS+12:p.y>=lf.y-14&&liftPos(lf,TK()+20).y>=lf.y-20;
+  if(edge<16+Math.abs(h.vx)*5){if(ready)return jumpNow(lf.ax==='h'?7:6);return h.vx>.3?{left:true}:{}}
+  if(edge<70&&!ready&&h.vx>1.2)return{};break}
+ // firebars: wait for the gap in the spin (but never for ever)
+ for(const bar of LV.bars){const dx=bar.x-h.x;if(dx<-40||dx>100)continue;
+  // safe to go when the bar stays clear of the ground for the next ~70 steps (the time it takes to run underneath)
+  const low=t=>barBalls(bar,TK()+t).some(f=>f.y>h.y-hH(h)-8&&Math.abs(f.x-bar.x)<46);let clear=true;for(let t=0;t<=70;t+=5)if(low(t)){clear=false;break}
+  if(dx>18&&!clear&&(b.bw=(b.bw|0)+1)<240)return Math.abs(h.vx)>.5?{left:h.vx>0,right:h.vx<0}:{};if(clear)b.bw=0}
  // a wall: jump to its top
  for(let dc=1;dc<=2;dc++){const col=c+dc,edge=col*TS-front;if(edge>reach)break;let s=-1;for(let k=0;k<body;k++)if(solid(tileAt(col,r-k))){s=r-k;break}
   if(s>=0){let top=s;while(top>0&&solid(tileAt(col,top-1)))top--;const rise=h.y-top*TS+4;if(rise>78)break;return jumpNow(holdFor(rise,v0)+(lvl===2?0:1))}}
@@ -286,21 +357,28 @@ const sceneImg=k=>img('s'+k,()=>X.sprite(ART[k]));
 const bubbleImg=()=>img('bub',()=>{const c=X.mk(26,30),g=c.getContext('2d');for(let y=0;y<30;y++)for(let x=0;x<26;x++){const d=Math.hypot((x+.5-13)/13,(y+.5-15)/15);if(d<=1&&d>.86){g.fillStyle=d>.95?'#60a0ff':'#a0f0ff';g.fillRect(x,y,1,1)}}g.fillStyle='#ffffff';g.fillRect(7,6,3,2);g.fillRect(6,8,1,2);return c});
 function skyImg(th,w,h){return img('sky'+th+w+'x'+h,()=>{const t=THEMES[th],c=X.mk(w,h),g=c.getContext('2d'),n=t.sky.length;for(let y=0;y<h;y++){const f=y/h*n,k=Math.min(n-1,Math.floor(f)),fr=f-k;
   for(let x=0;x<w;x++){g.fillStyle=k<n-1&&fr>.75&&X.dither(x,y,(fr-.75)/.25)?t.sky[k+1]:t.sky[k];g.fillRect(x,y,1,1)}}
-  if(t.roof){g.fillStyle='#1c1430';for(let x=0;x<w;x+=1)if(X.dither(x,0,.5))g.fillRect(x,0,1,1)}return c})}
+  if(t.roof){g.fillStyle='#1c1430';for(let x=0;x<w;x+=1)if(X.dither(x,0,.5))g.fillRect(x,0,1,1)}
+  // the castle: a dim brick wall behind everything
+  if(th==='castle'){for(let y=8;y<h;y++)for(let x=0;x<w;x++){const row=Math.floor(y/8),bx=(x+(row&1)*8)%16;if(y%8===0||bx===0){g.fillStyle='#160e1c';g.fillRect(x,y,1,1)}else if((x*7+y*13)%23===0){g.fillStyle='#2c1c2c';g.fillRect(x,y,1,1)}}}
+  return c})}
 const cams=[];let SCR=null;
 function view(g,focus,vx,vy,vw,vh,ci){const th=LV.theme,T=LV.th;let cam=cams[ci];const lead=focus.reduce((a,b)=>b.x>a.x?b:a),back=focus.reduce((a,b)=>b.x<a.x?b:a);
- let tx=lead.x-vw*.42;if(focus.length>1)tx=Math.min(tx,back.x-24);tx=Math.max(0,Math.min(LV.W*TS-vw,tx));if(!cam)cam=cams[ci]={x:tx};cam.x+=(tx-cam.x)*.2;
+ let tx=lead.x-vw*.42;if(focus.length>1)tx=Math.min(tx,back.x-24);tx=Math.max(0,Math.min(LV.W*TS-vw,tx));if(!cam)cam=cams[ci]={x:tx,tk:K.tick};{let n=0;while(cam.tk<K.tick&&n++<40){cam.tk++;cam.x+=(tx-cam.x)*.2}cam.tk=K.tick}   // smoothed per game step, not per drawn frame
  const cx=Math.round(cam.x)+(shake>.5?Math.round((Math.random()-.5)*shake):0),cy=LH*TS-vh;
  g.save();g.beginPath();g.rect(vx,vy,vw,vh);g.clip();g.translate(vx-cx,vy-cy);
  g.drawImage(skyImg(th,vw,vh),cx,cy);
+ if(th==='castle')for(let tx2=Math.floor(cx*.5/96)*96;tx2<cx*.5+vw+96;tx2+=96){const px=Math.round(tx2-cx*.5+cx),f=(K.tick>>3)&1;g.fillStyle=P.k;g.fillRect(px-2,88,5,10);g.fillStyle='#5c566c';g.fillRect(px-1,89,3,8);g.fillStyle=f?'#ffa040':'#fff07c';g.fillRect(px-1,82-f,3,6);g.fillStyle='#f05050';g.fillRect(px,84,1,3)}
  if(T.scen){for(const s of LV.scen){const px=Math.round(s.x-cx*.5+cx);if(px>cx-40&&px<cx+vw+10)g.drawImage(sceneImg('cloud'),px,s.y)}
   for(const s of LV.ground){if(s.x>cx-60&&s.x<cx+vw+20){const im=sceneImg(s.k);g.drawImage(im,s.x,160-im.height)}}}
  // tiles
  const c0=Math.max(0,Math.floor(cx/TS)),c1=Math.min(LV.W-1,Math.floor((cx+vw)/TS)),me=focus[0],qf=['q1','q1','q1','q2','q3','q2'][(K.tick>>3)%6];
  for(let r=0;r<LH;r++)for(let c=c0;c<=c1;c++){const v=tileAt(c,r);if(!v)continue;const q=r*LV.W+c;let k;
-  if(v===1)k=r>0&&tileAt(c,r-1)===1?'dirt':'top';else if(v===2)k='brick';else if(v===3||v===4)k=me.used.has(q)?'used':qf;else if(v===5)k='hard';else k=['pipeTL','pipeTR','pipeBL','pipeBR'][v-6];
+  if(v===1)k=r>0&&tileAt(c,r-1)===1?'dirt':'top';else if(v===2)k='brick';else if(v===3||v===4)k=me.used.has(q)?'used':qf;else if(v===5)k='hard';else if(v===10)k=(K.tick>>4)&1?'lava2':'lava1';else k=['pipeTL','pipeTR','pipeBL','pipeBR'][v-6];
   let oy=0;for(const h of focus)if(h.bump&&h.bump.c===c&&h.bump.r===r)oy=-Math.round(Math.sin(h.bump.t/8*Math.PI)*4);
   g.drawImage(tileImg(k,th),c*TS,r*TS+oy)}
+ // lifts and firebars
+ for(const l of LV.lifts){const p=liftPos(l,TK());if(p.x+l.hw<cx-10||p.x-l.hw>cx+vw+10)continue;const im=sceneImg('lift');for(let x=0;x<l.hw*2;x+=16)g.drawImage(im,Math.round(p.x-l.hw+x),Math.round(p.y))}
+ for(const b of LV.bars){if(b.x<cx-60||b.x>cx+vw+60)continue;const im=sceneImg('fireb'),fl=(K.tick>>2)&1;for(const f of barBalls(b,TK()))g.drawImage(im,Math.round(f.x-4),Math.round(f.y-4)+(fl&&0));g.fillStyle='#fff07c';g.fillRect(b.x-1,b.y-1,2,2)}
  // pits at night fall into darkness; the flag and the castle
  const fx=LV.flagX;if(fx>cx-20&&fx<cx+vw+20){g.fillStyle=P.k;g.fillRect(fx-2,24,4,136);g.fillStyle='#88dc48';g.fillRect(fx-1,24,2,136);g.fillStyle=P.k;g.fillRect(fx-4,16,8,8);g.fillStyle='#38a038';g.fillRect(fx-3,17,6,6);g.fillStyle='#88dc48';g.fillRect(fx-2,18,2,2);
   const fy=focus.some(h=>h.pole===1)?Math.min(140,(focus.find(h=>h.pole===1).y)-20):focus.some(h=>h.pole>=2||h.fin)?140:26;g.drawImage(sceneImg('flag'),fx-13,Math.round(fy))}
@@ -325,9 +403,14 @@ function view(g,focus,vx,vy,vw,vh,ci){const th=LV.theme,T=LV.th;let cam=cams[ci]
 const tm=t=>{t=Math.max(0,t);const s=t/60;return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0')+'.'+String(Math.floor(s*10)%10)};
 const PLC=['#fff07c','#e8e4dc','#ffa040'];
 function hud(g,focus,vx,vy,vw,vh){const TX=(s,x,y,o)=>X.text(g,s,x,y,Object.assign({outline:P.k},o||{})),me=focus[0];
- if(K.tick<CD+40){const n=K.tick<CD?3-Math.floor(K.tick/(CD/3)):0;TX(n>0?n+'':'GO!',vx+vw/2,vy+50,{col:n>0?'#ffffff':'#88dc48',align:'center',scale:3});
-  if(K.tick%(CD/3|0)===0&&K.tick<CD&&K.tick>0)RA.audio.blip(440);if(K.tick===CD)RA.audio.blip(880)}
+ if(TK()<CD+40){const n=TK()<CD?3-Math.floor(TK()/(CD/3)):0;TX(n>0?n+'':'GO!',vx+vw/2,vy+50,{col:n>0?'#ffffff':'#88dc48',align:'center',scale:3});
+  if(TK()%(CD/3|0)===0&&TK()<CD&&TK()>0)RA.audio.blip(440);if(TK()===CD)RA.audio.blip(880)}
  if(K.demo){TX('SUPER DASH BROS',vx+vw/2,vy+vh-16,{col:'#fff07c',align:'center',scale:2});return}
+ if(LV.name&&TK()<CD+60){TX(LV.name,vx+vw/2,vy+82,{col:'#ffffff',align:'center',scale:LV.name.length<14?2:1});if(cup.length>1)TX('LEVEL '+(ci+1)+' OF '+cup.length,vx+vw/2,vy+100,{col:'#a0f0ff',align:'center'})}
+ if(cs==='between'){const list=heroes.slice().sort((a,b)=>cupPts[b.i]-cupPts[a.i]),n=Math.min(8,list.length),bw=150,bh=30+n*9,x0=vx+vw/2-bw/2,y0=vy+28;
+  g.fillStyle='rgba(16,12,24,.88)';g.fillRect(x0,y0,bw,bh);TX('CUP STANDINGS',vx+vw/2,y0+4,{col:'#fff07c',align:'center'});
+  list.slice(0,n).forEach((h,j)=>{const y=y0+16+j*9,mine=focus.includes(h);g.fillStyle=h.col;g.fillRect(x0+6,y+1,4,5);TX((j+1)+' '+(h.name||'').slice(0,10),x0+13,y,{col:mine?'#ffffff':'#c8c4d8',outline:false});TX(cupPts[h.i]+'',x0+bw-6,y,{col:'#fff07c',align:'right',outline:false})});
+  const nx=LEVELS[cup[ci+1]];if(nx)TX('NEXT: '+nx.n,vx+vw/2,y0+bh+4,{col:'#a0f0ff',align:'center'});return}
  // progress along the course: everyone as a dot
  const bx=vx+vw/2-70,by=vy+16,bw=140;g.fillStyle=P.k;g.fillRect(bx-1,by-1,bw+2,4);g.fillStyle='#5c566c';g.fillRect(bx,by,bw,2);g.fillStyle='#88dc48';g.fillRect(bx+bw-2,by-4,2,6);
  const prog=h=>Math.max(0,Math.min(1,h.x/LV.flagX));for(const h of heroes){if(focus.includes(h))continue;g.fillStyle=h.col;g.fillRect(Math.round(bx+prog(h)*bw)-1,by,2,2)}
@@ -335,8 +418,8 @@ function hud(g,focus,vx,vy,vw,vh){const TX=(s,x,y,o)=>X.text(g,s,x,y,Object.assi
  // place, coins, time
  const pl=me.place||1,pc=PLC[pl-1]||'#ffffff';TX(pl+'',vx+4,vy+14,{col:pc,scale:2});TX(ord(pl).replace(/^\d+/,''),vx+4+X.tw(pl+'',2)+1,vy+14,{col:pc});
  g.drawImage(coinImg(0),vx+4,vy+31);TX('x'+String(me.coins).padStart(2,'0'),vx+17,vy+33,{col:'#ffffff'});
- TX(tm(me.fin?me.ft:K.tick-CD),vx+vw-4,vy+16,{col:'#a0f0ff',align:'right'});
- const t=K.tick-CD,touch=K.seats[me.i]&&K.seats[me.i].ctrl==='touch';
+ TX(tm(me.fin?me.ft:TK()-CD),vx+vw-4,vy+16,{col:'#a0f0ff',align:'right'});
+ const t=TK()-CD,touch=K.seats[me.i]&&K.seats[me.i].ctrl==='touch';
  if(t>0&&t<60*6)TX(touch?'HOLD JUMP FOR HIGHER JUMPS':'A D RUN - SPACE JUMP (HOLD = HIGHER)',vx+vw/2,vy+vh-22,{col:'#ffffff',align:'center'});
  else if(t>=60*6&&t<60*11)TX('JUMP ON ENEMIES - AND ON RIVALS!',vx+vw/2,vy+vh-22,{col:'#fff07c',align:'center'});
  if(me.fire&&t<60*30)TX('E / SHIFT: FIREBALL',vx+vw/2,vy+40,{col:'#ffa040',align:'center'});
@@ -353,15 +436,15 @@ K=RA.kit({id:'dash',name:'SUPER DASH BROS',kind:'Platform race',players:'1-20 pl
  icon:['...rrrr...','..rrrrrr..','..ssks....','.sssss....','..ssss....','.rruurr...','rruuuurr..','.uuyuyu...','.uu..uu...','nn....nn..'],
  music:MUSIC,fireLabel:'JUMP',
  modes:[['RACE','Everyone for themselves: first to the flag.'],['TEAM RACE','Red vs blue: points for every finishing place.']],
- settings:[['world','World',[['rnd','Random'],['over','Overworld'],['under','Underground'],['dusk','Dusk']]],['length','Course',[['normal','Normal'],['short','Short'],['long','Long']]],['len','Time limit',[[0,'None'],[3,'3 min'],[5,'5 min']]]],
+ settings:[['level','Levels',[['cup','Cup: 4 levels'],['tour','Grand Tour: all 6'],['rnd','One random level'],...LEVELS.map((l,i)=>[i,l.n]),['mix','Shuffled course']]],['len','Time limit',[[0,'None'],[3,'3 min'],[5,'5 min']]]],
  kb:[['A D','run'],['SPACE W','jump'],['E SHIFT','fireball'],['S','crouch'],['C','chat'],['ESC','menu']],pad:[['LS','run'],['A','jump'],['B X','fireball'],['START','menu']],
  ach:[{id:'first',name:'First Flag',desc:'Finish your first race',test:s=>s.played>=1,unlock:'title:Plumber'},{id:'win1',name:'Top Of The Pole',desc:'Win a race',test:(s,m)=>m.won,unlock:'title:Speed Runner'},
   {id:'stomp20',name:'Stomper',desc:'Stomp 20 enemies or rivals in one race',test:(s,m)=>m.kills>=20,unlock:'title:Stomper'},{id:'coins50',name:'Coin Collector',desc:'50 coins in one race',test:(s,m)=>m.coins>=50,unlock:'title:Coin Collector'}],
  alive:i=>!!heroes[i],out:i=>!!heroes[i]&&!!heroes[i].fin&&K.state!=='play',
  start,step,local,upload,follow,snap,apply,render,bot,onFx,teamOf,
- info:()=>LV?({over:'Overworld',under:'Underground',dusk:'Dusk'})[LV.theme]:'',
- ranks:()=>heroes.slice().sort((a,b)=>a.place-b.place).map(h=>[h.name,h.col,h.fin?tm(h.ft):Math.round(100*h.x/LV.flagX)+'%']),
+ info:()=>LV?(LV.name||({over:'Overworld',under:'Underground',dusk:'Dusk'})[LV.theme])+(cup.length>1?' · '+(ci+1)+'/'+cup.length:''):'',
+ ranks:()=>cup.length>1?heroes.slice().sort((a,b)=>cupPts[b.i]-cupPts[a.i]||a.place-b.place).map(h=>[h.name,h.col,cupPts[h.i]+' pts']):heroes.slice().sort((a,b)=>a.place-b.place).map(h=>[h.name,h.col,h.fin?tm(h.ft):Math.round(100*h.x/LV.flagX)+'%']),
  result:(i,w)=>{const h=heroes[i];return{won:!!w&&(w.team!=null?teamOf(i)===w.team:w.i===i),kills:h.stomps|0,coins:h.coins|0}}});
-window.__db={get heroes(){return heroes},get lv(){return LV},get enemies(){return enemies},K,bot:i=>bot(i)};
+window.__db={get heroes(){return heroes},get lv(){return LV},get cup(){return cup},get ci(){return ci},get pts(){return cupPts},next:()=>nextLevel(),load:i=>{cup=[i];ci=0;loadLevel(0);for(const h of heroes)resetHero(h)},get enemies(){return enemies},K,bot:i=>bot(i)};
 
 })();
