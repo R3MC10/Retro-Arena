@@ -49,6 +49,8 @@ Ask these again at every milestone: *Does this make sense? Does it align with th
   Model the real contact points (two wheels, two feet) instead of a single point.
 - Failure is an animation sequence driven by physics (thrown, bounce, slide, lie, get up, return), never a sprite
   that just spins.
+- Cameras must smooth per game step (catch up K.tick in a loop), not per rendered frame - otherwise screenshots and
+  slow machines show the camera lagging behind the player.
 - Juice: particles from contact points (dirt, dust, sparks), screen shake on big impacts (only for that player),
   sound for every action, an engine/movement sound that follows speed.
 - Test edge cases of the physics on purpose: lips of ramps, cliffs, slopes measured across a drop (Excitebike crashed
@@ -90,6 +92,8 @@ Serve: `cd game && python3 -m http.server 8765`. Tools in `game/tools/test` (see
    Platformers: model a masher (holds right, taps jump on a rhythm) - if they loop-die at one obstacle, the respawn
    is a trap: respawn on safe ground a few tiles back, and after two deaths at the same spot put them past it.
    Add ledge forgiveness (step up when feet are within ~10px of a ledge top) and keep walls you must climb <= 3 tiles.
+   Survival / swarm games: check a solo human with the WEAKEST starting kit survives the first minutes; contact damage
+   that feels fine with a team kills a lone player in seconds. bot() must output key booleans too (test harness), not only ax/ay.
    Rare moments (keeper dives, goals, crashes) won't show up in random frames: stage them - the frames.js input
    function can set game state at step n (put the ball on a shot path, then grab the next 40 steps).
 3. `node sim.js <id> <mode> 8` and with 20 players - every mode ends properly, results make sense, snapshot under 3 KB,
