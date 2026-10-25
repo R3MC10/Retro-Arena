@@ -94,6 +94,10 @@ Serve: `cd game && python3 -m http.server 8765`. Tools in `game/tools/test` (see
    Add ledge forgiveness (step up when feet are within ~10px of a ledge top) and keep walls you must climb <= 3 tiles.
    Survival / swarm games: check a solo human with the WEAKEST starting kit survives the first minutes; contact damage
    that feels fine with a team kills a lone player in seconds. bot() must output key booleans too (test harness), not only ax/ay.
+   Log every death with its cause and tile (why@x): clusters point straight at an impossible jump, an enemy you can't
+   hit (Jungle Force turrets sat inside solid rock, so bullets never reached them) or a respawn that walks you back
+   into the same trap. Measure every obstacle against the real jump (height and reach) before trusting a level chunk.
+   In co-op with CPU allies, the allies are backup: they respawn freely and the team falls when the humans do.
    Rare moments (keeper dives, goals, crashes) won't show up in random frames: stage them - the frames.js input
    function can set game state at step n (put the ball on a shot path, then grab the next 40 steps).
 3. `node sim.js <id> <mode> 8` and with 20 players - every mode ends properly, results make sense, snapshot under 3 KB,
