@@ -85,7 +85,9 @@ function move(h,inp){if(K.tick<CD){h.vx=0;return}
  h.crouch=down;
  // momentum: walking speed at once, running speed after a short run-up
  if(dir&&h.gr&&Math.sign(h.vx)!==-dir)h.run=Math.min(40,h.run+1);else if(h.gr&&!dir)h.run=Math.max(0,h.run-2);else if(dir&&Math.sign(h.vx)===-dir&&h.gr)h.run=0;
- const top=h.dash>0?DASH:h.run>=28?RUN:WALK+(RUN-WALK)*h.run/28;
+ // CPUs run slower on the lower levels (testers found them too fast): Easy tops out below a beginner's pace
+ const cpuF=!K.demo&&K.seats[h.i]&&K.seats[h.i].ctrl==='cpu'?[.74,.9,1][K.cpu]:1;
+ const top=(h.dash>0?DASH:h.run>=28?RUN:WALK+(RUN-WALK)*h.run/28)*cpuF;
  if(down)h.vx*=.95;
  else if(dir){if(h.gr&&h.vx*dir<0){h.vx+=dir*SKID;h.skid=1}else{h.skid=0;const a=h.gr?(Math.abs(h.vx)<WALK?ACC:ACCR):AIRA;if(h.vx*dir<top)h.vx=dir*Math.min(top,Math.abs(h.vx)*(h.vx*dir>0?1:-1)+a);else h.vx+=(dir*top-h.vx)*.05}h.face=h.gr?dir:h.face}
  else{h.skid=0;if(h.gr){const s=Math.sign(h.vx);h.vx-=s*FRIC;if(Math.sign(h.vx)!==s)h.vx=0}}

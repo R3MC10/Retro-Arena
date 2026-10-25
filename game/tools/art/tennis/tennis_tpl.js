@@ -138,7 +138,7 @@ function control(p,inp,c){if(flipped(p))inp=flipInp(inp);const tap=inp.fire&&!p.
    else if(p.toss){p.tz+=p.tvz;p.tvz-=G;if((tap||p.auto&&p.tvz<.002)&&p.tz>1.25){serveHit(p,c,inp);return}if(p.tz<1&&p.tvz<0){p.toss=0;p.tz=0}}}
   if(p.toss)mx=0}
  // run: snappy acceleration, slower while the swing plays out
- const cpu=isCpu(p),lvl=cpu?K.cpu:2,max=PSPD*(cpu?[.82,.9,.97][lvl]:1)*(p.swT>0?.45:1),l=Math.hypot(mx,my);
+ const cpu=isCpu(p),lvl=cpu?K.cpu:2,max=PSPD*(cpu?[.74,.9,.97][lvl]:1)*(p.swT>0?.45:1),l=Math.hypot(mx,my);
  const tx=l>0?mx/Math.max(1,l)*max:0,ty=l>0?my/Math.max(1,l)*max:0;p.vx+=(tx-p.vx)*.25;p.vy+=(ty-p.vy)*.25;
  // beginner assist: an armed swing drifts you sideways onto the incoming ball
  if(!cpu&&p.sw>0&&c.st==='rally'&&b.hs!==p.side&&b.y*sgn(p.side)>-2){const ax=b.x-hand(p)*.55-p.x;if(Math.abs(ax)<3.5)p.vx+=Math.sign(ax)*Math.min(Math.abs(ax),.045)}
@@ -164,7 +164,7 @@ function tryHit(p,c,inp){const b=c.ball,s=sgn(p.side);if(b.held||b.hs===p.side||
  if(d<=REACH&&b.z<=2.7)kind=b.z>1.95?'smash':b.b===0?'volley':swingSide(p,b);else if(d<=LREACH&&b.z<1.3)kind='lunge';else return false;
  const inc=Math.hypot(b.vx,b.vy),perfect=SWW-p.sw<=PERF&&kind!=='lunge',cpu=isCpu(p),lvl=cpu?K.cpu:2;
  const[tx0,ty0,fwd,back]=aimTarget(p,c,inp,kind);
- let sig=.28+.5*Math.pow(Math.min(1,d/REACH),2)+inc*.8+(perfect?-.14:0)+(kind==='lunge'?.45:0)+(cpu?[.3,.12,.03][lvl]:0);if(kind==='smash')sig=.3+(cpu?.1:0);
+ let sig=.28+.5*Math.pow(Math.min(1,d/REACH),2)+inc*.8+(perfect?-.14:0)+(kind==='lunge'?.45:0)+(cpu?[.45,.12,.03][lvl]:0);if(kind==='smash')sig=.3+(cpu?.1:0);
  const tx=tx0+gauss()*sig,ty=ty0+gauss()*sig*1.2;
  let vh=kind==='smash'?.44:p.lob?.17:kind==='lunge'?.2:kind==='volley'?.32:fwd?.28:.44+inc*.15+(perfect?.08:0);
  const sp=p.lob?.3:kind==='lunge'?-.4:kind==='smash'?.2:1,clr=p.lob?1.5:Math.max(perfect?.1:-.6,.14+gauss()*sig*.32);
@@ -223,7 +223,7 @@ function brain(p){const i=p.i;const c=courts[p.court];if(!c)return{};const o={},
  if(c.st==='serve'){if(server(c)===p&&now-c.t>24){if(!p.toss){if(--p.wt<0)press('fire')}else if(p.tvz<(lvl<0?.02:[.012,.007,.003][lvl])+Math.random()*.004){press('fire');const r=Math.random();if(r<.35)o.left=true;else if(r<.7)o.right=true}}else if(server(c)!==p){const h=homes(c)[p.i];if(h)steer(o,p,h[0],h[1],.15)}return o}
  if(c.st!=='rally'){p.bf=0;return o}
  const incoming=b.hs!==p.side&&b.b<2;
- if(incoming&&now-b.t>=(lvl<0?30:[22,15,9][lvl])){if(!p.plan||p.plan.sq!==b.sq)p.plan=plan(p,c,lvl);}
+ if(incoming&&now-b.t>=(lvl<0?30:[28,15,9][lvl])){if(!p.plan||p.plan.sq!==b.sq)p.plan=plan(p,c,lvl);}
  const pn=p.plan&&p.plan.sq===b.sq&&incoming?p.plan:null;
  if(pn&&!pn.mate){const left=pn.at-now;steer(o,p,pn.x,pn.y,.12);
   if(left<=(lvl<0?13:4)&&p.sw<=0&&p.cd<=0)press(pn.lob?'alt':'fire');else if(p.sw>0)p.bf=0;
@@ -232,7 +232,7 @@ function brain(p){const i=p.i;const c=courts[p.court];if(!c)return{};const o={},
   const net=dbl&&sidePl(c,p.side).length>1&&p.slot===(c.gs+c.srvN+p.side)%2,rx=dbl?(p.slot?1.8:-1.8)+b.x*.25:Math.max(-1.5,Math.min(1.5,b.x*.35)),ry=s*(net?4:HL+.8);steer(o,p,rx,ry,.3)}
  return o}
 function steer(o,p,x,y,dz){const dx=x-p.x,dy=y-p.y;if(dx>dz)o.right=true;else if(dx<-dz)o.left=true;if(dy>dz)o.down=true;else if(dy<-dz)o.up=true}
-function plan(p,c,lvl){const b=c.ball,path=predict(b,c.sf,170),s=sgn(p.side),spd=PSPD*(lvl<0?.8:[.82,.9,.97][lvl])*.92,err=gauss()*(lvl<0?.9:[.55,.3,.12][lvl]);let best=null,bestScore=1e9;
+function plan(p,c,lvl){const b=c.ball,path=predict(b,c.sf,170),s=sgn(p.side),spd=PSPD*(lvl<0?.8:[.74,.9,.97][lvl])*.92,err=gauss()*(lvl<0?.9:[.75,.3,.12][lvl]);let best=null,bestScore=1e9;
  if(path.some(q=>q.net&&q.b>=1&&q.y*s<0))return{sq:b.sq,mate:1};          // it's going into the net: nothing to do
  for(const q of path){if(q.b>=2)break;if(q.y*s<.3||Math.abs(q.y)>HL+2.6)continue;const okH=q.b===1?q.z<1.6:(q.z<2.3&&Math.abs(q.y)<8.5&&!b.srv);if(!okH)continue;
   const sx=q.x-hand(p)*.7+err,sy=q.y+s*.25,d=Math.hypot(sx-p.x,sy-p.y),need=d/spd,score=(need>q.t?(need-q.t)*3:0)+(q.b===1&&q.z>.45&&q.z<1.3?0:6)+q.t*.02;

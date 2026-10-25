@@ -43,7 +43,7 @@ RA.kit=o=>{
   <section class="panel" id="${P}OnlinePanel"><h2 class="ph">ONLINE · UP TO ${MAX} PLAYERS</h2><div id="${P}Online"></div></section>
   <section class="panel" id="${P}Setup" hidden><h2 class="ph">LOCAL · ONE SCREEN</h2>
    <div class="row between"><div class="row"><span class="lbl">PLAYERS</span><div class="step"><button id="${P}Minus" aria-label="Fewer">−</button><output id="${P}N">2</output><button id="${P}Plus" aria-label="More">+</button></div>
-    <label>CPU <select id="${P}Cpu"><option value="0">Easy</option><option value="1" selected>Normal</option><option value="2">Hard</option></select></label></div><button class="go" id="${P}Start">START ▶</button></div>
+    <label>CPU <select id="${P}Cpu"><option value="0" selected>Easy</option><option value="1">Normal</option><option value="2">Hard</option></select></label></div><button class="go" id="${P}Start">START ▶</button></div>
    <div class="list kslots" id="${P}Slots"></div><p class="note">${o.howto||''}</p></section>
   <div class="pad" hidden><div class="dpad"><i class="dU">▲</i><i class="dD">▼</i><i class="dL">◀</i><i class="dR">▶</i></div><div class="ab"><button data-k="fire" class="a">${o.fireLabel||'GO'}</button></div></div>`);
  root.classList.add('kit');
@@ -56,11 +56,11 @@ RA.kit=o=>{
  let S=Object.assign({},S0,sv.S||{});
  const cleanS=x=>{const r={};for(const[k,,opts]of SET){const v=x&&x[k];const hit=opts.find(y=>String(y[0])===String(v));r[k]=hit?hit[0]:S[k]}return r};
  let selMode=sv.md>=0&&sv.md<modes.length?sv.md:0,onlineTab=sv.tab!==false;
- const save=()=>{try{localStorage.setItem(LS,JSON.stringify({S,md:selMode,tab:onlineTab,n:nSel(),cpu:q('Cpu').value,c:[...Array(MAX).keys()].map(i=>q('c'+i).value)}))}catch(e){}};
+ const save=()=>{try{localStorage.setItem(LS,JSON.stringify({S,md:selMode,tab:onlineTab,n:nSel(),cpu:q('Cpu').value,cv:2,c:[...Array(MAX).keys()].map(i=>q('c'+i).value)}))}catch(e){}};
  q('Set').innerHTML=SET.map(([k,t,op])=>'<label>'+t+' <select id="'+P+'s_'+k+'">'+op.map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join('')+'</select></label>').join('');
  q('Slots').innerHTML=COLORS.map((c,i)=>'<div class="slot" id="'+P+'sl'+i+'"><span class="chip" style="background:'+c[1]+'">'+(i+1)+'</span><select id="'+P+'c'+i+'" aria-label="Seat '+(i+1)+' controls">'+CTRL.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('')+'</select></div>').join('');
  for(let i=0;i<MAX;i++)q('c'+i).value=(sv.c&&sv.c[i])||(i===0?(touchDev?'touch':'mk'):'cpu');
- q('N').textContent=String(sv.n||2);if(sv.cpu!=null)q('Cpu').value=sv.cpu;
+ q('N').textContent=String(sv.n||2);if(sv.cpu!=null&&sv.cv===2)q('Cpu').value=sv.cpu;   // cv: testers found Normal too strong, so older saves start on the new Easy default
  const nSel=()=>+q('N').textContent;
  function syncSlots(){const n=nSel();q('Minus').disabled=n<=1;q('Plus').disabled=n>=MAX;for(let i=0;i<MAX;i++)q('sl'+i).hidden=i>=n}
  function setMode(m){selMode=m;root.querySelectorAll('#'+P+'Modes .tab').forEach(b=>b.classList.toggle('on',+b.dataset.m===m));q('ModeNote').textContent=(modes[m]||[])[1]||'';save()}
@@ -118,7 +118,7 @@ RA.kit=o=>{
  K.track=k=>{if(k===lastTrack||K.demo&&k)return;lastTrack=k;RA.music.play(id,k)};
  K.end=win=>{if(K.demo){startDemo();return}if(K.state!=='play')return;K.winner=win||null;K.state='ending';overT=60};
  function begin(seats,md,demo){K.demo=!!demo;K.tick=0;K.mode=md;K.S=S;K.winner=null;K.state='play';NET.ev=[];overT=0;
-  seats.forEach((s,i)=>{s.col=s.col||COLORS[i][1]});K.seats=seats;K.cpu=demo?1:+q('Cpu').value;o.start(seats,md,S,K.seed)}
+  seats.forEach((s,i)=>{s.col=s.col||COLORS[i][1]});K.seats=seats;K.cpu=demo?1:R.online&&R.host?R.cpuLevel():+q('Cpu').value;o.start(seats,md,S,K.seed)}
  function startDemo(){K.seed=(Math.random()*1e9)|0;begin(Array.from({length:o.demo||4},(_,i)=>({ctrl:'cpu',name:'CPU '+(i+1)})),Math.min(modes.length-1,o.demoMode||0),true)}
  function enterPlay(tp){document.body.classList.add('playing');document.body.classList.toggle('touchplay',tp);
   document.body.classList.toggle('mouseaim',!!o.aim&&!touchDev&&(R.online?NET.myIdx>=0:K.seats.some(s=>s.ctrl==='mk')));
@@ -149,12 +149,12 @@ RA.kit=o=>{
   NET.myIdx=-1;K.myIdx=-1;startDemo();setMode(selMode);RA.music.play(id,0);lastTrack=0}
  // ---- snapshots
  // keys the kit puts in every snapshot: a game's snap() must not use them
- const RES=['ph','id','r','md','bs','sd','n','t','mt','w','rk','e'];let warned=false;
+ const RES=['ph','id','r','md','bs','sd','n','t','mt','w','rk','e','cq'];let warned=false;
  function snapshot(){const gs=o.snap();if(!warned)for(const k in gs)if(RES.includes(k)){warned=true;console.warn(id+': snap() key "'+k+'" clashes with the kit')}
-  const g=Object.assign(gs,{ph:K.state==='over'?'over':'play',id:NET.id,r:NET.r,md:K.mode,bs:S,sd:K.seed,n:K.seats.length,t:K.tick,mt:lastTrack});
+  const g=Object.assign(gs,{ph:K.state==='over'?'over':'play',id:NET.id,r:NET.r,md:K.mode,bs:S,sd:K.seed,n:K.seats.length,t:K.tick,mt:lastTrack,cq:K.cpu});
   if(K.state==='over'){g.w=K.winner;g.rk=ranksCache}g.e=NET.ev.slice();
   while(JSON.stringify(g).length>3800&&g.e.length)g.e.shift();return g}
- function applySnap(g){if(!g)return;if(g.bs)S=cleanS(g.bs);
+ function applySnap(g){if(!g)return;if(g.bs)S=cleanS(g.bs);if(typeof g.cq==='number')K.cpu=g.cq;
   if(g.ph==='lobby'){if(!K.demo)toLobby();if(typeof g.md==='number')setMode(Math.max(0,Math.min(modes.length-1,g.md|0)));showS();return}
   if(!Array.isArray(g.r))return;const me=R.room&&R.room.peers().find(p=>p.sameTab),n=Math.min(MAX,g.n|0);
   if(g.id!==NET.id||K.seats.length!==n||K.demo){NET.id=g.id;NET.seen=0;for(const e of g.e||[])NET.seen=Math.max(NET.seen,e[0]|0);

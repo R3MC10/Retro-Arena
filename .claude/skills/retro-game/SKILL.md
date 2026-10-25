@@ -65,6 +65,12 @@ Ask these again at every milestone: *Does this make sense? Does it align with th
 - Only show messages that matter to the viewer (your own PERFECT, not 7 CPUs' ones); name tags only on other humans.
 - Power-ups that fit the game and the place-based catch-up rule (back of the pack gets the strong ones).
 
+- **Real players are weaker than the skilled brain.** Testers found the CPUs too strong. Easy is the default now, and each game's
+  Easy must really be easy: run `CPU=0 node novice.js <id> 4` (the game's brain reacting 6-10 steps late and missing 30% of
+  presses) and the novice should place mid-pack and win sometimes. Easy CPUs that differ from Normal only by a little aim
+  error are not easier (Super Dash Bros Easy ran 29.4 s vs 29.6 s on Normal) - lower their top speed / tap rate / reaction.
+  One-hit-kill games get a softer Easy for the humans too (Jungle Force: two hits per life on Easy).
+
 ## 4. Online (RA.kit localFirst)
 
 - Each player's own character runs on their device; upload it, the host reads `K.remote(i)`. Shared things (items,
@@ -72,6 +78,10 @@ Ask these again at every milestone: *Does this make sense? Does it align with th
 - Guests see CPU seats as 'net' seats: send a CPU flag per seat in the snapshot if the game treats CPUs differently (name tags).
 - One-ended views (NES Tennis style): turn the court round for a local human playing the far end and flip their controls,
   so everyone plays up the screen.
+- A footballer / character you can switch away from must never keep a timed state without its timer: snapshots carry the
+  state but not the countdown, so a guest who switches onto a player mid-slide got 'slide' with no time left - and kept it
+  forever (Pixel Kick players 'died' after slides online). End any state whose timer is 0, and release ownership
+  (seat) of anything the owner no longer uploads.
 - **snap() keys must not clash with the kit's:** ph id r md bs sd n t mt w rk e (the kit warns in the console).
 - Sync what others need to draw: pose, suspension, crash state, not just x/y.
 - Measure content against each other: track lengths / level sizes within ~20% of each other (Frosty Peaks was 2x).

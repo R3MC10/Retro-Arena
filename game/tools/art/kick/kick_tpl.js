@@ -97,6 +97,8 @@ function moveP(p,mx,mz,sprint){const f=p.fx;
  p.x=clamp(p.x+p.vx,-30,PW+30);p.z=clamp(p.z+p.vz,-30,PH+20);
  if(p.z>GZ0-3&&p.z<GZ1+3&&!p.gk){if(p.x<3&&p.x>-GD-4)p.x=p.z>GZ0+2&&p.z<GZ1-2?3:p.x;if(p.x>PW-3&&p.x<PW+GD+4)p.x=p.z>GZ0+2&&p.z<GZ1-2?PW-3:p.x}
  const v=Math.hypot(p.vx,p.vz);p.run=v>.15?p.run+v*.11:0;
+ // a state with no time left (taken over from a snapshot, which carries no timer) ends instead of lasting forever
+ if(p.st&&p.stT<=0)p.stT=1;
  if(p.stT>0&&--p.stT===0){if(p.st==='slide'||p.st==='down'||p.st==='dive'){p.st='getup';p.stT=14}else p.st=''}
  if(p.dodge>0)p.dodge--;if(p.kc>0)p.kc--;for(const k in f)if(f[k]>0&&k!=='fire'&&k!=='banana')f[k]--;
  for(const q of pl){if(q===p||q.st==='down')continue;const dx=p.x-q.x,dz=p.z-q.z,d=Math.hypot(dx,dz);if(d<6&&d>.01){p.x+=dx/d*(6-d)*.5;p.z+=dz/d*(6-d)*.5}}}
@@ -193,7 +195,9 @@ function keeperSave(p){const b=ball;if(b.h>=0||!p.gk||p.st==='down')return false
 function step(){if(K.tick===2)music();const S=K.S;
  // auto-switch for humans on this device
  for(let i=0;i<K.seats.length;i++){const s=K.seats[i];if(!s||s.ctrl==='cpu'||s.ctrl==='net'||seatP[i]==null)continue;const n=pickFor(i,seatP[i]);if(n!==seatP[i])switchTo(i,n)}
- for(const p of pl){if(ownerOf(p)==='net'){const r=K.remote(p.seat);if(r){if(r.n!=null&&r.n!==p.n)continue;readUpload(p,r)}continue}
+ // a footballer still marked with a seat that has moved on to someone else goes back to the AI (it used to freeze mid-slide)
+ for(const p of pl)if(p.seat>=0&&seatP[p.seat]!==p.n)p.seat=-1;
+ for(const p of pl){if(ownerOf(p)==='net'){const r=K.remote(p.seat);if(r){if(r.n!=null&&r.n!==p.n){ai(p);continue}readUpload(p,r)}continue}
   if(ctrlBy(p))control(p,K.inp(p.seat));else{ai(p);for(const it of items)if(!it.dead&&Math.hypot(it.x-p.x,it.z-p.z)<9){it.dead=1;powerUp(p,it.k)}}}
  // a guest asking for another footballer
  for(let i=0;i<K.seats.length;i++){const s=K.seats[i];if(!s||s.ctrl!=='net')continue;const r=K.remote(i);if(!r||r.n==null||r.n===seatP[i])continue;const q=pl[r.n];

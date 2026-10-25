@@ -88,10 +88,12 @@ function targets(){const out=[];for(const f of foes){if(f.dead||!f.on&&f.k!=='T'
 function hurtCheck(h){const H=hH(h);for(const b of eb){if(Math.abs(b.x-h.x)<HW+2&&b.y>h.y-H&&b.y<h.y){die(h,'shot');b.t=0;return}}
  for(const f of foes)if(f.k==='s'&&!f.dead&&Math.abs(f.x-h.x)<9&&Math.abs(f.y-h.y)<12){die(h,'touch');return}}
 function pickups(h){for(const it of items){if(it.got||it.fly)continue;if(Math.abs(it.x-h.x)<12&&it.y>h.y-26&&it.y<h.y+6){it.got=1;h.gun=it.gun;sfx('powerup');say(h,GUNS[it.gun].n+'!','#fff07c');claim(h,'it',it.id)}}}
-function die(h,why){if(h.dead||h.inv>0)return;h.dead=60;h.vy=-3.2;h.gun='R';h.bul=[];if(!(K.mode===0&&K.seats[h.i]&&K.seats[h.i].ctrl==='cpu'&&K.seats.some(s=>s.ctrl!=='cpu')))h.lives--;sfx('kill');if(h.i===meIdx())shake=4}
+function die(h,why){if(h.dead||h.inv>0)return;h.why=why;
+ // Easy: a life takes two hits (the first knocks you back and flashes you), pits still kill
+ if(h.hp==null)h.hp=K.cpu===0?2:1;if(why!=='pit'&&h.hp>1&&!h.out){h.hp--;h.inv=90;h.vy=-2.4;h.vx=-h.face*1.5;sfx('kill');return}h.dead=60;h.vy=-3.2;h.gun='R';h.bul=[];if(!(K.mode===0&&K.seats[h.i]&&K.seats[h.i].ctrl==='cpu'&&K.seats.some(s=>s.ctrl!=='cpu')))h.lives--;sfx('kill');if(h.i===meIdx())shake=4}
 function respawn(h){if(h.lives<=0){h.out=true;return}let x=Math.max(24,h.x-48);
  // back on solid ground a few steps behind (never into water or over a pit)
- for(let k=0;k<12;k++){const c=Math.floor(x/TS);let ok=false;for(let r=2;r<LH;r++){const v=tileAt(c,r);if(v===5)break;if(solid(v)||plat(v)){ok=true;break}}if(ok)break;x-=TS}h.x=Math.max(24,x);h.y=10;h.vy=0;h.inv=150;h.gr=false}
+ for(let k=0;k<12;k++){const c=Math.floor(x/TS);let ok=false;for(let r=2;r<LH;r++){const v=tileAt(c,r);if(v===5)break;if(solid(v)||plat(v)){ok=true;break}}if(ok)break;x-=TS}h.x=Math.max(24,x);h.y=10;h.vy=0;h.inv=150;h.gr=false;h.hp=null}
 function poseStep(h){let p;if(h.dead)p='die';else if(!h.gr)p='spin'+(Math.floor(K.tick/4)%4);else if(h.prone)p='prone';else if(Math.abs(h.vx)>.1){const f=1+Math.floor(h.anim)%3;p='run'+f+'_'+(h.aim==='u'?'ud':h.aim==='d'?'f':h.aim)}else p='stand_'+(h.aim==='dd'||h.aim==='d'?'f':h.aim);h.pose=p}
 function claim(h,k,a,b){if(!K.isClient()){resolve(h,[0,k,a,b]);return}h.cseq++;h.claims.push([h.cseq,k,a,b]);if(h.claims.length>16)h.claims.shift()}
 function say(h,s,col){if(h.i!==meIdx())return;texts.push({x:h.x,y:h.y-36,s,col,t:70})}
@@ -112,18 +114,18 @@ function step(){for(const h of men){if(ownerNet(h)){const u=K.remote(h.i);if(u)r
  if(K.tick<CD){vis();return}
  const live=men.filter(m=>!m.out&&!m.dead),lead=live.reduce((a,b)=>!a||b.x>a.x?b:a,null),n=men.length;
  // runners come in from the right, a few from behind
- if(lead&&lead.x<LV.bossX-160){const every=Math.round([150,105,75][K.cpu]/(1+.1*(n-1)));if(K.tick%every===0){const fromBack=Math.random()<.15,x=fromBack?Math.max(8,lead.x-230):lead.x+190+Math.random()*40,c=Math.floor(x/TS),gy=groundY(c);
+ if(lead&&lead.x<LV.bossX-160){const every=Math.round([200,105,75][K.cpu]/(1+.1*(n-1)));if(K.tick%every===0){const fromBack=Math.random()<.15,x=fromBack?Math.max(8,lead.x-230):lead.x+190+Math.random()*40,c=Math.floor(x/TS),gy=groundY(c);
    if(gy!=null&&!fromBack||gy!=null)foes.push({id:nextId++,k:'s',x,y:gy,vx:0,vy:0,hp:1,on:1,face:fromBack?1:-1,t:0})}}
  for(const f of foes){if(f.dead){f.vy=(f.vy||0)+.2;f.y+=f.vy;if(f.y>LH*TS+60)f.gone=1;continue}if(f.fl>0)f.fl--;
   const near=live.reduce((a,m)=>{const d=Math.hypot(m.x-f.x,m.y-f.y);return d<a.d?{m,d}:a},{m:null,d:1e9});
   if(f.k==='s'){f.t++;f.x+=f.face*1.1;f.vy=Math.min(MAXF,(f.vy||0)+GRAV);let ny=f.y+f.vy;const r=Math.floor(ny/TS),v=tileAt(Math.floor(f.x/TS),r);if(f.vy>=0&&(solid(v)||plat(v))&&f.y<=r*TS+1){ny=r*TS;f.vy=0}f.y=ny;
    if(solid(tileAt(Math.floor((f.x+f.face*6)/TS),Math.floor((f.y-8)/TS))))f.face=-f.face;if(f.y>LH*TS+20||!live.some(m=>Math.abs(m.x-f.x)<320))f.gone=1}
-  else if(f.k==='r'){if(!f.on&&near.m&&near.d<240)f.on=1;if(f.on&&near.m){f.face=near.m.x<f.x?-1:1;if(--f.cd<=0){f.cd=[170,130,100][K.cpu];shoot(f.x+f.face*8,f.y-15,near.m,1.5)}}}
-  else if(f.k==='T'){if(!f.on&&near.m&&near.d<230)f.on=1;if(f.on&&near.m){const a=Math.atan2(near.m.y-12-f.y,near.m.x-f.x);f.ang=Math.round(a/(Math.PI/4))*(Math.PI/4);if(--f.cd<=0){f.cd=[190,145,110][K.cpu];shoot(f.x+Math.cos(f.ang)*10,f.y+Math.sin(f.ang)*10,null,1.6,f.ang)}}}
+  else if(f.k==='r'){if(!f.on&&near.m&&near.d<240)f.on=1;if(f.on&&near.m){f.face=near.m.x<f.x?-1:1;if(--f.cd<=0){f.cd=[240,130,100][K.cpu];shoot(f.x+f.face*8,f.y-15,near.m,1.5)}}}
+  else if(f.k==='T'){if(!f.on&&near.m&&near.d<230)f.on=1;if(f.on&&near.m){const a=Math.atan2(near.m.y-12-f.y,near.m.x-f.x);f.ang=Math.round(a/(Math.PI/4))*(Math.PI/4);if(--f.cd<=0){f.cd=[260,145,110][K.cpu];shoot(f.x+Math.cos(f.ang)*10,f.y+Math.sin(f.ang)*10,null,1.6,f.ang)}}}
   else if(f.k==='cap'){if(!f.on&&lead&&lead.x>f.x0-150){f.on=1;f.x=lead.x-170;f.t=0}if(f.on){f.t++;f.x+=1.3;f.y=f.y0+Math.sin(f.t*.05)*22;if(f.t>500)f.gone=1}}}
  foes=foes.filter(f=>!f.gone);
  // the fortress: two cannons lob shells, the core waits to be destroyed
- if(boss&&!cleared){if(!boss.on&&lead&&lead.x>boss.x-170){boss.on=1;K.fx('bs')}if(boss.on)for(const c of boss.cans){if(c.hp<=0)continue;if(--c.cd<=0){c.cd=[120,90,70][K.cpu];const t=live[Math.floor(Math.random()*live.length)];if(t)shoot(c.x-8,c.y,t,2.2)}}}
+ if(boss&&!cleared){if(!boss.on&&lead&&lead.x>boss.x-170){boss.on=1;K.fx('bs')}if(boss.on)for(const c of boss.cans){if(c.hp<=0)continue;if(--c.cd<=0){c.cd=[230,90,70][K.cpu];const t=live[Math.floor(Math.random()*live.length)];if(t)shoot(c.x-8,c.y,t,2.2)}}}
  for(const b of eb){b.x+=b.vx;b.y+=b.vy;if(b.g)b.vy+=b.g;b.t--;const v=tileAt(Math.floor(b.x/TS),Math.floor(b.y/TS));if(solid(v)&&v!==6)b.t=0}eb=eb.filter(b=>b.t>0);
  for(const it of items){if(it.got)continue;it.vy=Math.min(3,it.vy+.15);it.y+=it.vy;const r=Math.floor(it.y/TS),v=tileAt(Math.floor(it.x/TS),r);if(it.vy>0&&(solid(v)||plat(v))){it.y=r*TS;it.vy=-it.vy*.4;if(Math.abs(it.vy)<.5)it.vy=0}it.x+=.4;if(it.y>LH*TS+40)it.got=1}
  items=items.filter(it=>!it.got);
@@ -133,7 +135,7 @@ function step(){for(const h of men){if(ownerNet(h)){const u=K.remote(h.i);if(u)r
   // engineers patch the bridge after a while so nobody is stranded
   else if(e.gone&&K.tick>=e.at+480){LV.tiles[10*LV.W+e.c]=4;bridgeDone.delete(e);if(![...bridgeDone].some(o=>typeof o==='object'))for(const o of [...bridgeDone])if(typeof o==='string')bridgeDone.delete(o)}}
  vis();checkEnd()}
-function shoot(x,y,tg,sp,ang){const a=ang!=null?ang:Math.atan2(tg.y-12-y,tg.x-x);eb.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:200})}
+function shoot(x,y,tg,sp,ang){sp*=[.8,1,1][K.cpu];const a=ang!=null?ang:Math.atan2(tg.y-12-y,tg.x-x);eb.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:200})}
 function checkEnd(){const hum=men.filter(m=>K.seats[m.i]&&K.seats[m.i].ctrl!=='cpu'),live=(hum.length&&K.mode===0?hum:men).filter(m=>!m.out);
  const lender=men.some(m=>!m.out&&m.lives>1&&K.seats[m.i].ctrl!=='cpu');if(!live.length&&lender){if(!men.outAt)men.outAt=K.tick;if(K.tick-men.outAt<300)return}else men.outAt=0;
  const done=cleared&&K.tick-clearT>180,lost=!live.length;if(!done&&!lost)return;

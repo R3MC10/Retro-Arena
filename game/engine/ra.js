@@ -6,7 +6,7 @@
 const $=id=>document.getElementById(id);
 const RA=window.RA={};
 // Shown as the watermark in the top-left corner. Bump it with every publish of the live game.
-RA.VERSION='v73';
+RA.VERSION='v74';
 
 /* ---------- helpers ---------- */
 const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
@@ -450,11 +450,11 @@ RA.rooms=o=>{
   '<div class="list" data-r="home"><div class="row"><button class="go" data-r="create">CREATE ROOM</button><input data-r="code" maxlength="5" placeholder="CODE" aria-label="Room code" autocomplete="off"><button class="go" data-r="join">JOIN</button></div>'+
   '<p class="note online" data-r="who"></p><div class="list" data-r="rooms"></div><p class="note">'+(o.note||'')+'</p></div>'+
   '<div class="list" data-r="inroom" hidden><div class="row between"><div class="row"><span class="lbl">ROOM</span><span class="code" data-r="rcode"></span></div><button data-r="leave">LEAVE</button></div>'+
-  '<div class="roster" data-r="roster"></div><div class="row" data-r="hostctl"><label>CPU players <select data-r="cpus"></select></label><button class="go" data-r="start">START</button></div>'+
+  '<div class="roster" data-r="roster"></div><div class="row" data-r="hostctl"><label>CPU players <select data-r="cpus"></select></label><label>CPU level <select data-r="lvl"><option value="0" selected>Easy</option><option value="1">Normal</option><option value="2">Hard</option></select></label><button class="go" data-r="start">START</button></div>'+
   '<label class="spec"><input type="checkbox" data-r="spec"> SPECTATE (watch, don&#39;t play)</label><p class="note" data-r="wait">Waiting for the host to start…</p>'+(o.controls?'<div class="ctlCard"><b>CONTROLS</b><p>'+o.controls+'</p></div>':'')+'</div>';
  q('cpus').innerHTML=Array.from({length:max},(_,i)=>'<option>'+i+'</option>').join('');q('cpus').value=String(o.cpus==null?1:o.cpus);
  const R={lobby:null,room:null,user:null,me:null,code:'',host:false,order:[],names:{},hostGone:0,lastB:0,lastL:0,lastSend:'',lastSendT:0,
-  get online(){return!!R.room}};
+  get online(){return!!R.room},cpuLevel:()=>+q('lvl').value};
  const msg=t=>{q('msg').textContent=t||'';q('msg').hidden=!t};R.msg=msg;
  const off=()=>{msg('Online play is not available here. Open this page signed in to claude.ai; friends need it shared with them.');q('create').disabled=q('join').disabled=true};
  function wantName(by){if(!R.user||R.names[by]!==undefined)return;R.names[by]='';

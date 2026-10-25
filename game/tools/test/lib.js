@@ -10,10 +10,12 @@ async function openGame(b,id,{name='Tester',ctx=null}={}){const pg=await(ctx||b)
  await pg.evaluate(id=>{for(const b of document.querySelectorAll('#games button')){b.click();if(RA.menu.current&&RA.menu.current.id===id)return;RA.menu.show()}},id);
  await pg.waitForTimeout(1200);return{pg,errs,P:id.slice(0,3)}}
 // start a local match: n seats, the first `humans` on keyboards (mk, k3, k2, k4), the rest CPU; settings {key: value}
-async function startLocal(pg,P,{n=4,humans=1,mode=0,settings={}}={}){await pg.evaluate(([P,n,humans,mode,settings])=>{
+// CPU level: env CPU=0|1|2 (default: the lobby default)
+async function startLocal(pg,P,{n=4,humans=1,mode=0,settings={},cpu=process.env.CPU}={}){await pg.evaluate(([P,n,humans,mode,settings,cpu])=>{
   for(const k in settings){const s=document.getElementById(P+'s_'+k);if(s){s.value=String(settings[k]);s.dispatchEvent(new Event('change'))}}
   document.getElementById(P+'TabLocal').click();document.getElementById(P+'N').textContent=String(n);
   for(let i=0;i<20;i++){const c=document.getElementById(P+'c'+i);if(c)c.value=i<humans?['mk','k3','k2','k4'][i]:'cpu'}
-  const m=document.querySelector('#'+P+'Modes [data-m="'+mode+'"]');if(m)m.click();document.getElementById(P+'Start').click();document.activeElement&&document.activeElement.blur()},[P,n,humans,mode,settings])}
+  if(cpu!=null){const c=document.getElementById(P+'Cpu');if(c)c.value=String(cpu)}
+  const m=document.querySelector('#'+P+'Modes [data-m="'+mode+'"]');if(m)m.click();document.getElementById(P+'Start').click();document.activeElement&&document.activeElement.blur()},[P,n,humans,mode,settings,cpu])}
 const arg=(i,d)=>process.argv[2+i]!==undefined?process.argv[2+i]:d;
 module.exports={browser,openGame,startLocal,arg,URL};

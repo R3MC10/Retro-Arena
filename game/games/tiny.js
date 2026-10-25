@@ -66,7 +66,7 @@ function placeAll(k){const n=cars.length,order=cars.slice().sort((a,b)=>((a.i*79
  order.forEach((c,j)=>{const row=j>>1,sd=j&1?1:-1,i=((k-row*5)%MAP.N+MAP.N)%MAP.N,s=MAP.path[i];c.x=s.x+s.ty*sd*-8;c.y=s.y-s.tx*sd*-8;c.a=s.a;c.vx=c.vy=0;c.lane=(Math.random()-.5)*28;c.pace=.97+Math.random()*.05;c.out=false;c.outT=0;c.fall=0;c.idx=i;c.prog=c.lap*MAP.N+i;c.rid=round})}
 function drive(c,inp){if(c.out||rState!=='race'){c.vx*=.9;c.vy*=.9;return}
  let steer=(inp.right?1:0)-(inp.left?1:0);if(inp.ax!=null&&Math.abs(inp.ax)>.2)steer=inp.ax;
- const s=surfAt(c.x,c.y),cpu=K.seats[c.i]&&K.seats[c.i].ctrl==='cpu';let max=s===0?VMAX:s===1?VMAX*.85:VOFF;if(cpu)max*=[.94,1,1.03][K.cpu]*(c.pace||1);
+ const s=surfAt(c.x,c.y),cpu=K.seats[c.i]&&K.seats[c.i].ctrl==='cpu';let max=s===0?VMAX:s===1?VMAX*.85:VOFF;if(cpu)max*=[.88,1,1.03][K.cpu]*(c.pace||1);
  // slipstream: everyone but the leader gets a little extra, so the pack stays a pack
  const L=leader();if(L&&L!==c&&rState==='race')max*=1.03;
  const f=fwd(c.a),sp0=c.vx*f[0]+c.vy*f[1];let sp=sp0;
