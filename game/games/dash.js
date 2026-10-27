@@ -123,7 +123,7 @@ function move(h,inp){if(TK()<CD){h.vx=0;return}
  // momentum: walking speed at once, running speed after a short run-up
  if(dir&&h.gr&&Math.sign(h.vx)!==-dir)h.run=Math.min(40,h.run+1);else if(h.gr&&!dir)h.run=Math.max(0,h.run-2);else if(dir&&Math.sign(h.vx)===-dir&&h.gr)h.run=0;
  // CPUs run slower on the lower levels (testers found them too fast): Easy tops out below a beginner's pace
- const cpuF=!K.demo&&K.seats[h.i]&&K.seats[h.i].ctrl==='cpu'?[.86,.93,1][K.cpu]:1;
+ const cpuF=!K.demo&&K.seats[h.i]&&K.seats[h.i].ctrl==='cpu'?[.66,.93,1][K.cpu]:1;
  const top=(h.dash>0?DASH:h.run>=28?RUN:WALK+(RUN-WALK)*h.run/28)*cpuF;
  const ice=LV.th.ice&&h.gr,gi=ice?.5:1;   // snow worlds: ice takes longer to get going, stop and turn
  if(down)h.vx*=ice?.99:.95;
