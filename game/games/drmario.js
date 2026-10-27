@@ -66,12 +66,12 @@ function route(from,code){const al=boards.filter(o=>o!==from&&!o.out);if(!al.len
 function outflow(b){while(b.outq.length){const c=b.outq.shift();b.outSeq++;b.outLog.push([b.outSeq,c]);if(b.outLog.length>12)b.outLog.shift();if(!K.isClient())route(b,c)}}
 const ENC='0123456789abcdefghijklmnopqrstuvwxyz';
 function pack(b){let s='';for(const a of b.cells)s+=a?ENC[1+(a.c-1)*7+(a.v?6:a.l+1)]:'0';
- return{w:s,c:b.cur?[b.cur.x,b.cur.y,b.cur.r,b.cur.c.join('')]:0,n:b.next.join(''),v:b.vir,l:b.lvl,sg:b.stages,s:b.score,o:b.out?1:0,pl:b.pill,p:b.pend.length,won:b.won?1:0,fx:Object.keys(b.fx).filter(k=>b.fx[k]>0).join(','),t:b.tagT>0?b.tag:'',oq:b.outLog.slice(-8),ver:b.ver}}
+ return{w:s,c:b.cur?[b.cur.x,b.cur.y,b.cur.r,b.cur.c.join('')]:0,n:b.next.join(''),v:b.vir,l:b.lvl,sg:b.stages,s:b.score,o:b.out?1:0,pl:b.pill,p:b.pend.length,won:b.won?1:0,fx:Object.keys(b.fx).filter(k=>b.fx[k]>0).join(','),t:b.tagT>0?b.tag:'',is:b.inSeen,oq:b.outLog.slice(-8),ver:b.ver}}
 function unpack(b,d){if(!d)return;if(typeof d.w==='string'&&d.w.length===BW*BH)b.cells=[...d.w].map(ch=>{const n=ENC.indexOf(ch);if(n<=0)return null;const c=1+Math.floor((n-1)/7),r=(n-1)%7;return{c,v:r===6?1:0,l:r===6?-1:r-1}});
  b.cur=Array.isArray(d.c)?{x:d.c[0],y:d.c[1],r:d.c[2],c:String(d.c[3]).split('').map(Number)}:null;b.next=String(d.n||'11').split('').map(Number);b.vir=d.v|0;b.lvl=d.l|0;b.stages=d.sg|0;b.score=d.s|0;b.out=!!d.o;b.pill=d.pl|0;b.pendN=d.p|0;b.won=!!d.won;
  b.fxs=String(d.fx||'');if(d.t&&d.t!==b.tag){b.tag=d.t;b.tagT=60}}
 function start(seats,md,S,seed){boards=seats.map((s,i)=>newBoard(i,s.name,s.col))}
-function step(){for(const b of boards){if(K.seats[b.i].ctrl==='net'){if(b.tagT>0)b.tagT--;const d=K.remote(b.i);if(d){const w=b.out;unpack(b,d);for(const e of d.oq||[])if((e[0]|0)>b.rSeen){b.rSeen=e[0]|0;route(b,String(e[1]))}if(!w&&b.out)b.outAt=K.tick}continue}
+function step(){for(const b of boards){if(K.seats[b.i].ctrl==='net'){if(!K.R.peer(K.seats[b.i].peer)){if(!b.out){b.out=true;b.outAt=K.tick;tag(b,'LEFT')}continue}if(b.tagT>0)b.tagT--;const d=K.remote(b.i);if(d){const w=b.out;unpack(b,d);b.inbox=b.inbox.filter(e=>e[0]>(d.is|0));for(const e of d.oq||[])if((e[0]|0)>b.rSeen){b.rSeen=e[0]|0;route(b,String(e[1]))}if(!w&&b.out)b.outAt=K.tick}continue}
   stepBoard(b,K.inp(b.i));outflow(b)}
  const al=boards.filter(b=>!b.out),lim=K.S.len*3600,won=boards.find(b=>b.won);
  if(won){K.end({i:won.i});return}
@@ -80,8 +80,13 @@ function step(){for(const b of boards){if(K.seats[b.i].ctrl==='net'){if(b.tagT>0
  if(al.length===2&&boards.length>2)K.track(3)}
 function local(i){const b=boards[i];if(!b)return;stepBoard(b,K.inp(i));outflow(b)}
 function upload(i){return boards[i]?pack(boards[i]):null}
-let rotN=0;function snap(){rotN++;return{b:boards.map((b,k)=>{const d=pack(b);delete d.oq;if(b.sv===d.ver&&(k+rotN)%Math.max(4,boards.length)!==0)delete d.w;else b.sv=d.ver;d.in=b.inbox.slice(-8);return d})}}
-function apply(g){(g.b||[]).forEach((d,k)=>{const b=boards[k];if(!b)return;if(k===K.myIdx){for(const e of d.in||[])if((e[0]|0)>b.inSeen){b.inSeen=e[0]|0;receive(b,String(e[1]),e[2]|0)}return}const w=b.out;unpack(b,d);if(!w&&b.out)b.outAt=K.tick})}
+// Two rotating bottles bound traffic at 20 seats; capsules update every send.
+let rotN=0;function snap(){const first=rotN;rotN=(rotN+2)%boards.length;return{b:boards.map((b,k)=>{const d=pack(b),send=(k-first+boards.length)%boards.length<2;
+ const w=send?d.w.replace(/0+$/,'').replace(/([0-9a-z])\1{2,25}/g,z=>String.fromCharCode(64+z.length)+z[0])||'0':'';
+ return[w,d.c,d.n,d.v,d.l,d.sg,d.s,d.o,d.pl,d.p,d.won,d.fx,d.t,b.out?[]:b.inbox.slice(-8)]})}}
+function apply(g){(g.b||[]).forEach((a,k)=>{const b=boards[k];if(!b)return;const d={c:a[1],n:a[2],v:a[3],l:a[4],sg:a[5],s:a[6],o:a[7],pl:a[8],p:a[9],won:a[10],fx:a[11],t:a[12],in:a[13]};
+ if(a[0])d.w=a[0].replace(/([A-Z])([0-9a-z])/g,(_,n,c)=>c.repeat(n.charCodeAt(0)-64)).padEnd(BW*BH,'0');
+ if(k===K.myIdx){for(const e of d.in||[])if((e[0]|0)>b.inSeen){b.inSeen=e[0]|0;receive(b,String(e[1]),e[2]|0)}return}const w=b.out;unpack(b,d);if(!w&&b.out)b.outAt=K.tick})}
 function follow(){for(const b of boards)if(b.i!==K.myIdx&&b.tagT>0)b.tagT--}
 function onFx(k,a){if(k==='a'&&a[1]===K.myIdx)sfx('boom')}
 /* CPU: try every spot for the capsule, prefer matching colours on top of same colours, low stacks */
@@ -132,7 +137,7 @@ K=RA.kit({id:'drmario',name:'DR. PILLBOX',kind:'Virus puzzle',players:'1-20 play
  ach:[{id:'first',name:'Intern',desc:'Finish your first match',test:s=>s.played>=1,unlock:'title:Intern'},{id:'win1',name:'Chief Physician',desc:'Win a match',test:(s,m)=>m.won,unlock:'title:Chief Physician'},
   {id:'st3',name:'Cure Found',desc:'Clear 3 stages in one match',test:(s,m)=>m.stages>=3,unlock:'title:Cure Found'},{id:'pts',name:'Virologist',desc:'Score 20,000 in one match',test:(s,m)=>m.bestScore>=20000,unlock:'title:Virologist'}],
  alive:i=>!!boards[i]&&!boards[i].out,start,step,local,upload,follow,snap,apply,render,bot,onFx,
- ranks:()=>boards.slice().sort((a,b)=>(b.won|0)-(a.won|0)||(a.out-b.out)||((b.outAt|0)-(a.outAt|0))||b.stages-a.stages||a.vir-b.vir).map(b=>[b.name,b.col,b.stages+' stages · '+b.vir+' virus']),
+ ranks:()=>boards.slice().sort((a,b)=>((K.winner&&K.winner.i===b.i)?1:0)-((K.winner&&K.winner.i===a.i)?1:0)||(b.won|0)-(a.won|0)||(a.out-b.out)||((b.outAt|0)-(a.outAt|0))||b.stages-a.stages||a.vir-b.vir).map(b=>[b.name,b.col,b.stages+' stages · '+b.vir+' virus']),
  result:(i,w)=>{const b=boards[i];return{won:!!w&&w.i===i,stages:b.stages,bestScore:b.score}}});
-window.__dm={get boards(){return boards},K,P:()=>boards[1]?boards[1].cur&&boards[1].cur.x:0};
+window.__dm={get boards(){return boards},K,bot,P:()=>boards[1]?boards[1].cur&&boards[1].cur.x:0};
 })();
