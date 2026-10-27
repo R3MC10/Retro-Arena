@@ -107,7 +107,7 @@ function onFx(k,a){if(k==='a'&&a[1]===K.myIdx)sfx('boom')}
 /* ---- CPU */
 function bot(i){const b=boards[i];if(!b||b.out)return{};const o={};let tx=b.px;
  const bl=b.balls.filter(x=>!x.stuck&&x.vy>0).sort((p,q)=>q.y-p.y)[0];
- if(bl){let x=bl.x,y=bl.y,vx=bl.vx;const t=(PY-y)/Math.max(.1,bl.vy);x+=vx*t;const L=WALL+3,R=BWID-WALL-3,Wd=R-L;let u=((x-L)%(2*Wd)+2*Wd)%(2*Wd);x=L+(u>Wd?2*Wd-u:u);tx=x+(K.cpu===0?Math.sin(K.tick*.02+i)*14:K.cpu===1?Math.sin(K.tick*.03+i)*6:0)}
+ if(bl){let x=bl.x,y=bl.y,vx=bl.vx;const t=(PY-y)/Math.max(.1,bl.vy);x+=vx*t;const L=WALL+3,R=BWID-WALL-3,Wd=R-L;let u=((x-L)%(2*Wd)+2*Wd)%(2*Wd);x=L+(u>Wd?2*Wd-u:u);tx=x+(K.cpu===0?Math.sin(K.tick*.02+i)*(K.seats[i].ctrl==='cpu'?30:14):K.cpu===1?Math.sin(K.tick*.03+i)*6:0)}
  else{const cap=b.caps.find(c=>c.k!==8);if(cap)tx=cap.x}
  if(tx<b.px-3)o[b.fx.rev>0?'right':'left']=true;else if(tx>b.px+3)o[b.fx.rev>0?'left':'right']=true;
  if(b.balls.some(x=>x.stuck)&&++b.cpuT%50===0)o.tap=true;if(b.fx.laser>0&&K.tick%16===0)o.tap=true;return o}
