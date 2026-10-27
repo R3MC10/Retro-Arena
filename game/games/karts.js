@@ -243,6 +243,7 @@ function trackLap(p){if(BAT)return;const id=idxAt(p.x,p.z),N=MAP.N,prev=p.idx;p.
 function music(){if(!musOn&&K.tick>2&&!K.demo){musOn=true;K.track(BAT?5:MAP.th.mus)}}
 function step(){music();
  for(const p of karts){const s=K.seats[p.i];
+  if(K.hostOnline()&&s.ctrl==='net'&&!K.R.peer(s.peer))s.ctrl='cpu';   // a player who left: a CPU drives their kart home
   if(s.ctrl==='net'){const r=K.remote(p.i);if(r)readUpload(p,r)}
   else{const inp=p.fin&&!BAT?bot(p.i):K.inp(p.i);drive(p,inp);ownerChecks(p,inp)}
   trackLap(p)}
@@ -267,7 +268,7 @@ function checkEnd(){const S=K.S,lim=(S.len||(BAT?3:0))*3600;
    if(K.mode===3){const sc=[0,1].map(t=>karts.filter(p=>p.i%2===t).reduce((a,p)=>a+p.bal,0));K.end(sc[0]===sc[1]?null:{team:sc[0]>sc[1]?0:1,name:TEAMN[sc[0]>sc[1]?0:1]})}else K.end(b?{i:b.i}:null)}return}
  const humans=karts.filter(p=>K.seats[p.i].ctrl!=='cpu'&&!p.fin).length,all=karts.every(p=>p.fin);
  if(all||finN&&humans===0&&K.tick-Math.max(firstFin,lastHF)>300||finN&&K.tick-firstFin>1800||lim&&K.tick>=lim+CD){places();const w=karts.find(p=>p.place===1);champ=w?w.i:-1;
-  if(K.mode===1){const n=karts.length,sc=[0,1].map(t=>karts.filter(p=>p.i%2===t).reduce((a,p)=>a+(n-p.place+1),0));K.end(sc[0]===sc[1]?null:{team:sc[0]>sc[1]?0:1,name:TEAMN[sc[0]>sc[1]?0:1]})}
+  if(K.mode===1){const n=karts.length,sc=[0,1].map(t=>karts.filter(p=>p.i%2===t).reduce((a,p)=>a+(n-p.place+1),0));const t=sc[0]===sc[1]?(w?w.i%2:-1):sc[0]>sc[1]?0:1;K.end(t<0?null:{team:t,name:TEAMN[t]})}   // level points: the winner's team takes it
   else K.end(w?{i:w.i}:null)}}
 const ord=n=>n+(n%100>10&&n%100<14?'TH':['TH','ST','ND','RD'][n%10]||'TH');
 function say(p,s,col){texts.push({x:p.x,z:p.z,y:16,s,col,t:80,own:p.i})}
