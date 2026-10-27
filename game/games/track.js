@@ -97,7 +97,7 @@ function follow(){for(const a of ath){if(a.i===K.myIdx||a.tx==null)continue;a.tx
 function onFx(k,a){if(k==='w'){const o=ath[a[0]];if(o&&o.i===meIdx())sfx('fan');else sfx('pick')}}
 /* ---------- CPU athletes ---------- */
 function bot(i){const a=ath[i];if(!a||ph!=='go')return{};const lvl=a.i===meIdx()?2:K.cpu,o={},e=EV();
- const b=a.bt||(a.bt={key:0,next:0,rate:[5.6,8.6,9.8][lvl]*(.94+Math.random()*.1),err:Math.random()-.5,react:[24,11,7][lvl]+Math.floor(Math.random()*6)});
+ const b=a.bt||(a.bt={key:0,next:0,rate:[4.2,8.6,9.8][lvl]*(.94+Math.random()*.1),err:Math.random()-.5,react:[24,11,7][lvl]+Math.floor(Math.random()*6)});
  if(K.tick-ga<b.react)return o;
  if(a.st==='set'||a.st==='run'){if(K.tick>=b.next){b.key^=1;b.next=K.tick+60/b.rate*(.85+Math.random()*.3)}o[b.key?'left':'right']=true}
  if(e==='hurd'&&a.st==='run'){const hx=HURD.find(x=>x>a.x+.2);if(hx!=null){const d=hx-a.x,want=a.v*(.37+(Math.random()-.5)*.22*(2.4-lvl));if(d<want&&!a.fh)o.fire=true}}
