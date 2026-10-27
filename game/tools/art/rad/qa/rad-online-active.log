@@ -1,0 +1,7 @@
+HOST_CRASH_ON_GUEST { spin: 107, lift: 21.06, angle: 2.08 }
+GUEST_CRASH_ON_HOST { spin: 106, lift: 21.77, angle: 2.24 }
+STEERING { seat: 1, right: -0.033078157792451324, left: -0.3366211819028976 }
+TAKEOVER { ctrl: 'cpu', d: 104.59002157872573 }
+HOST { bytes: 525 }
+GUEST { myIdx: -1 }
+NO ERRORS

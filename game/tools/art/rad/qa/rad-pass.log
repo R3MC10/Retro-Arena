@@ -1,0 +1,36 @@
+pass.js rad-racer
+{"steps":9199,"min":2.6,"over":true,"win":"CPU 5 WINS","first":"1 CPU 5 #1 130.8s","peak":712,"ftMed":0.9,"ftMax":1.8,"n":8,"mode":0,"errs":[]}
+{"steps":9818,"min":2.7,"over":true,"win":"BLUE TEAM WINS","first":"1 CPU 6 #1 140.0s","peak":720,"ftMed":0.7,"ftMax":1.7,"n":8,"mode":1,"errs":[]}
+{"steps":11021,"min":3.1,"over":true,"win":"CPU 5 WINS","first":"1 CPU 5 1077% checkpoint","peak":696,"ftMed":0.7,"ftMax":1.3,"n":8,"mode":2,"errs":[]}
+{"steps":9186,"min":2.6,"over":true,"win":"CPU 2 WINS","first":"1 CPU 2 #1 129.4s","peak":1487,"ftMed":0.6,"ftMax":1.6,"n":20,"mode":0,"errs":[]}
+{"steps":9300,"min":2.6,"over":true,"win":"RED TEAM WINS","first":"1 CPU 1 #1 131.3s","peak":1534,"ftMed":0.7,"ftMax":1.2,"n":20,"mode":1,"errs":[]}
+{"steps":11021,"min":3.1,"over":true,"win":"CPU 3 WINS","first":"1 CPU 3 1086% checkpoint","peak":1509,"ftMed":0.7,"ftMax":1.9,"n":20,"mode":2,"errs":[]}
+{"guestIdx":1,"guest":"0,0 -> 1,0","hostSeesGuest":"1,0","host":"-1,0 -> 0,0","guestSeesHost":"0,0","leaverOnHost":{"x":0,"y":0,"out":0},"leaverCtrl":"cpu","leaverLater":"0,0","errs":[]}
+
+pass.js rad-racer
+{"steps":7236,"min":2,"over":true,"win":"CPU 7 WINS","first":"1 CPU 7 #1 104.0s","peak":659,"ftMed":0.8,"ftMax":1.6,"n":8,"mode":0,"errs":[]}
+{"steps":7416,"min":2.1,"over":true,"win":"BLUE TEAM WINS","first":"1 CPU 2 #1 106.3s","peak":659,"ftMed":0.7,"ftMax":1.5,"n":8,"mode":1,"errs":[]}
+{"steps":10721,"min":3,"over":true,"win":"CPU 1 WINS","first":"1 CPU 1 Clock out - CP 12","peak":647,"ftMed":0.8,"ftMax":2.4,"n":8,"mode":2,"errs":[]}
+{"steps":7372,"min":2,"over":true,"win":"CPU 1 WINS","first":"1 CPU 1 #1 104.1s","peak":1406,"ftMed":0.9,"ftMax":1.5,"n":20,"mode":0,"errs":[]}
+{"steps":7564,"min":2.1,"over":true,"win":"BLUE TEAM WINS","first":"1 CPU 16 #1 103.9s","peak":1411,"ftMed":0.8,"ftMax":2.1,"n":20,"mode":1,"errs":[]}
+{"steps":10721,"min":3,"over":true,"win":"CPU 1 WINS","first":"1 CPU 1 Clock out - CP 12","peak":1449,"ftMed":0.9,"ftMax":2,"n":20,"mode":2,"errs":[]}
+{"guestIdx":1,"guest":"0,0 -> 1,0","hostSeesGuest":"1,0","host":"-1,0 -> 0,0","guestSeesHost":"0,0","leaverOnHost":{"x":0,"y":0,"out":0},"leaverCtrl":"cpu","leaverLater":"0,0","errs":[]}
+
+pass.js rad-racer
+{"steps":7211,"min":2,"over":true,"win":"CPU 6 WINS","first":"1 CPU 6 #1 104.8s","peak":680,"ftMed":0.6,"ftMax":2.9,"n":8,"mode":0,"errs":[]}
+{"steps":7450,"min":2.1,"over":true,"win":"BLUE TEAM WINS","first":"1 CPU 4 #1 107.6s","peak":679,"ftMed":0.6,"ftMax":1,"n":8,"mode":1,"errs":[]}
+{"steps":10991,"min":3.1,"over":true,"win":"CPU 5 WINS","first":"1 CPU 5 CP 14 / LAST CLOCK","peak":661,"ftMed":0.6,"ftMax":1.2,"n":8,"mode":2,"errs":[]}
+{"steps":7506,"min":2.1,"over":true,"win":"CPU 10 WINS","first":"1 CPU 10 #1 102.8s","peak":1413,"ftMed":0.7,"ftMax":1.4,"n":20,"mode":0,"errs":[]}
+{"steps":7451,"min":2.1,"over":true,"win":"BLUE TEAM WINS","first":"1 CPU 1 #1 101.8s","peak":1412,"ftMed":0.8,"ftMax":1.6,"n":20,"mode":1,"errs":[]}
+{"steps":10990,"min":3.1,"over":true,"win":"CPU 13 WINS","first":"1 CPU 13 CP 14 / LAST CLOCK","peak":1370,"ftMed":0.9,"ftMax":2,"n":20,"mode":2,"errs":[]}
+{"guestIdx":1,"guest":"0,0 -> 1,0","hostSeesGuest":"1,0","host":"-1,0 -> 0,0","guestSeesHost":"0,0","leaverOnHost":{"x":0,"y":0,"out":0},"leaverCtrl":"cpu","leaverLater":"0,0","errs":[]}
+
+pass.js rad-racer
+{"steps":7414,"min":2.1,"over":true,"win":"CPU 4 WINS","first":"1 CPU 4 #1 106.6s","peak":682,"ftMed":0.8,"ftMax":1.7,"n":8,"mode":0,"errs":[]}
+{"steps":7407,"min":2.1,"over":true,"win":"BLUE TEAM WINS","first":"1 CPU 7 #1 107.6s","peak":676,"ftMed":0.7,"ftMax":1.5,"n":8,"mode":1,"errs":[]}
+{"steps":10990,"min":3.1,"over":true,"win":"CPU 5 WINS","first":"1 CPU 5 Clock out - CP 13","peak":806,"ftMed":0.6,"ftMax":1.6,"n":8,"mode":2,"errs":[]}
+{"steps":7561,"min":2.1,"over":true,"win":"CPU 9 WINS","first":"1 CPU 9 #1 104.5s","peak":2168,"ftMed":1,"ftMax":2,"n":20,"mode":0,"errs":[]}
+{"steps":7547,"min":2.1,"over":true,"win":"BLUE TEAM WINS","first":"1 CPU 4 #1 103.1s","peak":1479,"ftMed":0.8,"ftMax":1.6,"n":20,"mode":1,"errs":[]}
+{"steps":10991,"min":3.1,"over":true,"win":"CPU 3 WINS","first":"1 CPU 3 Clock out - CP 13","peak":1774,"ftMed":1,"ftMax":3,"n":20,"mode":2,"errs":[]}
+{"guestIdx":1,"guest":"0,0 -> 1,0","hostSeesGuest":"1,0","host":"-1,0 -> 0,0","guestSeesHost":"0,0","leaverOnHost":{"x":0,"y":0,"out":0},"leaverCtrl":"cpu","leaverLater":"0,0","errs":[]}
+

@@ -1,0 +1,48 @@
+novice.js rad-racer 4 10 0.3 30000
+rad-racer {"steps":7525,"over":true,"win":"YOU WIN!","place":1,"of":4,"me":"#1 101.8s","best":"#1 101.8s","x":["0d","0d","0d","0d","0d","0d"]} 
+
+novice.js rad-racer 4 10 0.3 30000
+rad-racer {"steps":8120,"over":true,"win":"YOU WIN!","place":1,"of":4,"me":"#1 111.7s","best":"#1 111.7s","x":["0d","0d","0d","0d","0d","0d"]} 
+
+novice.js rad-racer 4 10 0.3 30000
+rad-racer {"steps":7567,"over":true,"win":"YOU WIN!","place":1,"of":4,"me":"#1 102.5s","best":"#1 102.5s","x":["0d","0d","0d","0d","0d","0d"]} 
+
+novice.js rad-racer 4 10 0.3 30000
+rad-racer {"steps":7918,"over":true,"win":"YOU WIN!","place":1,"of":4,"me":"#1 108.3s","best":"#1 108.3s","x":["0d","0d","0d","0d","0d","0d"]} 
+
+novice.js rad-racer 4 10 0.3 30000
+rad-racer {"steps":7683,"over":true,"win":"YOU WIN!","place":1,"of":4,"me":"#1 104.4s","best":"#1 104.4s","x":["0d","0d","0d","0d","0d","0d"]} 
+
+novice.js rad-racer 8 0 0 30000
+rad-racer {"steps":6984,"over":true,"win":"YOU WIN!","place":1,"of":8,"me":"#1 101.9s","best":"#1 101.9s","x":["0d","0d","0d","0d","0d","0d"]} 
+
+novice.js rad-racer 8 0 0 30000
+rad-racer {"steps":7001,"over":true,"win":"YOU WIN!","place":1,"of":8,"me":"#1 101.2s","best":"#1 101.2s","x":["0d","0d","0d","0d","0d","0d"]} 
+
+novice.js rad-racer 8 0 0 30000
+rad-racer {"steps":7024,"over":true,"win":"YOU WIN!","place":1,"of":8,"me":"#1 102.1s","best":"#1 102.1s","x":["0d","0d","0d","0d","0d","0d"]} 
+
+novice.js rad-racer 4 10 0.3 30000
+rad-racer {"steps":7109,"over":true,"win":"CPU 1 WINS","place":2,"of":4,"me":"#2 109.0s","best":"#1 108.0s","x":["0d","0d","0d","0d","0d","0d"]} 
+
+novice.js rad-racer 4 10 0.3 30000
+rad-racer {"steps":7309,"over":true,"win":"CPU 2 WINS","place":2,"of":4,"me":"#2 109.3s","best":"#1 108.5s","x":["0d","0d","0d","0d","0d","0d"]} 
+
+novice.js rad-racer 4 10 0.3 30000
+rad-racer {"steps":7158,"over":true,"win":"YOU WIN!","place":1,"of":4,"me":"#1 109.3s","best":"#1 109.3s","x":["0d","0d","0d","0d","0d","0d"]} 
+
+novice.js rad-racer 4 10 0.3 30000
+rad-racer {"steps":7156,"over":true,"win":"YOU WIN!","place":1,"of":4,"me":"#1 105.4s","best":"#1 105.4s","x":["0d","0d","0d","0d","0d","0d"]} 
+
+novice.js rad-racer 4 10 0.3 30000
+rad-racer {"steps":7327,"over":true,"win":"YOU WIN!","place":1,"of":4,"me":"#1 105.4s","best":"#1 105.4s","x":["0d","0d","0d","0d","0d","0d"]} 
+
+novice.js rad-racer 8 0 0 30000
+rad-racer {"steps":7012,"over":true,"win":"YOU WIN!","place":1,"of":8,"me":"#1 101.4s","best":"#1 101.4s","x":["0d","0d","0d","0d","0d","0d"]} 
+
+novice.js rad-racer 8 0 0 30000
+rad-racer {"steps":7013,"over":true,"win":"YOU WIN!","place":1,"of":8,"me":"#1 102.8s","best":"#1 102.8s","x":["0d","0d","0d","0d","0d","0d"]} 
+
+novice.js rad-racer 8 0 0 30000
+rad-racer {"steps":7043,"over":true,"win":"YOU WIN!","place":1,"of":8,"me":"#1 102.8s","best":"#1 102.8s","x":["0d","0d","0d","0d","0d","0d"]} 
+

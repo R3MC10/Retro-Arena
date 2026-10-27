@@ -2,7 +2,7 @@
 // then online host + guest: guest moves, host sees it, host moves, guest sees it, guest leaves -> out on the host.
 // node pass.js <id> [sim|online|all]   (serve game/ on 8765; PLAYWRIGHT_BROWSERS_PATH=out/browsers)
 const {browser,openGame,startLocal}=require('./lib'),fs=require('fs');
-const HOOK={'f-1-race':'__f1',karts:'__tk',excite:'__eb',tiny:'__tt',icepeak:'__ip',dash:'__db',jungle:'__jf',kick:'__pk',tennis:'__tn',track:'__tf',skyaces:'__sa',surv:'__ns',
+const HOOK={'rad-racer':'__rad','f-1-race':'__f1',karts:'__tk',excite:'__eb',tiny:'__tt',icepeak:'__ip',dash:'__db',jungle:'__jf',kick:'__pk',tennis:'__tn',track:'__tf',skyaces:'__sa',surv:'__ns',
  worms:'__wm',tanks:'__bc',blast:'__bm',pacman:'__pm',galaxian:'__gx',duckhunt:'__dh',arkanoid:'__ak',tetris:'__testTetris',drmario:'__dm',jewels:'__mj',snake:'__sn'};
 const id=process.argv[2],what=process.argv[3]||'all',out='out/pass/'+id;fs.mkdirSync(out,{recursive:true});
 // the per-seat list: the hook's first array whose items carry a seat index

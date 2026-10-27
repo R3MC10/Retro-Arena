@@ -1,0 +1,68 @@
+{
+  "brushSpeed": 1.68,
+  "controls": "W S A D E Space",
+  "checkpoint": 1,
+  "crashFrames": [
+    {
+      "j": 0,
+      "spin": 119,
+      "lift": 2.4,
+      "angle": 0.2,
+      "x": -0.6
+    },
+    {
+      "j": 15,
+      "spin": 104,
+      "lift": 22.8,
+      "angle": 2.6,
+      "x": -0.92
+    },
+    {
+      "j": 30,
+      "spin": 89,
+      "lift": 14,
+      "angle": 5,
+      "x": -1.15
+    },
+    {
+      "j": 45,
+      "spin": 74,
+      "lift": 5.1,
+      "angle": 7.4,
+      "x": -1.33
+    },
+    {
+      "j": 60,
+      "spin": 59,
+      "lift": 1.4,
+      "angle": 9.8,
+      "x": -1.46
+    },
+    {
+      "j": 75,
+      "spin": 44,
+      "lift": 0.4,
+      "angle": 12.2,
+      "x": -1.55
+    },
+    {
+      "j": 90,
+      "spin": 29,
+      "lift": 0.2,
+      "angle": 4.4,
+      "x": -1.28
+    },
+    {
+      "j": 105,
+      "spin": 14,
+      "lift": 0,
+      "angle": 0.1,
+      "x": -0.92
+    }
+  ],
+  "clockOut": 499,
+  "spectator": [
+    1
+  ],
+  "bytes": 662
+}
