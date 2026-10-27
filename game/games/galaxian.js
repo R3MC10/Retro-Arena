@@ -105,7 +105,9 @@ function follow(){for(const a of aliens){if(a.tx==null)continue;if(Math.abs(a.tx
 function onFx(k,a){if(k==='x'){sfx('boom');for(let q=0;q<(a[3]|0);q++)parts.push({x:a[0],y:a[1],vx:(Math.random()-.5)*3,vy:(Math.random()-.5)*3,t:30,col:q%2?a[2]:'#fff'})}
  else if(k==='t')texts.push({x:a[0],y:a[1],s:String(a[2]).slice(0,16),col:a[3],t:60});else if(k==='s')sfx('dive');else if(k==='b')K.track(3)}
 function bot(i){const s=ships[i];if(!s||!s.alive)return{};const o={};let tx=s.x;
- const threat=bombs.filter(b=>b.y>SY-70&&Math.abs(b.x-s.x)<14);const tgt=aliens.filter(a=>a.st==='dive').sort((a,b)=>b.y-a.y)[0]||aliens[Math.floor((K.tick/120+i*3)%Math.max(1,aliens.length))]||boss;
+ const threat=bombs.filter(b=>b.y>SY-70&&Math.abs(b.x-s.x)<14);// each CPU guards its own lane, so a crowd spreads out instead of chasing the same diver into the same bombs
+ const lw=fW/Math.max(1,ships.length),home=(i+.5)*lw,near=x=>Math.abs(x-home)<lw*1.5;
+ const tgt=aliens.filter(a=>a.st==='dive'&&near(a.x)).sort((a,b)=>b.y-a.y)[0]||aliens.filter(a=>!a.dead).sort((a,b)=>Math.abs(a.x-home)-Math.abs(b.x-home))[0]||boss;
  if(tgt)tx=tgt.x+(K.cpu===0?Math.sin(K.tick*.03+i)*18:0);const d=drops.find(d=>Math.abs(d.x-s.x)<60);if(d)tx=d.x;if(threat.length)tx=s.x+(threat[0].x>s.x?-30:30);
  if(tx<s.x-3)o.left=true;else if(tx>s.x+3)o.right=true;if(tgt&&Math.abs(tgt.x-s.x)<10&&K.tick%(K.cpu===2?8:18)===0)o.tap=true;return o}
 /* ---- drawing */
