@@ -34,6 +34,14 @@ packed into a Windows desktop app (Electron) with peer-to-peer rooms. The owner 
 ## Decisions log
 - 2026-10-27: The project is non-commercial (owner). Claude leads and Codex builds. Work goes through branches and PRs, and the owner merges.
 
+- 2026-10-27: Every game gets full testing (skill section 5: online.js, sim at 8/20 players, novice/skilled, shots checked by the lead).
+- 2026-10-27: Build all the coming-soon games in catalog.js, simplest first (8-bit, then bigger 2D, then 3D-styled).
+- 2026-10-27: Names that sound like the classics without being them; see `NAMES.md`. Ids stay the same.
+
 ## Next
-- Audit all games with `smoke.js`, and collect errors and visible problems in `AUDIT.md`.
-- Fix them in order of priority, one game per PR.
+1. Minor fixes from AUDIT.md (branch work/minor-fixes), then the renames from NAMES.md.
+2. Full test pass of all 22 games, fixing what it finds, one commit per game.
+3. Build the new games in this order: ROAD BRAWLER, F-ONE RACE, RAD RUNNER, CIRCUS CHUCK, MOON BALL, BIG SNOUT, CHIP & CHUM,
+   ADVENTURE ATOLL, SUPER CONTACT, GUERRILLA RAID, SKY WRECKER, TETRONIX 2, GOAL RUSH; then METAL SNAIL X, CONTACT FORCE,
+   BRAWL STADIUM, CRUSH BASH, LUMINOS 2, PATAPUM, ROLLOROLLO, MORTAL KOMBO 4, GRAND THEFT TOWN, RED ALARM 2,
+   POCKET CRITTERS YELLOW, DIABOLO; then the 3D-styled ones. One game per branch and PR.
