@@ -223,7 +223,7 @@ function onFx(k,a){if(k==='f'){const c=cl[a[0]];if(c)sfx('roar')}else if(k==='qk
 function bot(i){const c=cl[i];if(!c||c.out||c.fin||c.stun>0)return{};const o={},lvl=K.cpu,f=c.floor,up=f+1;
  if(c.fx.bal>0)return{};
  // like a person: after landing on a new floor, look up for a moment before moving
- if(c.gr&&c.bf!==f){c.bf=f;c.wait=K.tick+[90,35,18][lvl]+Math.random()*[70,30,15][lvl];c.err=(Math.random()-.5)*[13,4,1.5][lvl]}
+ if(c.gr&&c.bf!==f){c.bf=f;c.wait=K.tick+(K.seats[i].ctrl==='cpu'?[150,35,18]:[90,35,18])[lvl]+Math.random()*[90,30,15][lvl];c.err=(Math.random()-.5)*[13,4,1.5][lvl]}
  if(c.wait>K.tick)return{};
  if(up>NF){const dx=condor.x-c.x;if(Math.abs(dx)>6)o[dx>0?'right':'left']=true;if(Math.abs(dx)<24&&c.gr&&(K.tick&1))o.up=true;return o}
  if(c.gr){if(c.tf!==up||c.tT<K.tick){// pick a way up: an open hole next to a ledge, or ice to smash
