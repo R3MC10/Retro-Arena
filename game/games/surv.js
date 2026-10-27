@@ -76,7 +76,7 @@ function spawner(){const t=K.tick,min=t/3600,live=pl.filter(alive);if(!live.leng
    const e=spawn(kind,p);if(kind==='bat')for(let q=0;q<2;q++){const b=spawn('bat',p);b.x=e.x+(Math.random()-.5)*20;b.y=e.y+(Math.random()-.5)*20}}k-=1}
  if(t>0&&t%3600===1800){const p=live[Math.floor(Math.random()*live.length)];spawn('elite',p);say(p,'A GIANT IS COMING!','#f05050')}
  if(K.mode===0&&!boss&&!won&&t===LIM()-3600){const p=live[0];boss=spawn('boss',p);for(const q of pl)say(q,'THE REAPER!','#f05050');K.fx('bs')}}
-function step(){for(const p of pl){if(ownerNet(p)){const u=K.remote(p.i);if(u)readUp(p,u);continue}if(!p.out)move(p,K.inp(p.i))}
+function step(){K.takeover();for(const p of pl){if(ownerNet(p)){const u=K.remote(p.i);if(u)readUp(p,u);continue}if(!p.out)move(p,K.inp(p.i))}
  if(K.tick<60){vis();return}
  spawner();gridBuild();
  const live=pl.filter(alive),t=K.tick;
