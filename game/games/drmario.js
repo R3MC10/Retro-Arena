@@ -90,10 +90,10 @@ function apply(g){(g.b||[]).forEach((a,k)=>{const b=boards[k];if(!b)return;const
 function follow(){for(const b of boards)if(b.i!==K.myIdx&&b.tagT>0)b.tagT--}
 function onFx(k,a){if(k==='a'&&a[1]===K.myIdx)sfx('boom')}
 /* CPU: try every spot for the capsule, prefer matching colours on top of same colours, low stacks */
-function plan(b){let best=null;for(let r=0;r<4;r++)for(let x=-1;x<BW;x++){let p={...b.cur,x,y:0,r};if(hit(b,p))continue;while(!hit(b,{...p,y:p.y+1}))p.y++;let sc=p.y*.4+Math.random()*(K.cpu===0?4:K.cpu===1?1:.1);
+function plan(b){let best=null;for(let r=0;r<4;r++)for(let x=-1;x<BW;x++){let p={...b.cur,x,y:0,r};if(hit(b,p))continue;while(!hit(b,{...p,y:p.y+1}))p.y++;let sc=p.y*.4+Math.random()*(K.cpu===0?7:K.cpu===1?1:.1);
   for(const[hx,hy,c]of halves(p)){const below=hy+1<BH?b.cells[(hy+1)*BW+hx]:null;if(below&&below.c===c)sc+=below.v?5:3;else if(below)sc-=2;
    for(const dx of[-1,1]){const s=hx+dx>=0&&hx+dx<BW&&hy>=0?b.cells[hy*BW+hx+dx]:null;if(s&&s.c===c)sc+=1.5}}if(!best||sc>best.sc)best={sc,x,r}}return best}
-function bot(i){const b=boards[i];if(!b||b.out||!b.cur)return{};if(b.pk!==b.ver+':'+b.cur.c){b.pk=b.ver+':'+b.cur.c;b.pl=plan(b);b.wait=K.cpu===0?30:K.cpu===1?12:4}
+function bot(i){const b=boards[i];if(!b||b.out||!b.cur)return{};if(b.pk!==b.ver+':'+b.cur.c){b.pk=b.ver+':'+b.cur.c;b.pl=plan(b);b.wait=K.cpu===0?55:K.cpu===1?12:4}
  if(b.pill&&K.tick%60===0)return{alt:true};if(--b.wait>0||!b.pl)return{};const o={};if(((b.cur.r%4)+4)%4!==b.pl.r){if(K.tick%3===0)o.up=true;return o}
  if(b.cur.x<b.pl.x&&K.tick%3===0)o.right=true;else if(b.cur.x>b.pl.x&&K.tick%3===0)o.left=true;else if(b.cur.x===b.pl.x)o.down=true;return o}
 /* drawing: glass bottle in a lit lab */
