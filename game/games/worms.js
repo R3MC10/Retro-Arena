@@ -99,7 +99,7 @@ function newRound(){round++;phase='round';phT=K.tick;wind=Math.round((Math.rando
  if(Math.random()<.55||round===2){const health=Math.random()<.35,x=40+Math.random()*(W-80);crates.push({id:nextId++,x,y:-10,vy:0,k:health?'health':'crate',w:health?-1:WI[CRATE[Math.floor(Math.random()*CRATE.length)]],land:0})}
  K.fx('r',round)}
 const activeOf=s=>active[s]>=0?worms[active[s]]:null;
-function step(){for(const w of worms){if(w.dead)continue;if(ownerNet(w.seat)){const u=K.remote(w.seat);if(u)readUp(w,u);continue}const me=activeOf(w.seat)===w;control(w,me&&phase==='round'?K.inp(w.seat):{},me)}
+function step(){for(const w of worms){if(K.hostOnline()&&ownerNet(w.seat)&&!K.R.peer(K.seats[w.seat].peer)){w.dead=true;w.hp=0;w.rope=null}if(w.dead)continue;if(ownerNet(w.seat)){const u=K.remote(w.seat);if(u)readUp(w,u);continue}const me=activeOf(w.seat)===w;control(w,me&&phase==='round'?K.inp(w.seat):{},me)}
  // shot claims from guests
  for(let s=0;s<teams.length;s++){if(!ownerNet(s))continue;const u=K.remote(s);if(!u||!u.sh)continue;const t=teams[s];for(const c of u.sh)if((c[0]|0)>(t.seen|0)){t.seen=c[0]|0;const w=worms[c[1]];if(w&&w.seat===s&&!w.dead)doShot(w,c.slice(2))}}
  world();phases();vis()}
@@ -257,14 +257,14 @@ function upload(i){const ws=worms.filter(w=>w.seat===i),sh=teams[i]&&teams[i].sh
  return{w:ws.map(w=>[w.id,Math.round(w.x*10)/10,Math.round(w.y*10)/10,Math.round(w.vx*100)/100,Math.round(w.vy*100)/100,w.face,Math.round(w.aim*100)/100,w.pose,w.gr?1:0,w.rope?Math.round(w.rope.x):-1,w.rope?Math.round(w.rope.y):-1,Math.round(w.pw*100),teams[i].wsel,w.acted?1:0,w.evSeen]),sh}}
 function readUp(w,u){const r=(u.w||[]).find(a=>a[0]===w.id);if(!r)return;w.x=r[1];w.y=r[2];w.vx=r[3];w.vy=r[4];w.face=r[5];w.aim=r[6];w.pose=r[7];w.gr=!!r[8];w.rope=r[9]>=0?{x:r[9],y:r[10],len:0}:null;w.pw=r[11]/100;teams[w.seat].wsel=r[12];w.ch=w.pw>0;
 }
-function snap(){return{wm:worms.map(w=>[Math.round(w.x),Math.round(w.y),w.face,Math.round(w.aim*100),w.pose,w.hp,w.dead?1:0,w.rope?Math.round(w.rope.x):-1,w.rope?Math.round(w.rope.y):-1,Math.round(w.pw*100),w.acted?1:0,ownerNet(w.seat)?w.ev:0]),
+function snap(){const ammo=teams.map(t=>t.ammo.map(n=>String.fromCharCode(65+n)).join('')),am=[...new Set(ammo)];return{wm:worms.map(w=>[Math.round(w.x),Math.round(w.y),w.face,Math.round(w.aim*100),w.pose,w.hp,w.dead?1:0,w.rope?Math.round(w.rope.x):-1,w.rope?Math.round(w.rope.y):-1,Math.round(w.pw*100),w.acted?1:0,ownerNet(w.seat)?w.ev:0]),
  pj:proj.map(p=>[p.id,p.k,Math.round(p.x),Math.round(p.y),Math.round(p.vx*100),Math.round(p.vy*100),p.t,p.face||0,p.trig?1:0]),cr:crates.map(c=>[c.id,c.k,Math.round(c.x),Math.round(c.y),c.w]),
- on:ops.length,op:ops.slice(-30),wd:wind,wa:water,ro:round,pz:phase==='round'?0:1,pt:phT,ac:active,tt:turnTeam,am:teams.map(t=>t.ammo.join(',')),ws:teams.map(t=>t.wsel),tk:[teams.map(t=>t.kills|0),teams.map(t=>t.dmg|0)]}}
+ on:ops.length,op:ops.slice(-30),wd:wind,wa:water,ro:round,pz:phase==='round'?0:1,pt:phT,ac:active,tt:turnTeam,am,ai:ammo.map(s=>am.indexOf(s)),ws:teams.map(t=>t.wsel),tk:[teams.map(t=>t.kills|0),teams.map(t=>t.dmg|0)]}}
 function apply(g){wind=g.wd;water=g.wa;phase=g.pz?'settle':'round';phT=g.pt;turnTeam=g.tt;active=g.ac||active;
  if(g.ro!==round){round=g.ro;for(const w of worms){w.acted=false;w.pw=0;w.ch=false}}
  // terrain ops, in order (the last 30 ride along every snapshot)
  const first=g.on-(g.op||[]).length;(g.op||[]).forEach((op,k)=>{const idx=first+k;if(idx>=ops.length&&idx===ops.length){ops.push(op);applyOp(op)}});
- (g.am||[]).forEach((s,i)=>{const t=teams[i];if(!t)return;const a=String(s).split(',').map(Number);if(i!==K.myIdx||true)t.ammo=a;if(i!==K.myIdx)t.wsel=g.ws[i]});
+ teams.forEach((t,i)=>{const s=(g.am||[])[g.ai?g.ai[i]:i];if(s==null)return;t.ammo=g.ai?Array.from(s,c=>c.charCodeAt(0)-65):String(s).split(',').map(Number);if(i!==K.myIdx)t.wsel=g.ws[i]});
  if(g.tk){teams.forEach((t,i)=>{t.kills=g.tk[0][i];t.dmg=g.tk[1][i]})}
  (g.wm||[]).forEach((a,k)=>{const w=worms[k];if(!w)return;w.hp=a[5];const wasDead=w.dead;w.dead=!!a[6];if(w.dead&&!wasDead&&w.seat===K.myIdx){}
   if(w.seat===K.myIdx){if(a[10])w.acted=true;for(const e of a[11]||[])if((e[0]|0)>w.evSeen){w.evSeen=e[0]|0;w.vx=e[1]/100;w.vy=e[2]/100;w.gr=false;w.rope=null;w.hurt=40;w.y-=1}return}
