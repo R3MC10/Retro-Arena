@@ -110,7 +110,7 @@ function send(o,kind){if(ownerNet(o)){o.evSeq++;o.ev.push([o.evSeq,kind]);if(o.e
 function onEv(h,kind){if(kind==='life'){h.out=false;h.lives=1;h.dead=0;const lead=men.filter(m=>!m.out&&m!==h).sort((p,q)=>q.x-p.x)[0];h.x=lead?lead.x-20:h.x;h.y=10;h.inv=150;respawn(h)}else if(kind==='lend'){if(!K.isClient()||h.i===K.myIdx)h.lives=Math.max(1,h.lives-0)}}
 function boom(x,y,n){for(let k=0;k<6*n;k++)parts.push({x:x+(Math.random()-.5)*10*n,y:y+(Math.random()-.5)*10*n,vx:(Math.random()-.5)*2,vy:-Math.random()*2,t:20+Math.random()*10,col:['#fff07c','#ffa040','#f05050','#ffffff'][k%4],sz:2,g:.05});shake=Math.max(shake,n*2);sfx('boom',n*6)}
 function groundY(c){for(let r=2;r<LH;r++){const v=tileAt(c,r);if(solid(v)||plat(v))return r*TS}return null}
-function step(){for(const h of men){if(ownerNet(h)){const u=K.remote(h.i);if(u)readUp(h,u);continue}move(h,K.inp(h.i))}
+function step(){K.takeover();for(const h of men){if(ownerNet(h)){const u=K.remote(h.i);if(u)readUp(h,u);continue}move(h,K.inp(h.i))}
  if(K.tick<CD){vis();return}
  const live=men.filter(m=>!m.out&&!m.dead),lead=live.reduce((a,b)=>!a||b.x>a.x?b:a,null),n=men.length;
  // runners come in from the right, a few from behind
