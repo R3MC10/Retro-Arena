@@ -1,0 +1,12 @@
+﻿const {browser,openGame,startLocal}=require('./lib');const fs=require('fs');process.chdir(__dirname);
+(async()=>{const b=await browser(),{pg,errs,P}=await openGame(b,'road-fighter');await startLocal(pg,P,{n:8,humans:2,settings:{course:2}});await pg.evaluate(()=>document.activeElement?.blur());
+ await pg.keyboard.down('KeyW');await pg.keyboard.down('ArrowUp');await pg.waitForTimeout(3400);await pg.keyboard.down('KeyD');await pg.waitForTimeout(180);await pg.keyboard.up('KeyD');await pg.keyboard.down('KeyA');await pg.waitForTimeout(220);await pg.keyboard.up('KeyA');await pg.keyboard.press('KeyE');await pg.screenshot({path:'out/road-split.png'});
+ const r=await pg.evaluate(()=>{const H=__road,K=H.K,G=RA.menu.current,c=H.cars[0],tests={};let hold={};RA.input.keys=map=>{const o={};for(const k in map)if(hold[k])o[map[k]]=true;return o};
+ // Stop the live loop while staging contacts in the fixed-step simulation.
+ K.tick=700;c.x=0;c.d=1000;c.v=2.4;c.fuel=0;c.inv=9999;c.spin=0;const before=c.d;for(let i=0;i<300;i++)G.step();tests.coast={distance:c.d-before,speed:c.v,out:!!c.out};if(!c.out||c.d<=before)throw Error('Empty tank must coast then stop');
+ c.out=0;c.fuel=50;c.d=1400;c.x=H.road(c.d).center;c.v=2.4;c.inv=0;c.shield=1;c.spin=0;H.crash(c,'shield');tests.shield={spin:c.spin,shield:c.shield};if(c.spin||c.shield)throw Error('Shield did not absorb hit');
+ c.inv=0;H.crash(c,'animation');const x=c.x,d=c.d;const states=[];for(let i=0;i<95;i++){G.step();if(i%15===0)states.push([c.spin,+c.angle.toFixed(2),+c.v.toFixed(2),+c.x.toFixed(1),+c.d.toFixed(1)])}tests.spin={states,displacement:Math.hypot(c.x-x,c.d-d),recovered:!c.spin};if(c.spin)throw Error('Spin did not recover');
+ c.inv=0;c.spin=0;c.v=2.4;c.vx=3.5;c.x=H.road(c.d).center+H.road(c.d).half-7;hold.KeyD=true;G.step();hold={};tests.barrier={spin:c.spin};if(!c.spin)throw Error('Fast barrier contact must spin');
+ c.spin=0;c.inv=0;c.cd=0;c.x=H.road(c.d).center;c.vx=0;hold.KeyE=true;G.step();tests.bump={dash:c.dash,cooldown:c.cd,vx:c.vx};if(!c.dash||!c.cd)throw Error('Bump missing');hold={};
+ c.inv=9999;c.spin=0;c.fuel=4;let p=H.pickups(c).find(o=>o.kind===0);if(!p){c.d+=200;p=H.pickups(c).find(o=>o.kind===0)}c.x=p.x;c.d=p.d-c.v;G.step();tests.fuel={fuel:c.fuel,pickups:c.picks};if(c.fuel<30)throw Error('Fuel car failed');return tests;});
+ console.log(JSON.stringify(r));console.log(errs.length?errs.join('\n'):'NO ERRORS');fs.appendFileSync('out/road-tests.log','BEHAVIOR\n'+JSON.stringify(r)+'\n'+errs.join('\n')+'\n');await b.close()})();
