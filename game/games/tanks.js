@@ -585,6 +585,7 @@ function step(){tick++;
   if(mode===1&&crews.filter(c=>!c.out).length===2&&crews.length>2)playTrack(3);return}
  if(state!=='play'){stepFx();camStep();return}
  matchT++;
+ if(hostOnline()&&!demo)for(const c of crews)if(c.ctrl==='net'&&!R.peer(c.peer)){c.out=true;c.outAt=matchT;c.lives=0;if(c.tank)c.tank.dead=true;c.tank=null}
  for(const c of crews){if(c.tank||c.out)continue;if(--c.respawn<=0){if(c.lives>0){if(spawnCrew(c))c.lives--}else{c.out=true;c.outAt=matchT}}}
  for(const t of tanks){if(t.dead)continue;if(t.kind){if(t.spawnT>0){t.spawnT--;continue}stepTank(t,t.frozen>0?{}:enemyInput(t))}}
  for(const c of crews)if(c.tank&&!c.tank.dead)stepTank(c.tank,readInput(c));
@@ -625,7 +626,8 @@ const ACH=RA.achievements('tanks',[
 function showOver(){state='over';
  const w=NET.winner,me=crews[NET.myIdx]||(!isClient()&&crews.find(c=>c.ctrl!=='cpu'));
  if(me){const m={won:mode===0?w===99:w>=200?me.team===w-200:w===me.i,kills:me.kills|0,bestScore:me.score|0,coop:mode===0};SAVE.record(m);ACH.check(m)}$('bcWin').textContent=mode===0?(w===99?'CITY SAVED!':'GAME OVER'):w>=200?(me&&me.team===w-200?'YOUR TEAM WINS!':TEAMN[w-200]+' WINS'):w>=0&&crews[w]?(crews[w]===me?'YOU WIN!':crews[w].name.toUpperCase()+' WINS'):'DRAW';
- const list=crews.slice().sort((a,b)=>mode===0?b.score-a.score:((!b.out)-(!a.out))||(b.outAt-a.outAt)||(b.kills-a.kills));
+ const won=c=>w>=200?c.team===w-200:c.i===w;
+ const list=crews.slice().sort((a,b)=>mode===0?b.score-a.score:(won(b)-won(a))||((!b.out)-(!a.out))||(b.outAt-a.outAt)||(b.kills-a.kills)||(b.score-a.score));
  $('bcRanks').innerHTML=list.slice(0,10).map((c,k)=>'<li style="animation-delay:'+k*60+'ms"><span class="pos">'+(k+1)+'</span><span style="color:'+c.col+'">'+esc(c.name)+'</span><em>'+c.kills+' KO · '+c.score+'</em></li>').join('');
  $('bcAgain').hidden=isClient();$('bcSetupBtn').hidden=isClient();$('bcOverNote').hidden=!isClient();
  $('bcAgain').textContent=hostOnline()?'BACK TO ROOM':'PLAY AGAIN';$('bcSetupBtn').textContent=R.online?'LEAVE ROOM':'SETUP';
@@ -679,5 +681,5 @@ RA.register({id:'tanks',name:'BATTLE TOWN',kind:'Tank battle',players:'1-20 play
  step,frame,onKey,
  onQuit(){if(R.online)R.leave();else toLobby()}});
 window.__bc={get crews(){return crews},get tanks(){return tanks},get state(){return state},get mode(){return mode},get shells(){return shells},get items(){return items},get bases(){return bases},
- get map(){return{GW,GH,typ,msk}},step,startLocal,snapshot,applySnap,startOnline,setMode,grab,R,NET,cam};
+ get map(){return{GW,GH,typ,msk}},bot:i=>crews[i]?bot(crews[i]):{},step,startLocal,snapshot,applySnap,startOnline,setMode,grab,R,NET,cam};
 })();
