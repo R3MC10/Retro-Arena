@@ -92,7 +92,7 @@ function pick(m,k){const n=ITEMS[k].n;say(m,n,ITEMS[k].c);sfx('pick');
  else if(k===6)m.fire=12;else if(k===7)m.pierce=true;else if(k===8)m.remote=true;else if(k===9){m.curse=1+Math.floor(Math.random()*6);m.curseT=600;say(m,CURSES[m.curse-1],'#c0c0c0')}else if(k===10)m.louie=true}
 /* ---- the step */
 function step(){const S=K.S;if(K.state==='ending'){fxStep();return}roundT++;
- if(roundOver){if(--roundOver===0){const best=Math.max(...men.map(m=>m.wins));if(best>=S.rounds||K.mode===2&&lastCoop!=null){finish();return}newRound()}fxStep();return}
+ if(roundOver){if(--roundOver===0){const best=Math.max(...men.map(m=>m.wins));if(best>=S.rounds||K.mode===2&&lastCoop!=null||bigMatch()&&round>=S.rounds){finish();return}newRound()}fxStep();return}
  for(const m of men){const s=K.seats[m.i];if(K.hostOnline()&&s.ctrl==='net'&&!K.R.peer(s.peer)){m.left=true;m.alive=false;m.ghost=false;m.dead=0}if(m.left)continue;
   if(m.inv>0)m.inv--;if(m.stun>0){m.stun--;continue}
   if(!m.alive){if(m.dead>0){m.dead--;if(!m.dead&&S.revenge==='on'&&K.mode!==2){m.ghost=true;m.gx=Math.random()*perim()}}if(m.ghost)ghostStep(m);continue}
@@ -134,6 +134,8 @@ function endRound(w){if(roundOver)return;roundOver=150;
  if(w&&w.i!=null){men[w.i].wins++;say(men[w.i],'ROUND WIN!','#f8d040')}else if(w&&w.team!=null){for(const m of men)if(m.i%2===w.team)m.wins++;}
  else if(w&&w.coop)for(const m of men)m.wins++;
  K.fx('w',w&&w.i!=null?w.i:w&&w.team!=null?100+w.team:-1)}
+// 9+ players rarely reach the win target (a 20-player match took 15 min): play S.rounds rounds, most wins takes it
+const bigMatch=()=>K.mode!==2&&men.length>8;
 function finish(){if(K.mode===2){K.end({coop:lastCoop?1:0,name:lastCoop?'MAZE CLEARED!':'GAME OVER'});return}
  if(K.mode===1){const t=[0,1].sort((a,b)=>men.filter(m=>m.i%2===b).reduce((s,m)=>s+m.wins,0)-men.filter(m=>m.i%2===a).reduce((s,m)=>s+m.wins,0))[0];K.end({team:t,name:TEAMN[t]});return}
  const b=men.slice().sort((a,c)=>c.wins-a.wins||c.kills-a.kills)[0];K.end(b?{i:b.i}:null)}
@@ -247,7 +249,7 @@ function render(g,Wv,Hv){camFor(Wv,Hv);buildFloor();if(shake>0)shake*=.85;
  g.restore();
  // HUD: round, round wins
  g.font='7px "Russo One",sans-serif';g.textAlign='center';g.fillStyle='#fff';
- if(!K.demo){g.fillText(K.mode===2?'STAGE '+round:'ROUND '+round+' · FIRST TO '+K.S.rounds,Wv/2,Hv-34);if(hurry&&(K.tick>>4)&1){g.fillStyle='#ff5040';g.fillText('HURRY UP!',Wv/2,Hv-42)}}
+ if(!K.demo){g.fillText(K.mode===2?'STAGE '+round:'ROUND '+round+(bigMatch()?' OF '+K.S.rounds:' · FIRST TO '+K.S.rounds),Wv/2,Hv-34);if(hurry&&(K.tick>>4)&1){g.fillStyle='#ff5040';g.fillText('HURRY UP!',Wv/2,Hv-42)}}
  const list=men.slice().sort((a,b)=>b.wins-a.wins||b.kills-a.kills).slice(0,8);g.font='6px "Russo One",sans-serif';
  list.forEach((m,k)=>{const y=30+k*8;g.textAlign='left';g.fillStyle='rgba(0,0,0,.5)';g.fillRect(Wv-80,y-6,76,7.5);g.fillStyle=m.col;g.fillRect(Wv-79,y-5,4,5);g.fillStyle=m.alive?'#fff':'#888';
   g.fillText((m.name||'').slice(0,12),Wv-73,y);g.textAlign='right';g.fillText('★'+m.wins,Wv-7,y)});
