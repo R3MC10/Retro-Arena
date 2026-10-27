@@ -238,7 +238,7 @@ function enemyStep(e,host){if(e.dead){e.vy+=.3;e.y+=e.vy;e.x+=e.vx;if(e.y>LH*TS+
  // spinning shells take out everything in their way, and grumps / beetles turn round when they meet
  for(const o of enemies){if(o===e||o.dead||o.flat||!o.on)continue;if(Math.abs(o.x-e.x)<12&&Math.abs(o.y-e.y)<12){if(e.k===E_SHELL&&e.spin){o.dead=1;o.vy=-4;o.vx=Math.sign(e.vx);sfx('stomp')}else if(!(o.k===E_SHELL&&o.spin)&&e.k!==E_SHELL&&Math.sign(o.x-e.x)===Math.sign(e.vx)){e.vx=-e.vx}}}
  if(e.k===E_SHELL&&!e.spin){e.idle=(e.idle|0)+1;if(e.idle>420){e.k=E_BEETLE;e.vx=-.5;e.idle=0}}}
-function step(){const S=K.S;
+function step(){K.takeover();const S=K.S;
  if(cs==='between'){if(K.tick-csT>330)nextLevel();vis();return}
  for(const h of heroes){if(ownerNet(h)){const u=K.remote(h.i);if(u)readUp(h,u);continue}move(h,h.fin?{}:K.inp(h.i))}
  for(const e of enemies)enemyStep(e,true);enemies=enemies.filter(e=>!e.gone);
