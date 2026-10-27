@@ -1,7 +1,7 @@
 /* DR. MARIO for Retro Arena: up to 20 glass bottles in a lit lab. Lag-free: your bottle runs on your machine.
    A / D move the megavitamin, W / Space rotate (Q back), S drops faster. Line up 4 of a colour (viruses count) to clear them.
    Chains (a clear that makes halves fall into another clear) throw coloured halves into a rival's bottle. Clear every virus for the next stage.
-   Modes: VERSUS (last bottle standing) · RACE (first to clear the target stages). Host picks virus level, speed, targeting, garbage and items.
+   Modes: VERSUS (last bottle standing) · RACE (clear the target stages or be the last bottle standing). Host picks virus level, speed, targeting, garbage and items.
    Dr. Mario power pills (party): a 2+ chain fills your PILL slot; press E to use it.
     CHILL PILL (your capsules fall slowly) · RAINBOW (your next capsule matches any colour) · FEVER (a rival's capsules fall fast)
     VIRUS OUTBREAK (4 new viruses in a rival's bottle) · BITTER PILL (a rival's next 3 capsules are two-tone and clash). */
@@ -125,7 +125,7 @@ K=RA.kit({id:'drmario',name:'DR. MARIO',kind:'Virus puzzle',players:'1-20 player
  howto:'A / D move, W or Space rotate, Q rotate back, S drop faster, E use power pill. Gamepad: d-pad moves, A rotates, X rotates back, B uses the pill.',
  icon:['..........','..rrryyy..','..rrryyy..','..........','.b..bb..b.','bbb.bb.bbb','.b......b.','..........','...kwwk...','..k.ww.k..'],
  music:MUSIC,fireLabel:'TURN',
- modes:[['VERSUS','Everyone vs everyone. Last bottle standing wins.'],['RACE','First to clear the target number of stages wins.']],
+ modes:[['VERSUS','Everyone vs everyone. Last bottle standing wins.'],['RACE','Clear the target stages or be the last bottle standing. At the time limit: most stages, then fewest viruses, then score.']],
  settings:[['virus','Virus level',[[4,'4'],[0,'0'],[8,'8'],[12,'12'],[16,'16'],[20,'20']]],['speed','Speed',[[1,'Med'],[0,'Low'],[2,'Hi']]],['target','Target',[['random','Random'],['attacker','Attacker'],['leader','Leader']]],
   ['att','Garbage',[['on','On'],['off','Off']]],['items','Power pills',[['off','Off'],['party','Wild party']]],['race','Race stages',[[3,'3'],[1,'1'],[5,'5']]],['len','Time limit',[[0,'None'],[5,'5 min'],[10,'10 min']]]],
  kb:[['A D','move'],['W SPACE','rotate'],['S','drop'],['E','pill'],['C','chat'],['ESC','menu']],pad:[['DPAD','move'],['A','rotate'],['B','pill'],['BACK','chat'],['START','menu']],
