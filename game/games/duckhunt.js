@@ -40,7 +40,7 @@ function stepDuck(d){if(d.st==='hit'){if(++d.t>24){d.st='fall';d.vy=0}return}
   if(d.t>60*12){d.st='away';const p=hunters[d.pilot];if(p){p.score+=3000;p.escaped++}K.fx('t',d.x,d.y,'ESCAPED!','#80ff80')}return}
  const sp=duckSpeed(d);if(d.t%50===0&&Math.random()<.6){const a=-Math.PI*(.15+Math.random()*.7);d.vx=Math.cos(a)*(Math.random()<.5?-1:1);d.vy=Math.sin(a)*(.6+Math.random()*.6)}
  d.x+=d.vx*sp;d.y+=d.vy*sp;if(d.x<10||d.x>FW-10)d.vx=-d.vx;if(d.y<16)d.vy=Math.abs(d.vy);if(d.y>GROUND-24&&d.t>40)d.vy=-Math.abs(d.vy);
- if(d.t>(K.S.time|0)*60){d.st='away';K.fx('s','quack')}}
+ if(d.t>(K.S.time|0)){d.st='away';K.fx('s','quack')}}
 function flyDuck(d,inp){const sp=2.2;let mx=(inp.right?1:0)-(inp.left?1:0),my=(inp.down?1:0)-(inp.up?1:0);d.x=Math.max(8,Math.min(FW-8,d.x+mx*sp));d.y=Math.max(10,Math.min(GROUND-20,d.y+my*sp));if(mx)d.vx=mx}
 /* shots: the shooter decides the hit on their own screen and reports [seq, duckId, x, y] */
 function shoot(h,x,y){if(h.shells<=0||phase!=='fly')return null;h.shells--;sfx('zapper');const spread=h.fx.shotgun>0?14:6;
@@ -54,7 +54,7 @@ function item(h,k){K.fx('t',h.cx,h.cy-10,ITEMS[k].n,ITEMS[k].c);sfx('pick');if(k
  else{const rv=hunters.filter(o=>o!==h);if(!rv.length)return;const t=rv[Math.floor(Math.random()*rv.length)];if(k===5)t.fx.decoy=420;else if(k===6)t.fx.flash=90;else if(k===7)t.fx.dog=300;K.fx('t',FW/2,60,t.name+': '+ITEMS[k].n+'!',ITEMS[k].c)}}
 function burst(x,y){for(let k=0;k<10;k++)feathers.push({x,y,vx:(Math.random()-.5)*2,vy:-Math.random()*1.5,t:50,r:Math.random()*6})}
 function step(){waveT++;if(slow>0)slow--;
- for(const h of hunters){for(const k in h.fx)if(h.fx[k]>0&&k!=='extra')h.fx[k]--;const s=K.seats[h.i];
+ for(const h of hunters){for(const k in h.fx)if(h.fx[k]>0&&k!=='extra')h.fx[k]--;const s=K.seats[h.i];if(K.hostOnline()&&s.ctrl==='net'&&!K.R.peer(s.peer)){h.left=true;h.shells=0;for(const d of ducks)if(d.pilot===h.i&&d.st==='fly')d.st='away'}if(h.left)continue;
   if(s.ctrl==='net'){const r=K.remote(h.i);if(r){h.cx=r.cx;h.cy=r.cy;h.shells=r.sh|0;for(const e of r.sl||[])if((e[0]|0)>h.rSeen){h.rSeen=e[0]|0;resolve(h,e)}}continue}
   aimLocal(h);const inp=K.inp(h.i);if(inp.tap&&!(K.mode===1&&duckIdx===h.i)){const sh=shoot(h,h.cx,h.cy);if(sh)resolve(h,sh)}}
  for(const d of ducks)stepDuck(d);ducks=ducks.filter(d=>!d.dead||d.keep);
@@ -84,7 +84,7 @@ function snap(){return{wv:wave,dp:phase,di:duckIdx,sl:slow,dg:[dog.st==='up'?1:0
  d:ducks.map(d=>[d.id,Math.round(d.x),Math.round(d.y),Math.round(d.z*100),d.k,['fly','hit','fall','away','down'].indexOf(d.st),d.vx<0?1:0,d.gold?1:0,d.pilot,d.own,d.by==null?-1:d.by]),
  b:balloons.map(b=>[b.id,Math.round(b.x),Math.round(b.y),b.k])}}
 function apply(g){wave=g.wv|0;phase=g.dp||'fly';duckIdx=g.di|0;slow=g.sl|0;const dg=g.dg||[];dog.st=dg[0]?'up':'hide';dog.n=dg[1]|0;dog.laugh=!!dg[2];dog.who=dg[3]|0;dog.t=dg[4]|0;
- (g.h||[]).forEach((a,i)=>{const h=hunters[i];if(!h)return;if(i!==K.myIdx){h.tx=a[0];h.ty=a[1];h.shells=a[2]}else if(a[2]>h.shells&&phase==='fly'&&h.wave!==wave){h.shells=a[2];h.wave=wave}
+ (g.h||[]).forEach((a,i)=>{const h=hunters[i];if(!h)return;if(i!==K.myIdx){h.tx=a[0];h.ty=a[1];h.shells=a[2]}else if(phase==='fly'&&h.wave!==wave){h.shells=a[2];h.wave=wave}
   h.score=a[3]|0;h.hits=a[4]|0;const f=a[5]|0,fx={gold:f&1,shotgun:f&2,decoy:f&4,flash:f&8,dog:f&16};for(const k in fx)if(i!==K.myIdx||fx[k])h.fx[k]=fx[k]?Math.max(h.fx[k]|0,20):0});
  const old=new Map(ducks.map(d=>[d.id,d]));ducks=(g.d||[]).map(a=>{const o=old.get(a[0]);const mine=a[8]===K.myIdx&&o&&a[5]===0;
   const d={id:a[0],x:o&&!mine?o.x:a[1],y:o&&!mine?o.y:a[2],tx:a[1],ty:a[2],z:a[3]/100,k:a[4],st:['fly','hit','fall','away','down'][a[5]]||'fly',vx:a[6]?-1:1,gold:!!a[7],pilot:a[8],own:a[9],by:a[10]>=0?a[10]:null};if(mine){d.x=o.x;d.y=o.y;d.vx=o.vx}
@@ -163,5 +163,5 @@ K=RA.kit({id:'duckhunt',name:'QUACK HUNT',kind:'Light gun',players:'1-20 players
  alive:i=>!!hunters[i],start,step,local,upload,follow,snap,apply,render,bot,onFx,
  ranks:()=>hunters.slice().sort((a,b)=>b.score-a.score).map(h=>[h.name,h.col,h.score+' · '+h.hits+' hits']),
  result:(i,w)=>{const h=hunters[i];return{won:!!w&&w.i===i,kills:h.hits,escaped:h.escaped,bestScore:h.score}}});
-window.__dh={get hunters(){return hunters},get ducks(){return ducks},K,P:()=>hunters[1]?Math.round(hunters[1].cx):0};
+window.__dh={get hunters(){return hunters},get ducks(){return ducks},K,bot,P:()=>hunters[1]?Math.round(hunters[1].cx):0};
 })();
