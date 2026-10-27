@@ -1,0 +1,80 @@
+[
+ {
+  "steps": 9604,
+  "min": 2.7,
+  "over": true,
+  "win": "CPU 3 WINS",
+  "first": "1 CPU 3 #1 - 136.4s",
+  "peak": 612,
+  "ftMed": 1.1,
+  "ftMax": 3.3,
+  "n": 8,
+  "mode": 0,
+  "errs": []
+ },
+ {
+  "steps": 9572,
+  "min": 2.7,
+  "over": true,
+  "win": "RED TEAM WINS",
+  "first": "1 CPU 5 #1 - 135.8s",
+  "peak": 609,
+  "ftMed": 1,
+  "ftMax": 3.9,
+  "n": 8,
+  "mode": 1,
+  "errs": []
+ },
+ {
+  "steps": 9220,
+  "min": 2.6,
+  "over": true,
+  "win": "CPU 5 WINS",
+  "first": "1 CPU 5 10550 points",
+  "peak": 613,
+  "ftMed": 1.2,
+  "ftMax": 4.6,
+  "n": 8,
+  "mode": 2,
+  "errs": []
+ },
+ {
+  "steps": 9773,
+  "min": 2.7,
+  "over": true,
+  "win": "CPU 14 WINS",
+  "first": "1 CPU 14 #1 - 139.2s",
+  "peak": 1278,
+  "ftMed": 1.1,
+  "ftMax": 3,
+  "n": 20,
+  "mode": 0,
+  "errs": []
+ },
+ {
+  "steps": 9700,
+  "min": 2.7,
+  "over": true,
+  "win": "BLUE TEAM WINS",
+  "first": "1 CPU 2 #1 - 138.0s",
+  "peak": 1285,
+  "ftMed": 0.6,
+  "ftMax": 2.2,
+  "n": 20,
+  "mode": 1,
+  "errs": []
+ },
+ {
+  "steps": 9221,
+  "min": 2.6,
+  "over": true,
+  "win": "CPU 11 WINS",
+  "first": "1 CPU 11 11250 points",
+  "peak": 1271,
+  "ftMed": 1,
+  "ftMax": 3.1,
+  "n": 20,
+  "mode": 2,
+  "errs": []
+ }
+]

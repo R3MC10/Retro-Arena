@@ -1,0 +1,5 @@
+const cp=require('child_process'),fs=require('fs');process.chdir(__dirname);process.env.RA_URL=process.env.RA_URL||'http://localhost:8766/index.html';const what=process.argv[2];function run(file,args,env={}){const r=cp.spawnSync(process.execPath,[file,...args.map(String)],{env:{...process.env,...env},encoding:'utf8',timeout:240000});const log=[file,...args].join(' ')+'\n'+r.stdout+r.stderr;console.log(log);fs.appendFileSync('out/circus-tests.log',log+'\n');if(r.status!==0)process.exitCode=1}
+if(what==='basic'){run('smoke.js',['circus-charlie',3]);run('pass.js',['circus-charlie']);run('online.js',['circus-charlie']);}
+if(what==='novice')for(let j=0;j<6;j++)run('novice.js',['circus-charlie',4,10,.3,15000],{CPU:'0'});
+if(what==='skilled')for(let j=0;j<3;j++)run('novice.js',['circus-charlie',8,0,0,15000],{CPU:'1'});
+if(what==='shots')for(const[w,h,dpr]of[[1280,720,1],[2560,1440,1],[1536,864,1.25]])run('shots.js',['circus-charlie',20,'circus-'+w,'600,2000,3500,4800,6500',0,'{}',1],{VW:String(w),VH:String(h),DPR:String(dpr)});

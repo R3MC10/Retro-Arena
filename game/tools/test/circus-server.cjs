@@ -1,0 +1,3 @@
+// Serve this worktree without touching other worktrees' Node processes.
+const http=require('http'),fs=require('fs'),path=require('path'),root=path.resolve(__dirname,'../..');
+http.createServer((q,r)=>{const f=path.resolve(root,'.'+decodeURIComponent(q.url.split('?')[0]==='/'?'/index.html':q.url.split('?')[0]));if(!f.startsWith(root+path.sep)){r.writeHead(403);return r.end()}fs.readFile(f,(e,b)=>{r.statusCode=e?404:200;r.setHeader('Content-Type',({'.js':'application/javascript','.css':'text/css','.png':'image/png','.json':'application/json'})[path.extname(f)]||'text/html');r.end(e?'missing':b)})}).listen(+(process.env.PORT||8766));

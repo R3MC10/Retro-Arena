@@ -1,0 +1,1 @@
+const fs=require('fs'),path=require('path');const file=path.resolve(__dirname,'../../../games/circus.js'),art=require('./art.js');let s=fs.readFileSync(file,'utf8');s=s.replace(/ART=\{.*?\},SCR=X.screen\(\)/,'ART='+JSON.stringify(art)+',SCR=X.screen()');fs.writeFileSync(file,s);

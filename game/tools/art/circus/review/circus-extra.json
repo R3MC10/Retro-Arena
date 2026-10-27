@@ -1,0 +1,48 @@
+[
+  {
+    "mode": 0,
+    "steps": 5178,
+    "state": "over",
+    "fin": 20,
+    "snapshot": 1857,
+    "errs": []
+  },
+  {
+    "mode": 1,
+    "steps": 5340,
+    "state": "over",
+    "fin": 20,
+    "snapshot": 1886,
+    "errs": []
+  },
+  {
+    "mode": 2,
+    "steps": 9239,
+    "state": "over",
+    "fin": 0,
+    "snapshot": 1868,
+    "errs": []
+  },
+  {
+    "bump": {
+      "cooldown": 179,
+      "victimMisses": 1
+    },
+    "lazy": {
+      "state": "over",
+      "place": 1,
+      "d": 13500,
+      "fin": 1,
+      "miss": 12
+    },
+    "save": {
+      "played": 1,
+      "wins": 1,
+      "bestScore": 10700,
+      "pots": 18
+    }
+  },
+  {
+    "errs": []
+  }
+]

@@ -1,0 +1,3 @@
+// Render the actual embedded art in Chromium; no Python required.
+const {browser,openGame}=require('./lib'),fs=require('fs');(async()=>{const b=await browser(),{pg}=await openGame(b,'circus-charlie');const data=await pg.evaluate(()=>{const X=RA.pix,c=document.createElement('canvas');c.width=320;c.height=120;const g=c.getContext('2d');g.fillStyle='#201831';g.fillRect(0,0,320,120);let j=0;for(const[n,rows]of Object.entries(__circus.art)){const x=j%6*52,y=Math.floor(j/6)*40;g.drawImage(X.recolor(rows,'#50b8ff'),x+12,y+3);X.text(g,n,x+1,y+28,{col:'#ffffff',shadow:false});j++}return c.toDataURL()});fs.writeFileSync(require('path').join(__dirname,'../art/circus/sheet.png'),Buffer.from(data.split(',')[1],'base64'));await b.close()})();
+
