@@ -94,7 +94,7 @@ function step(){for(const c of cars){if(ownerNet(c)){const u=K.remote(c.i);if(u)
  else if(rState==='won'&&now-rT>140){const top=Math.max(...score);if(top>=target){endWho=score.indexOf(top);finish();return}const w=cars[lastWin]||leader()||cars[0];round++;placeAll(w.idx+4);rState='count';rT=now-CD+70;cam.x=w.x;cam.y=w.y}
  vis()}
 let endAt=0,endWho=-1;
-function finish(){if(K.mode===1)K.end({team:endWho,name:TEAMN[endWho]+' WINS!'});else K.end({i:endWho})}
+function finish(){if(K.mode===1)K.end({team:endWho,name:TEAMN[endWho]});else K.end({i:endWho})}
 function vis(){for(const p of parts){p.x+=p.vx;p.y+=p.vy;p.t--}parts=parts.filter(p=>p.t>0);for(const t of texts){t.t--;t.y-=.25}texts=texts.filter(t=>t.t>0)}
 /* ---------- guests ---------- */
 function local(i){const c=cars[i];if(c)drive(c,K.inp(i));vis()}
