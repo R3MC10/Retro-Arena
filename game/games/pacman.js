@@ -88,7 +88,7 @@ function useFruit(p,k){say(p,FRUIT[k].n,FRUIT[k].c);sfx('pick');p.score+=[0,100,
  else if(k===6){const lead=pacs.filter(o=>o!==p&&o.alive).sort((a,b)=>b.score-a.score)[0];if(lead){ghosts.push({t:0,x:house.x*TS+6,y:(house.y-3)*TS+6,dir:0,mode:'chase',hT:0,tgt:lead.i,extra:600});say(lead,'HUNTED!','#ff2020')}}
  else if(k===7){for(const o of pacs)if(o!==p&&o.alive)o.swap=420}else if(k===8){const sp=spawnPos(Math.floor(Math.random()*20),20);p.x=sp[0]*TS+6;p.y=sp[1]*TS+6}}
 function step(){const S=K.S;if(pause>0){pause--;return}lvlT++;if(fright>0&&--fright===0)K.track(1);
- for(const p of pacs){if(p.out)continue;
+ for(const p of pacs){const s=K.seats[p.i];if(K.hostOnline()&&s.ctrl==='net'&&!K.R.peer(s.peer)){p.out=true;p.alive=false}if(p.out)continue;
   if(!p.alive){if(--p.dieT<=0&&!p.out){const[x,y]=spawnPos(p.i,pacs.length);Object.assign(p,{x:x*TS+6,y:y*TS+6,alive:true,inv:150,dir:3,want:3})}continue}
   if(p.inv>0)p.inv--;if(p.speedT>0)p.speedT--;if(p.repel>0)p.repel--;if(p.swap>0)p.swap--;if(p.power>0)p.power--;
   const inp=K.inp(p.i);let d=-1;if(inp.up)d=0;else if(inp.right)d=1;else if(inp.down)d=2;else if(inp.left)d=3;
@@ -209,7 +209,7 @@ K=RA.kit({id:'pacman',name:'MUNCH-MAN',kind:'Maze chase',players:'1-20 players',
   {id:'g4',name:'Ghostbuster',desc:'Eat 8 ghosts in one match',test:(s,m)=>m.ghosts>=8,unlock:'title:Ghostbuster'},{id:'pts',name:'High Score',desc:'Score 10,000 in one match',test:(s,m)=>m.bestScore>=10000,unlock:'title:High Score'}],
  alive:i=>!!pacs[i]&&pacs[i].alive&&!pacs[i].out,out:i=>!pacs[i]||pacs[i].out,start,step,follow,snap,apply,render,bot,onFx,
  teamOf:i=>K.mode===1?0:i,
- ranks:()=>pacs.slice().sort((a,b)=>b.score-a.score).map(p=>[p.name,p.col,p.score+' pts · '+p.ghostsEaten+' ghosts']),
+ ranks:()=>pacs.slice().sort((a,b)=>(K.winner&&K.winner.i===b.i?1:0)-(K.winner&&K.winner.i===a.i?1:0)||b.score-a.score).map(p=>[p.name,p.col,p.score+' pts · '+p.ghostsEaten+' ghosts']),
  result:(i,w)=>{const p=pacs[i];return{won:!!w&&(w.coop!=null?!!w.coop:w.i===i),ghosts:p.ghostsEaten,kills:p.kills,bestScore:p.score}}});
-window.__pm={get pacs(){return pacs},get ghosts(){return ghosts},K};
+window.__pm={get pacs(){return pacs},get ghosts(){return ghosts},K,bot};
 })();
