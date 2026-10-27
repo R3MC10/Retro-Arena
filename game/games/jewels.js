@@ -430,7 +430,7 @@ const encB=b=>[encG(b.g),b.pc?b.pc.x:-1,b.pc?Math.round(b.pc.y*10):0,b.pc?encG(b
  b.mark?encM(b.mark):'',b.tg,b.ko,b.tm,b.outAt,b.item,(b.fx.fog>0?1:0)|(b.fx.speed>0?2:0)|(b.fx.rev>0?4:0)|(b.fx.slow>0?8:0)|(b.fx.flip>0?16:0)|(b.fx.disco>0?32:0),b.fx.shield];
 const decCell=c=>{const v=Math.max(0,(c||48)-48);return(v&15)>8||(v>>4)>=POW.length?0:v&255};
 function decB(b,a,i){const old=b.mark,og=b.g.slice();
- const s=String(a[0]||'');for(let q=0;q<BW*BH;q++)b.g[q]=decCell(s.charCodeAt(q));
+ const s=String(a[0]||'').replace(/([\u0100-\u0196])(.)/g,(_,n,c)=>c.repeat(n.charCodeAt(0)-256));if(s)for(let q=0;q<BW*BH;q++)b.g[q]=decCell(s.charCodeAt(q));
  b.pc=a[1]>=0&&String(a[3]).length===3?{x:Math.max(0,Math.min(BW-1,a[1]|0)),y:(a[2]|0)/10,j:[0,1,2].map(k=>decCell(String(a[3]).charCodeAt(k)))}:null;
  b.next=[0,1,2].map(k=>decCell(String(a[4]||'111').charCodeAt(k))||1);
  b.item=Math.max(0,Math.min(POW.length-1,a[14]|0));const f=a[15]|0;b.fx={fog:f&1,speed:f&2,rev:f&4,slow:f&8,flip:f&16,disco:f&32,shield:a[16]|0};
@@ -438,9 +438,12 @@ function decB(b,a,i){const old=b.mark,og=b.g.slice();
  b.alive=!!a[8];b.outAt=a[13]|0;
  if(a[9]){const m=new Uint8Array(BW*BH),ms=String(a[9]);for(let y=0;y<BH;y++){const v=Math.max(0,B64.indexOf(ms[y*2]))|Math.max(0,B64.indexOf(ms[y*2+1]))<<6;for(let x=0;x<BW;x++)if(v&(1<<x))m[y*BW+x]=1}b.mark=m}
  else{if(old)for(let q=0;q<BW*BH;q++)if(old[q])burst(i,q%BW,(q/BW)|0,og[q]);b.mark=null}}
+// Refresh two rotating wells each send; moving columns and hit events stay current.
+let snapRot=0;
 function snapshot(){
+ const first=snapRot;snapRot=(snapRot+2)%boards.length;
  const g={ph:state==='over'?'over':'play',id:NET.matchId,r:NET.mroster,w:NET.winner,wl:NET.wl||'',t:(matchT/60)|0,cf:[M.mode,M.size,M.speed,M.len,M.tgt],
-  b:boards.map(encB),hx:SY.pack(),e:NET.ev.slice()};
+  b:boards.map((b,i)=>{const a=encB(b);a[0]=(i-first+boards.length)%boards.length<2?a[0].replace(/0+$/,'').replace(/(.)\1{2,149}/g,z=>String.fromCharCode(256+z.length)+z[0])||'0':'';return a}),hx:SY.pack(),e:NET.ev.slice()};
  while(JSON.stringify(g).length>3700&&g.e.length)g.e.shift();
  return g}
 // host: a guest's board comes from the guest, its hits on other boards are passed on
@@ -676,5 +679,5 @@ RA.register({id:'jewels',name:'MAGIC GEMS',kind:'Puzzle',players:'1-20 players',
  leave(){if(R.online)R.leave();state='menu';boards=[];document.body.classList.remove('playing','touchplay','mouseaim')},
  step,frame,onKey,
  onQuit(){if(R.online)R.leave();else toLobby()}});
-window.__mj={get boards(){return boards},get state(){return state},get lay(){return lay},step,startLocal,findMatches,snapshot,applySnap,startOnline,R,NET,hit};
+window.__mj={get boards(){return boards},get state(){return state},get lay(){return lay},step,startLocal,findMatches,snapshot,applySnap,startOnline,R,NET,hit,bot:i=>{const o=bot(boards[i]);return{left:o.left,right:o.right,down:o.down,up:o.rot,fire:o.drop,alt:o.tgt,b3:o.item}}};
 })();
