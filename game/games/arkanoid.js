@@ -1,8 +1,8 @@
-/* ARKANOID for Retro Arena: battle-royale brick breaking for up to 20 players, every player on their own board, tilted 2.5D bricks.
-   A / D (or arrows, or the stick) move the Vaus, Space / click launches the ball and fires lasers. No mouse steering.
-   Every 8 bricks you break pushes a junk row onto a rival's board; bricks that reach your Vaus cost a life. Last board standing wins.
-   Arkanoid capsules: S slow · C catch · E enlarge · D disruption (3 balls) · L laser · P extra Vaus · B break (warp to a new stage and
-   bury a rival). Purple DOH capsules (troll) hit a rival instead: SHRINK their Vaus, SPEED their ball, FOG their board, REVERSE their controls.
+/* BRICKANOID for Retro Arena: battle-royale brick breaking for up to 20 players, every player on their own board, tilted 2.5D bricks.
+   A / D (or arrows, or the stick) move the paddle, Space / click launches the ball and fires lasers. No mouse steering.
+   Every 8 bricks you break pushes a junk row onto a rival's board; bricks that reach your paddle cost a life. Last board standing wins.
+   Brickanoid capsules: S slow · C catch · E enlarge · D disruption (3 balls) · L laser · P extra paddle · B break (warp to a new stage and
+   bury a rival). Purple CURSE capsules (troll) hit a rival instead: SHRINK their paddle, SPEED their ball, FOG their board, REVERSE their controls.
    Online is lag-free: your board runs on your own machine and the host only routes the junk and curses (RA.kit localFirst). */
 (()=>{
 const T=RA.music.track,sfx=RA.audio.sfx;
@@ -13,9 +13,9 @@ const CURSE=['SHRINK','SPEED','FOG','REVERSE'];
 RA.audio.add('ping',(AC,now,g,ch)=>{const o=AC.createOscillator();o.type='square';o.frequency.value=ch?660+ch*40:440;g.gain.setValueAtTime(.05,now);g.gain.exponentialRampToValueAtTime(.001,now+.06);o.connect(g);o.start();o.stop(now+.07)});
 RA.audio.add('vaus',(AC,now,g)=>{const o=AC.createOscillator();o.type='triangle';o.frequency.value=220;g.gain.setValueAtTime(.1,now);g.gain.exponentialRampToValueAtTime(.001,now+.08);o.connect(g);o.start();o.stop(now+.09)});
 const MUSIC=[T('Mothership',100,['Em','C','Am','B'],'k...s...k.k.s...','e5 - g5 b5 - a5 g5 - f#5 - e5 - b4 - - - c5 - e5 g5 - f#5 e5 - d#5 - b4 - - - - -'),
- T('Vaus Launch',140,['Am','F','G','E'],'k.hsk.hsk.hsk.hs','a4 c5 e5 a5 . e5 c5 . f4 a4 c5 f5 . c5 a4 . g4 b4 d5 g5 . d5 b4 . e4 g#4 b4 e5 g#5 b5 e6 .'),
+ T('Paddle Launch',140,['Am','F','G','E'],'k.hsk.hsk.hsk.hs','a4 c5 e5 a5 . e5 c5 . f4 a4 c5 f5 . c5 a4 . g4 b4 d5 g5 . d5 b4 . e4 g#4 b4 e5 g#5 b5 e6 .'),
  T('Dimension Control',156,['Dm','Bb','F','C'],'k.hhs.hhk.hhs.hk','d5 . a5 . f5 . d5 . bb4 . f5 . d5 . bb4 . f4 . c5 . a4 . f5 . c5 . e5 . g5 . c6 - - .'),
- T('Doh Awakens',172,['Cm','Ab','Fm','G'],'k.hsk.hsk.hsk.ss','c5 . eb5 . g5 . c6 . ab5 . eb5 . c5 . ab4 . f4 . ab4 . c5 . f5 . g5 . b4 . d5 . g4 - - .')];
+ T('Curse Awakens',172,['Cm','Ab','Fm','G'],'k.hsk.hsk.hsk.ss','c5 . eb5 . g5 . c6 . ab5 . eb5 . c5 . ab4 . f4 . ab4 . c5 . f5 . g5 . b4 . d5 . g4 - - .')];
 let K,boards=[];
 function level(b,seed){const rr=RA.util.mulberry(seed),rows=4+Math.floor(rr()*5),start=2+Math.floor(rr()*2),shape=Math.floor(rr()*4);b.br=new Uint8Array(COLS*ROWS);b.hp=new Uint8Array(COLS*ROWS);
  for(let r=0;r<rows;r++)for(let c=0;c<=COLS>>1;c++){let v=1+((r+b.lvl)%8);if(shape===1&&(c+r)%3===0)continue;if(shape===2&&r%2&&c%2)continue;if(shape===3&&c<r-2)continue;
@@ -36,7 +36,7 @@ function stepBoard(b,inp){if(b.out)return;const f=b.fx;for(const k in f)if(f[k]>
  if(!b.balls.length){lose(b,'ball')}
  for(const l of b.las){l.y-=5;const c=Math.floor((l.x-WALL)/BW),r=Math.floor((l.y-TOP)/BH);if(r>=0&&r<ROWS&&c>=0&&c<COLS&&b.br[r*COLS+c]){hitBrick(b,c,r);l.dead=true}if(l.y<TOP)l.dead=true}b.las=b.las.filter(l=>!l.dead);
  for(const c of b.caps){c.y+=1.1;if(c.y>PY-4&&c.y<PY+6&&Math.abs(c.x-b.px)<pw/2+6){c.dead=true;catchCap(b,c.k)}if(c.y>BHGT)c.dead=true}b.caps=b.caps.filter(c=>!c.dead);
- // bricks pushed down to the Vaus cost a life
+ // bricks pushed down to the paddle cost a life
  for(let c=0;c<COLS;c++)if(b.br[(ROWS-1)*COLS+c]){lose(b,'bury');break}
  if(!b.br.some((v,i)=>v&&v!==10))nextLevel(b)}
 function speed(b){return Math.min(4.2,(2+b.lvl*.12+(K.tick/3600)*.25*K.S.ramp)*(b.fx.slow>0?.65:1)*(b.fx.fast>0?1.45:1))}
@@ -57,7 +57,7 @@ function hitBrick(b,c,r){const i=r*COLS+c,v=b.br[i];if(v===10){sfx('ping',0);ret
  if(K.S.att!=='off'&&b.broke%8===0)b.outq.push('J');
  if(K.S.caps!=='off'&&Math.random()<.16&&!b.caps.length){let k=1+Math.floor(Math.random()*7);if(Math.random()<(K.S.caps==='party'?.4:.15))k=8;if(k===7&&Math.random()<.6)k=1+Math.floor(Math.random()*6);
   b.caps.push({x:WALL+c*BW+8,y:TOP+r*BH+4,k})}}
-function catchCap(b,k){sfx('pick');b.score+=1000;const f=b.fx;tag(b,k===8?'DOH!':['','SLOW','CATCH','ENLARGE','DISRUPTION','LASER','1UP','BREAK'][k]);
+function catchCap(b,k){sfx('pick');b.score+=1000;const f=b.fx;tag(b,k===8?'CURSE!':['','SLOW','CATCH','ENLARGE','DISRUPTION','LASER','1UP','BREAK'][k]);
  if(k===1)f.slow=600;else if(k===2)f.catch=900;else if(k===3)f.big=1200;else if(k===4){const s=b.balls.find(x=>!x.stuck)||b.balls[0];if(s)for(const a of[-.5,.5])b.balls.push({x:s.x,y:s.y,vx:Math.cos(-Math.PI/2+a)*2,vy:Math.sin(-Math.PI/2+a)*2})}
  else if(k===5)f.laser=900;else if(k===6)b.lives++;else if(k===7){b.outq.push('J','J','J');nextLevel(b)}else if(k===8)b.outq.push('SVFR'[Math.floor(Math.random()*4)])}
 function tag(b,s){b.tag=s;b.tagT=70}
@@ -145,18 +145,18 @@ function render(g,Wv,Hv){const bg=g.createLinearGradient(0,0,0,Hv);bg.addColorSt
   rest.forEach((b,k)=>drawBoard(g,b,ax+(k%best.cols)*(BWID+6)*best.sc,top+Math.floor(k/best.cols)*(BHGT+6)*best.sc,best.sc,false))}
  else{const n=boards.length,aw=Wv-16,ah=bot-top;let best=null;for(let cols=1;cols<=n;cols++){const rows=Math.ceil(n/cols),sc=Math.min(aw/cols/(BWID+6),ah/rows/(BHGT+6));if(!best||sc>best.sc)best={cols,rows,sc}}
   const tw=best.cols*(BWID+6)*best.sc,ox=(Wv-tw)/2;boards.forEach((b,k)=>drawBoard(g,b,ox+(k%best.cols)*(BWID+6)*best.sc,top+Math.floor(k/best.cols)*(BHGT+6)*best.sc,best.sc,fs.includes(b.i)))}}
-K=RA.kit({id:'arkanoid',name:'ARKANOID',kind:'Brick breaker',players:'1-20 players',demo:4,localFirst:true,
- desc:'Battle-royale brick breaking for up to 20, each on your own board with tilted 2.5D bricks. Break bricks to bury rivals in junk, catch Arkanoid capsules, and throw purple DOH curses.',
- blurb:'Move the Vaus with A / D, launch and fire with Space or click. Every 8 bricks sends a junk row to a rival. Last board standing wins.',
- howto:'A / D or arrows move the Vaus, Space or click launches the ball and fires lasers. Gamepad: stick or d-pad moves, A launches.',
+K=RA.kit({id:'arkanoid',name:'BRICKANOID',kind:'Brick breaker',players:'1-20 players',demo:4,localFirst:true,
+ desc:'Battle-royale brick breaking for up to 20, each on your own board with tilted 2.5D bricks. Break bricks to bury rivals in junk, catch Brickanoid capsules, and throw purple curses.',
+ blurb:'Move the paddle with A / D, launch and fire with Space or click. Every 8 bricks sends a junk row to a rival. Last board standing wins.',
+ howto:'A / D or arrows move the paddle, Space or click launches the ball and fires lasers. Gamepad: stick or d-pad moves, A launches.',
  icon:['..........','rrooyyggcc','rrooyyggcc','..........','.bb...ww..','.bb...ww..','..........','....w.....','..........','..kssssk..'],
  music:MUSIC,fireLabel:'FIRE',
  modes:[['ROYALE','Everyone vs everyone. Last board standing wins.']],
- settings:[['lives','Lives',[[3,'3'],[1,'1'],[5,'5']]],['att','Junk attacks',[['on','On'],['off','Off']]],['caps','Capsules',[['classic','Classic + some DOH'],['party','Wild party (lots of DOH)'],['off','Off']]],
+ settings:[['lives','Lives',[[3,'3'],[1,'1'],[5,'5']]],['att','Junk attacks',[['on','On'],['off','Off']]],['caps','Capsules',[['classic','Classic + some CURSES'],['party','Wild party (lots of CURSES)'],['off','Off']]],
   ['ramp','Speed-up',[[1,'Normal'],[2,'Fast'],[0,'None']]],['len','Time limit',[[5,'5 min'],[3,'3 min'],[10,'10 min'],[0,'None']]]],
  kb:[['A D','move'],['LMB SPACE','launch / laser'],['C','chat'],['ESC','menu']],pad:[['LS','move'],['A','launch / laser'],['BACK','chat'],['START','menu']],
- ach:[{id:'first',name:'Vaus Pilot',desc:'Finish your first match',test:s=>s.played>=1,unlock:'title:Vaus Pilot'},{id:'win1',name:'Doh Slayer',desc:'Win a match',test:(s,m)=>m.won,unlock:'title:Doh Slayer'},
-  {id:'r5',name:'Dimension Hopper',desc:'Reach round 5',test:(s,m)=>m.round>=5,unlock:'title:Dimension Hopper'},{id:'pts',name:'Arkanoid Ace',desc:'Score 30,000 in one match',test:(s,m)=>m.bestScore>=30000,unlock:'title:Arkanoid Ace'}],
+ ach:[{id:'first',name:'Paddle Pilot',desc:'Finish your first match',test:s=>s.played>=1,unlock:'title:Vaus Pilot'},{id:'win1',name:'Curse Breaker',desc:'Win a match',test:(s,m)=>m.won,unlock:'title:Doh Slayer'},
+  {id:'r5',name:'Dimension Hopper',desc:'Reach round 5',test:(s,m)=>m.round>=5,unlock:'title:Dimension Hopper'},{id:'pts',name:'Brick Ace',desc:'Score 30,000 in one match',test:(s,m)=>m.bestScore>=30000,unlock:'title:Arkanoid Ace'}],
  alive:i=>!!boards[i]&&!boards[i].out,start,step,local,upload,follow,snap,apply,render,bot,onFx,
  ranks:()=>boards.slice().sort((a,b)=>(a.out-b.out)||((b.outAt|0)-(a.outAt|0))||b.score-a.score).map(b=>[b.name,b.col,'R'+b.lvl+' · '+b.score]),
  result:(i,w)=>{const b=boards[i];return{won:!!w&&w.i===i,round:b.lvl,bestScore:b.score}}});

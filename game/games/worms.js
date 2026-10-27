@@ -1,6 +1,6 @@
-/* WORMS for Retro Arena: artillery with destructible pixel terrain for up to 20, after Worms (Team17).
+/* WORM WAR for Retro Arena: artillery with destructible pixel terrain for up to 20, with teams battling across an island.
    The original it follows: teams of worms on an island you blow apart; aim with the cursor keys, hold fire for power, mind
-   the wind; bazooka, grenades with fuses, cluster bombs, the sheep, the holy hand grenade, the ninja rope; crates fall in by
+   the wind; bazooka, grenades with fuses, cluster bombs, the sheep, the relic grenade, the ninja rope; crates fall in by
    parachute; fall too far and it hurts, fall in the water and you're gone. Last team with a worm standing wins.
    The 20-player twist: ALL AT ONCE turns - every team gets one attack per round at the same time (new wind every round),
    so twenty people never wait for each other. CLASSIC TURNS (one team at a time, like the original) for small groups.
@@ -41,7 +41,7 @@ const WP=[{k:'bazooka',n:'BAZOOKA',ki:'c',ammo:-1,r:26,dmg:45,wind:1,spr:'rocket
  {k:'girder',n:'GIRDER',ki:'t',ammo:2},
  {k:'air',n:'AIR STRIKE',ki:'t',ammo:0,r:20,dmg:26,spr:'strike'},
  {k:'banana',n:'BANANA BOMB',ki:'c',ammo:0,r:30,dmg:50,fuse:180,bnc:.5,spr:'banana',hold:'launcher',bits:5},
- {k:'holy',n:'HOLY HAND GRENADE',ki:'c',ammo:0,r:46,dmg:75,fuse:180,bnc:.3,spr:'holy',hold:'launcher'}];
+ {k:'holy',n:'RELIC GRENADE',ki:'c',ammo:0,r:46,dmg:75,fuse:180,bnc:.3,spr:'holy',hold:'launcher'}];
 const WI={};WP.forEach((w,i)=>WI[w.k]=i);const CRATE=['air','banana','holy','homing','cluster','sheep','dynamite','tele'];
 const THEMES={meadow:{n:'MEADOW',sky:['#4888d8','#78b0f0','#a8d0f8'],far:'#7c9cc8',top:['#88dc48','#38a038'],soil:['#8c5c34','#7a4e2a','#6a4222','#5a3a20'],stone:['#9a94a8','#5c566c'],water:['#2858b8','#4880e0']},
  arctic:{n:'ARCTIC',sky:['#7cb0e0','#a8d0f0','#d0e8f8'],far:'#a8c0d8',top:['#ffffff','#c8e8ff'],soil:['#6890c8','#5878b0','#4a6a9c','#3c5a88'],stone:['#c8e8ff','#a0c8f0'],water:['#3c6ac8','#6898e8']},
@@ -87,7 +87,7 @@ function start(seats,md,S,seed){const rr=RA.util.mulberry(seed),n=seats.length,p
  teams=seats.map((s,i)=>({i,name:s.name,col:md===1?TEAMC[i%2]:s.col,ammo:WP.map(w=>w.ammo),wsel:0,next:0}));
  worms=[];const total=n*per,slots=[];for(let k=0;k<total;k++)slots.push((k+.5)/total);for(let k=slots.length-1;k>0;k--){const j=Math.floor(rr()*(k+1));[slots[k],slots[j]]=[slots[j],slots[k]]}
  let k=0;for(let i=0;i<n;i++)for(let j=0;j<per;j++){let x=Math.round(40+slots[k++]*(W-80)),y=surfaceY(x);for(let t=0;t<40&&(y>=water-6||y<20);t++){x=Math.round(40+rr()*(W-80));y=surfaceY(x)}
-  worms.push({id:worms.length,seat:i,j,name:per>1?(s=>s)(['Boggy','Spadge','Clagnut','Chuck','Thrasher','Nobby','Wormy','Grub'][(i*3+j)%8]):seats[i].name,x,y,vx:0,vy:0,gr:false,face:x<W/2?1:-1,aim:-.5,hp:+S.hp||100,dead:false,pose:'idle1',dist:0,rope:null,pw:0,ch:false,ev:[],evSeq:0,evSeen:0,fall:0,shots:[],sseq:0,acted:false,kills:0,dmg:0,hurt:0})}
+  worms.push({id:worms.length,seat:i,j,name:per>1?(s=>s)(['Loam','Pebble','Sprout','Mulch','Bramble','Silt','Wiggle','Grub'][(i*3+j)%8]):seats[i].name,x,y,vx:0,vy:0,gr:false,face:x<W/2?1:-1,aim:-.5,hp:+S.hp||100,dead:false,pose:'idle1',dist:0,rope:null,pw:0,ch:false,ev:[],evSeq:0,evSeen:0,fall:0,shots:[],sseq:0,acted:false,kills:0,dmg:0,hurt:0})}
  active=teams.map(()=>-1);startT=K.tick;newRound()}
 const liveWorms=s=>worms.filter(w=>w.seat===s&&!w.dead);
 const aliveTeams=()=>{const t=new Set();for(const w of worms)if(!w.dead)t.add(teamOf(w.seat));return t};
@@ -355,7 +355,7 @@ function iconImg(k){return img('ic'+k,()=>{const c=X.mk(16,12),g=c.getContext('2
  else{const im=thing(ICON[k]);const sc=Math.min(1,14/im.width,11/im.height);g.drawImage(im,Math.round(8-im.width*sc/2),Math.round(6-im.height*sc/2),Math.round(im.width*sc),Math.round(im.height*sc))}return c})}
 const MENU={on:false,x:0,y:0,cw:38,ch:30};let startT=0;
 function hud2(g,me,vx,vy,vw,vh,small){const TX=(s,x,y,o)=>X.text(g,s,x,y,Object.assign({outline:P.k},o||{})),cxm=vx+vw/2;
- if(K.demo){TX('WORMS',cxm,vy+vh-16,{col:'#fff07c',align:'center',scale:2});return}
+ if(K.demo){TX('WORM WAR',cxm,vy+vh-16,{col:'#fff07c',align:'center',scale:2});return}
  // wind
  const wx=small?vx+vw-44:cxm,wy=small?vy+44:vy+26;g.fillStyle='rgba(16,12,24,.8)';g.fillRect(wx-34,wy-2,68,9);g.fillStyle='#5c566c';g.fillRect(wx,wy-1,1,7);const wl=Math.round(wind*30);g.fillStyle=wind<0?'#60a0ff':'#f05050';g.fillRect(Math.min(wx,wx+wl),wy+1,Math.abs(wl),3);
  if(!small)TX('WIND',wx-38,wy-1,{col:'#c8c4d8',align:'right'});
@@ -373,7 +373,7 @@ function hud2(g,me,vx,vy,vw,vh,small){const TX=(s,x,y,o)=>X.text(g,s,x,y,Object.
   TX(classic?((t.name||'').toUpperCase().slice(0,10)+"'S TURN"):'EVERY TEAM FIRES ONE SHOT',cxm,vy+vh*.22+18,{col:classic?t.col:'#fff07c',align:'center'})}
  if(!me)return;const t=teams[me.seat],wp=WP[t.wsel],am=t.ammo[t.wsel],act=activeOf(me.seat)===me;
  // the first seconds: how this game works
- if(round===1&&K.tick-startT<480&&!small&&!menuOpen&&!me.acted){const lines=classic?['WORMS - CLASSIC TURNS','Teams take turns: one team at a time.','On your turn: aim, fire ONE shot, run.']:['WORMS - ALL AT ONCE','Every round each team fires ONE shot.','Everyone aims at the same time.'];
+ if(round===1&&K.tick-startT<480&&!small&&!menuOpen&&!me.acted){const lines=classic?['WORM WAR - CLASSIC TURNS','Teams take turns: one team at a time.','On your turn: aim, fire ONE shot, run.']:['WORM WAR - ALL AT ONCE','Every round each team fires ONE shot.','Everyone aims at the same time.'];
   lines.push('Blast worms or knock them in the water.','Last team with a worm standing wins.');
   const bw=Math.min(vw-150,250),bx=cxm-bw/2,by=vy+38;g.fillStyle='rgba(16,12,24,.78)';g.fillRect(bx,by,bw,18+(lines.length-1)*9);TX(lines[0],cxm,by+4,{col:'#fff07c',align:'center'});lines.slice(1).forEach((l,j)=>TX(l,cxm,by+16+j*9,{col:'#ffffff',align:'center',outline:false}))}
  // the weapon bar: icon, name, ammo, how to change it
@@ -402,8 +402,8 @@ function render(ctx,W2,H2){if(!SCR)SCR=X.screen();const g=SCR.size(W2,H2);g.fill
  if(!K.demo){const mw=60,mh=Math.round(mw*WH/W),mx=w-mw-3,my=h-mh-3,mi=img('mini'+opsDone+W,()=>{const c=X.mk(mw,mh),gg=c.getContext('2d');gg.fillStyle='rgba(16,12,24,.7)';gg.fillRect(0,0,mw,mh);gg.fillStyle=THEMES[TH].soil[0];for(let y=0;y<mh;y++)for(let x=0;x<mw;x++)if(mask[Math.floor(y*WH/mh)*W+Math.floor(x*W/mw)])gg.fillRect(x,y,1,1);return c});
   g.drawImage(mi,mx,my);for(const wm of worms){if(wm.dead)continue;g.fillStyle=teams[wm.seat].col;g.fillRect(mx+Math.round(wm.x*mw/W)-1,my+Math.round(wm.y*mh/WH)-2,2,2)}g.fillStyle=THEMES[TH].water[1];g.fillRect(mx,my+Math.round(water*mh/WH),mw,1)}
  SCR.present(ctx,W2,H2)}
-K=RA.kit({id:'worms',name:'WORMS',kind:'Artillery',players:'1-20 players',demo:4,localFirst:true,baseH:330,minPlayers:1,
- desc:'Turn-based artillery on a destructible pixel island for up to 20: bazookas and grenades in the wind, cluster bombs, the sheep, the holy hand grenade and the ninja rope. Everyone takes their turn at once - or the classic way, one team at a time.',
+K=RA.kit({id:'worms',name:'WORM WAR',kind:'Artillery',players:'1-20 players',demo:4,localFirst:true,baseH:330,minPlayers:1,
+ desc:'Turn-based artillery on a destructible pixel island for up to 20: bazookas and grenades in the wind, cluster bombs, the sheep, the relic grenade and the ninja rope. Everyone takes their turn at once - or the classic way, one team at a time.',
  blurb:'A / D walk, E jump - press E again in the air for a high back-flip. W / S aim (or the mouse), hold SPACE for power and let go to fire, Q opens the weapon menu. One attack per round - then run!',
  howto:'A / D walk, E jump (E again in the air = high back-flip, Shift = back-flip from the ground), W / S or mouse aim, hold Space / left click for power and release to fire, Q weapon menu (WASD or mouse to choose, Space to take). Sheep: E makes it jump, Space blows it up. Crates drop in by parachute: walk into them. Water and long falls hurt.',
  icon:['..........','...ppp....','..pWkpp...','..ppppp...','...ppp....','..ppp.....','.ppp...kk.','.pppp.kRRk','..pppp.kk.','...pppp...'],

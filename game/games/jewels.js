@@ -1,4 +1,4 @@
-/* MAGIC JEWELRY for Retro Arena: falling columns of three jewels, up to 20 boards, built for online rooms.
+/* MAGIC GEMS for Retro Arena: falling columns of three jewels, up to 20 boards, built for online rooms.
    Line up three of a kind across, down or diagonally. Chains drop rock rows on a rival; rocks crack back into jewels
    when jewels next to them clear. The magic jewel wipes every jewel of the colour it lands on.
    Multiplayer twists: pick who your rocks hit (random, whoever attacks you, the leader, the weakest board),
@@ -32,7 +32,7 @@ const PCOL={k:'#000',w:'#fcfcfc',r:'#d82800',y:'#f8b800',c:'#3cbcfc',b:'#0058f8'
 
 const root=RA.mount(`
   <div class="top">
-    <div class="row"><button id="mjBack">◀ GAMES</button><div class="brand">RETRO <b>ARENA</b> · MAGIC JEWELRY</div></div>
+    <div class="row"><button id="mjBack">◀ GAMES</button><div class="brand">RETRO <b>ARENA</b> · MAGIC GEMS</div></div>
     <div class="info" id="mjInfo"></div>
   </div>
   <div class="screen">
@@ -40,7 +40,7 @@ const root=RA.mount(`
     <button class="hudbtn ra-quit">MENU</button>
     <button class="hudbtn ra-mus" aria-label="Music on or off">♪</button>
     <div class="overlay" id="mjTitle">
-      <h1>MAGIC JEWELRY</h1>
+      <h1>MAGIC GEMS</h1>
       <p>Line up three of a kind across, down or diagonally. Chains drop rocks on a rival, and you choose who. Knock boards out to steal their KO badges. Last board standing wins.</p>
     </div>
     <div class="overlay" id="mjOver" hidden>
@@ -152,7 +152,7 @@ const KEYS={
 const HOWTO=touchDev?'Touch: slide on the pad to move, down falls faster, up or DROP drops the column, TURN rotates it, TARGET picks who your rocks hit, ITEM fires your power-up.'
  :'Keys + mouse: A/D slide the column, click or W to rotate, right-click or Space to drop, S falls faster, E picks who your rocks hit (random, attackers, leader, weakest), Q or F fires your power-up. Clearing jewels and chains sends grey rock rows to the board you target; rocks sent to you show as INCOMING above your well and rise from the bottom. Gamepad: stick moves, A/B rotate, up or X drops, Y targets, RB fires the power-up, Back chat, Start menu.';
 let saved=null;try{saved=JSON.parse(localStorage.getItem('mj-setup'))}catch(e){}
-// your Magic Jewelry save file; the old device-only best score moves into it
+// your Magic Gems save file; the old device-only best score moves into it
 const SAVE=RA.save('jewels');let best=0;try{best=+localStorage.getItem('mj-best')||0}catch(e){}
 const ACH=RA.achievements('jewels',[
  {id:'first',name:'Polished',desc:'Finish your first game',test:s=>s.played>=1,unlock:['title:Polished','frame:Silver']},
@@ -668,7 +668,7 @@ R.init();
 
 RA.legend(root,{kb:[['A D','move'],['LMB W','rotate'],['RMB SPACE','drop'],['S','fall faster'],['E','target'],['Q F','power-up'],['C','chat'],['ESC','menu']],
  pad:[['DP','move'],['A B','rotate'],['X','drop'],['Y LB','target'],['RB RT','power-up'],['BACK','chat'],['START','menu']]});
-RA.register({id:'jewels',name:'MAGIC JEWELRY',kind:'Puzzle',players:'1-20 players',ready:true,el:root,
+RA.register({id:'jewels',name:'MAGIC GEMS',kind:'Puzzle',players:'1-20 players',ready:true,el:root,
  desc:'Falling columns of three jewels, built for online rooms. Line up three of a kind, pick who your rocks hit, steal KO badges, last board standing wins.',
  icon:['....kk....','...kcck...','...kcck...','...kkkk...','...krrk...','...krrk...','...kkkk...','...kyyk...','...kyyk...','....kk....'],
  music:TRACKS,

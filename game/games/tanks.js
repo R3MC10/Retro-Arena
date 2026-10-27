@@ -1,4 +1,4 @@
-/* BATTLE CITY for Retro Arena: top-down tank battle for 2-20 crews, built for online rooms, drawn in PS1-style 2.5D.
+/* BATTLE TOWN for Retro Arena: top-down tank battle for 2-20 crews, built for online rooms, drawn in PS1-style 2.5D.
    Modern controls: the hull drives in four directions (WASD), the turret follows the mouse and a click fires anywhere.
    Two modes:
     CO-OP   everyone guards one eagle against waves of CPU tanks. Friendly fire stuns a teammate (trolling allowed).
@@ -34,7 +34,7 @@ const KIND=[null,{n:'BASIC',sp:.55,bs:2.4,hp:1,sc:100,col:'#a8a8b8'},{n:'FAST',s
 
 const root=RA.mount(`
   <div class="top">
-    <div class="row"><button id="bcBack">◀ GAMES</button><div class="brand">RETRO <b>ARENA</b> · BATTLE CITY</div></div>
+    <div class="row"><button id="bcBack">◀ GAMES</button><div class="brand">RETRO <b>ARENA</b> · BATTLE TOWN</div></div>
     <div class="info" id="bcInfo"></div>
   </div>
   <div class="screen">
@@ -42,7 +42,7 @@ const root=RA.mount(`
     <button class="hudbtn ra-quit">MENU</button>
     <button class="hudbtn ra-mus" aria-label="Music on or off">♪</button>
     <div class="overlay" id="bcTitle">
-      <h1>BATTLE CITY</h1>
+      <h1>BATTLE TOWN</h1>
       <p>Drive with WASD, the turret follows your mouse, click to fire. Guard your eagle, blast through brick, grab power-ups, outlast every other crew.</p>
     </div>
     <div class="overlay" id="bcOver" hidden>
@@ -615,7 +615,7 @@ function step(){tick++;
   // let the last explosion play out, then show the results
   if(!overT)NET.winner=win==='coop'?99:win?win.i:-1;if(++overT>70){overT=0;showOver()}}}
 let overT=0;
-const SAVE=RA.save('tanks');   // your Battle City save file
+const SAVE=RA.save('tanks');   // your Battle Town save file
 const ACH=RA.achievements('tanks',[
  {id:'first',name:'Recruit',desc:'Finish your first battle',test:s=>s.played>=1,unlock:'title:Recruit'},
  {id:'save',name:'City Saved',desc:'Win a co-op defence',test:(s,m)=>m.coop&&m.won,unlock:'title:Defender'},
@@ -670,7 +670,7 @@ setMode(selMode);showBS();setInterval(showBS,500);R.init();
 
 RA.legend(root,{kb:[['W A S D','drive'],['MOUSE','aim turret'],['LMB SPACE','fire'],['C','chat'],['ESC','menu']],
  pad:[['LS','drive'],['RS','aim turret'],['A RB RT','fire'],['BACK','chat'],['START','menu']]});
-RA.register({id:'tanks',name:'BATTLE CITY',kind:'Tank battle',players:'1-20 players',ready:true,el:root,
+RA.register({id:'tanks',name:'BATTLE TOWN',kind:'Tank battle',players:'1-20 players',ready:true,el:root,
  desc:'Top-down tank battle in 2.5D. Co-op: guard one eagle against CPU waves. Versus: every crew has an eagle. Team War and Ground War: red vs blue, two eagles, CPU escorts. Host picks turret, lives, power-ups and more.',
  icon:['..........','....kk....','...kggkkkk','...kggkkk.','.kkggggkk.','kggggggggk','kddddddddk','kdkdkdkdkk','.kkkkkkkk.','..........'],
  music:TRACKS,

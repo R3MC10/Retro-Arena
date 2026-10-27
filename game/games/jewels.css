@@ -1,4 +1,4 @@
-/* Magic Jewelry only. Everything else comes from engine/ra.css. */
+/* Magic Gems only. Everything else comes from engine/ra.css. */
 .mj .mjslots{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
 .mj .slot{grid-template-columns:auto minmax(0,1fr)}
 .mj #mjOver .row{justify-content:center}

@@ -1,4 +1,4 @@
-// Super Dash Bros level probe: node dprobe.js <level> [players=6] [steps=9000] [humans=0]   (CPU=0|1|2)
+// Super Dash Buds level probe: node dprobe.js <level> [players=6] [steps=9000] [humans=0]   (CPU=0|1|2)
 const {browser,openGame,startLocal,arg}=require('./lib');
 (async()=>{const li=+arg(0,0),n=+arg(1,6),max=+arg(2,9000),hum=+arg(3,0);const b=await browser();const{pg,errs,P}=await openGame(b,'dash');await startLocal(pg,P,{n,humans:hum,settings:{level:li}});await pg.waitForTimeout(300);
  const r=await pg.evaluate(([max])=>{const G=RA.menu.current,D=window.__db,over=()=>!document.getElementById(RA.menu.current.el.id||'x')&&false;let n=0;const stall={};

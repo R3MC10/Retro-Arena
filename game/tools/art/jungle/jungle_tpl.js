@@ -1,4 +1,4 @@
-/* JUNGLE FORCE for Retro Arena: co-op run and gun for up to 20 in pixel art, after Contra.
+/* JUNGLE FORCE for Retro Arena: co-op run and gun for up to 20 in pixel art, with co-op jungle firefights.
    The original it follows: run right through the jungle, somersault jumps, aim in 8 directions (hold up / down while you
    shoot, lie prone with down), one hit and you lose a life, flying capsules drop the eagle weapons - S spread, M machine
    gun, L laser, F fire - and a fortress wall with cannons and a core waits at the end.

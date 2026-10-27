@@ -1,14 +1,14 @@
-/* PAC-MAN for Retro Arena: up to 20 Pac-Men in one big neon maze with the four ghosts (and their friends), 2.5D raised walls.
+/* MUNCH-MAN for Retro Arena: up to 20 munchers in one big neon maze with the four ghosts (and their friends), 2.5D raised walls.
    WASD / arrows / mouse steer (turns are buffered, so press early like the arcade). Dots, power pellets, fruit, ghost chains 200-1600.
-   Modes: BATTLE (most points / last Pac standing), CO-OP (clear mazes together, ghosts speed up each level), CHOMP (a powered Pac-Man
-   can also eat rivals). Fruit power-ups made for Pac-Man only:
+   Modes: BATTLE (most points / last muncher standing), CO-OP (clear mazes together, ghosts speed up each level), CHOMP (a powered Munch-Man
+   can also eat rivals). Fruit power-ups made for Munch-Man only:
     CHERRY points · STRAWBERRY speed · ORANGE ghost repellent · APPLE phase through one wall · MELON freeze every rival
-    GALAXIAN (party) calls a red ghost onto the leader · BELL (party) everyone else's controls swap · KEY (party) warp to a random spot. */
+    GALAXOID (party) calls a red ghost onto the leader · BELL (party) everyone else's controls swap · KEY (party) warp to a random spot. */
 (()=>{
 const T=RA.music.track,sfx=RA.audio.sfx;
 const TS=12,DX=[0,1,0,-1],DY=[-1,0,1,0];
-const FRUIT=[null,{n:'CHERRY',c:'#f02040'},{n:'STRAWBERRY',c:'#ff4060'},{n:'ORANGE',c:'#ff9020'},{n:'APPLE',c:'#e83030'},{n:'MELON',c:'#40d060'},{n:'GALAXIAN',c:'#f8d040',party:1},{n:'BELL',c:'#f8e040',party:1},{n:'KEY',c:'#80d0f8',party:1}];
-const GCOL=['#ff2020','#ffb8ff','#20ffff','#ffb850'],GNAME=['BLINKY','PINKY','INKY','CLYDE'];
+const FRUIT=[null,{n:'CHERRY',c:'#f02040'},{n:'STRAWBERRY',c:'#ff4060'},{n:'ORANGE',c:'#ff9020'},{n:'APPLE',c:'#e83030'},{n:'MELON',c:'#40d060'},{n:'GALAXOID',c:'#f8d040',party:1},{n:'BELL',c:'#f8e040',party:1},{n:'KEY',c:'#80d0f8',party:1}];
+const GCOL=['#ff2020','#ffb8ff','#20ffff','#ffb850'],GNAME=['SCARLET','ROSY','AQUA','AMBER'];
 RA.audio.add('waka',(AC,now,g,ch)=>{const o=AC.createOscillator();o.type='triangle';const up=ch&1;o.frequency.setValueAtTime(up?260:480,now);o.frequency.linearRampToValueAtTime(up?480:260,now+.07);g.gain.setValueAtTime(.08,now);g.gain.exponentialRampToValueAtTime(.001,now+.08);o.connect(g);o.start();o.stop(now+.09)});
 RA.audio.add('eatg',(AC,now,g)=>{const o=AC.createOscillator();o.type='square';o.frequency.setValueAtTime(200,now);o.frequency.exponentialRampToValueAtTime(1600,now+.25);g.gain.setValueAtTime(.06,now);g.gain.exponentialRampToValueAtTime(.001,now+.27);o.connect(g);o.start();o.stop(now+.28)});
 RA.audio.add('pdie',(AC,now,g)=>{const o=AC.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(900,now);o.frequency.exponentialRampToValueAtTime(80,now+.9);g.gain.setValueAtTime(.06,now);g.gain.exponentialRampToValueAtTime(.001,now+.95);o.connect(g);o.start();o.stop(now+1)});
@@ -27,7 +27,7 @@ function buildMaze(n,seed){const rr=RA.util.mulberry(seed),sz=K.S.maze==='auto'?
  const stack=[[1,1]];seen.add('1,1');carve(1,1);
  while(stack.length){const[x,y]=stack[stack.length-1],nb=[];for(let d=0;d<4;d++){const nx=x+DX[d]*2,ny=y+DY[d]*2;if(nx>=1&&ny>=1&&nx<=half-1&&ny<H-1&&!seen.has(nx+','+ny))nb.push([nx,ny,d])}
   if(!nb.length){stack.pop();continue}const[nx,ny,d]=nb[Math.floor(rr()*nb.length)];seen.add(nx+','+ny);carve(x+DX[d],y+DY[d]);carve(nx,ny);stack.push([nx,ny])}
- // braid: knock out most dead ends so it plays like Pac-Man, not a labyrinth
+ // braid: knock out most dead ends so it plays like Munch-Man, not a labyrinth
  for(let y=1;y<H-1;y++)for(let x=1;x<half;x++){if(wall[at(x,y)])continue;let open=0;for(let d=0;d<4;d++)if(!wall[at(x+DX[d],y+DY[d])])open++;
   if(open===1){const opts=[];for(let d=0;d<4;d++){const wx=x+DX[d],wy=y+DY[d];if(wall[at(wx,wy)]&&wx>0&&wy>0&&wy<H-1&&wx<W-1)opts.push([wx,wy])}if(opts.length){const[a,b]=opts[Math.floor(rr()*opts.length)];carve(a,b)}}}
  for(let k=0;k<cw*ch/5;k++){const x=1+Math.floor(rr()*(half-2)),y=1+Math.floor(rr()*(H-2));if((x+y)%2===1&&x>1&&y>1&&y<H-2)carve(x,y)}
@@ -113,7 +113,7 @@ function step(){const S=K.S;if(pause>0){pause--;return}lvlT++;if(fright>0&&--fri
  else if(S.lives>0&&(pacs.length>1?live.length<=1:!live.length)){K.end(live[0]?{i:live[0].i}:null);return}
  if(lim&&K.tick>=lim){if(K.mode===1)K.end({coop:1,name:'TIME! LEVEL '+level});else{const b=pacs.slice().sort((a,c)=>c.score-a.score)[0];K.end(b?{i:b.i}:null)}}
  if(lim&&K.tick===lim-1800)K.track(3)}
-/* CPU Pac-Men: head for the nearest dot, flee ghosts, chase blue ones */
+/* CPU munchers: head for the nearest dot, flee ghosts, chase blue ones */
 function bot(i){const p=pacs[i];if(!p||!p.alive)return{};const tx=((Math.floor(p.x/TS))%W+W)%W,ty=Math.floor(p.y/TS);const o={};
  const danger=ghosts.filter(g=>g.mode!=='house'&&g.mode!=='eyes'&&!(fright>0&&!g.eaten)&&Math.hypot(g.x-p.x,g.y-p.y)<TS*5);
  const blue=fright>40?ghosts.filter(g=>g.mode==='chase'&&!g.eaten&&Math.hypot(g.x-p.x,g.y-p.y)<TS*8):[];
@@ -195,15 +195,15 @@ function render(g,Wv,Hv){camFor(Wv,Hv);buildWalls();
  const list=pacs.slice().sort((a,b)=>b.score-a.score).slice(0,8);g.font='6px "Russo One",sans-serif';
  list.forEach((p,k)=>{const y=30+k*8;g.textAlign='left';g.fillStyle='rgba(0,0,0,.6)';g.fillRect(Wv-86,y-6,82,7.5);g.fillStyle=p.col;g.fillRect(Wv-85,y-5,4,5);g.fillStyle=p.out?'#777':'#fff';
   g.fillText((p.name||'').slice(0,10)+(K.S.lives>0?' '+'●'.repeat(Math.max(0,Math.min(5,p.lives))):''),Wv-79,y);g.textAlign='right';g.fillText(p.score,Wv-7,y)})}
-K=RA.kit({id:'pacman',name:'PAC-MAN',kind:'Maze chase',players:'1-20 players',demo:4,
- desc:'Up to 20 Pac-Men in one big neon maze with the ghosts and their friends. Battle for points, clear mazes together in co-op, or Chomp rivals when powered. Pac-Man-only fruit power-ups.',
+K=RA.kit({id:'pacman',name:'MUNCH-MAN',kind:'Maze chase',players:'1-20 players',demo:4,
+ desc:'Up to 20 munchers in one big neon maze with the ghosts and their friends. Battle for points, clear mazes together in co-op, or Chomp rivals when powered. Munch-Man-only fruit power-ups.',
  blurb:'Steer with WASD or the arrows. Eat every dot, grab power pellets and chain the ghosts, and keep an eye out for fruit.',
  howto:'WASD / arrows steer (turns are buffered: press early), Gamepad: stick steers.',
  icon:['...kkkk...','..kyyyyk..','.kyyyykk..','kyyyykk...','kyyyk.....','kyyyk.....','kyyyykk...','.kyyyykk..','..kyyyyk..','...kkkk...'],
  music:MUSIC,fireLabel:'·',
- modes:[['BATTLE','Most points wins. Ghosts catch everyone.'],['CO-OP','Clear mazes together. Share your lives wisely.'],['CHOMP','A powered Pac-Man can eat rivals too.']],
+ modes:[['BATTLE','Most points wins. Ghosts catch everyone.'],['CO-OP','Clear mazes together. Share your lives wisely.'],['CHOMP','A powered Munch-Man can eat rivals too.']],
  settings:[['lives','Lives',[[3,'3'],[1,'1'],[5,'5'],[0,'Endless']]],['len','Time limit',[[3,'3 min'],[2,'2 min'],[5,'5 min'],[0,'None']]],['maze','Maze',[['auto','Auto'],[0,'Small'],[1,'Medium'],[2,'Large']]],
-  ['ai','Ghost AI',[['classic','Classic'],['aggressive','Aggressive'],['dumb','Dumb']]],['fruit','Fruit',[['on','Pac fruit'],['party','Wild party'],['off','Off']]],['levels','Co-op mazes',[[3,'3'],[5,'5'],[1,'1']]]],
+  ['ai','Ghost AI',[['classic','Classic'],['aggressive','Aggressive'],['dumb','Dumb']]],['fruit','Fruit',[['on','Maze fruit'],['party','Wild party'],['off','Off']]],['levels','Co-op mazes',[[3,'3'],[5,'5'],[1,'1']]]],
  kb:[['W A S D','steer'],['C','chat'],['ESC','menu']],pad:[['LS','steer'],['BACK','chat'],['START','menu']],
  ach:[{id:'first',name:'Wakka Wakka',desc:'Finish your first match',test:s=>s.played>=1,unlock:'title:Wakka'},{id:'win1',name:'Top Muncher',desc:'Win a match',test:(s,m)=>m.won,unlock:'title:Top Muncher'},
   {id:'g4',name:'Ghostbuster',desc:'Eat 8 ghosts in one match',test:(s,m)=>m.ghosts>=8,unlock:'title:Ghostbuster'},{id:'pts',name:'High Score',desc:'Score 10,000 in one match',test:(s,m)=>m.bestScore>=10000,unlock:'title:High Score'}],

@@ -1,4 +1,4 @@
-/* ICE PEAK for Retro Arena: a race up a frozen mountain for up to 20 climbers, after Ice Climber (NES), in hand-drawn
+/* ICE PEAK for Retro Arena: a race up a frozen mountain for up to 20 climbers, with ice-smashing jumps, in hand-drawn
    pixel art on a 320x180 screen.
    The original's fun, kept: every floor is a row of ice blocks. Jump straight up into the ice to smash a hole with your
    hammer, then jump through it and land on the ledge above. Jumps carry your momentum. Seals push ice back into your holes,
@@ -21,7 +21,7 @@ const POSES=['stand','w1','w2','w3','jump','fall','sw1','sw2','sw3','dizzy','che
 const ITEMS=[null,{n:'SPIKE BOOTS',c:'#c0c8d8',v:0},{n:'BIG HAMMER',c:'#ffa040',v:1},{n:'BALLOON',c:'#f070c0',v:2},{n:'SNOWBALLS',c:'#ffffff',v:3},{n:'PARKA',c:'#60a0ff',v:4},
  {n:'BLIZZARD',c:'#a0f0ff',v:2,party:1},{n:'QUAKE',c:'#b07038',v:0,party:1},{n:'ICICLE RAIN',c:'#a0f0ff',v:4,party:1}];
 const MUSIC=[TM('Base Camp',96,['Am','F','C','G'],'k.......s.......','a5 - - e5 - - c6 - b5 - a5 - g5 - e5 - f5 - - c5 - - a5 - g5 - f5 - e5 - - -'),
- TM('Ice Climber',150,['C','F','G','C'],'k.hsk.hsk.hsk.hs','c5 e5 g5 c6 g5 e5 c5 e5 f5 a5 c6 f6 c6 a5 f5 a5 g5 b5 d6 g6 d6 b5 g5 b5 c6 g5 e5 c5 g4 c5 e5 g5'),
+ TM('Summit Sprint',150,['C','F','G','C'],'k.hsk.hsk.hsk.hs','c5 e5 g5 c6 g5 e5 c5 e5 f5 a5 c6 f6 c6 a5 f5 a5 g5 b5 d6 g6 d6 b5 g5 b5 c6 g5 e5 c5 g4 c5 e5 g5'),
  TM('North Face',138,['Dm','C','Bb','A'],'k..hs.h.k.khs.h.','d5 f5 a5 d6 . a5 f5 . c5 e5 g5 c6 . g5 e5 . bb4 d5 f5 bb5 . f5 d5 . a4 c#5 e5 a5 - - - -'),
  TM('Avalanche',176,['Em','C','D','B'],'kshskshskshskshs','e5 g5 b5 e6 b5 g5 e5 b4 c5 e5 g5 c6 g5 e5 c5 g4 d5 f#5 a5 d6 a5 f#5 d5 a4 b4 d#5 f#5 b5 f#5 d#5 b4 f#4')];
 RA.audio.add('smash',(AC,now,g)=>{const s=AC.createBufferSource(),f=AC.createBiquadFilter();s.buffer=RA.audio.noise;f.type='highpass';f.frequency.value=2200;g.gain.setValueAtTime(.2,now);g.gain.exponentialRampToValueAtTime(.001,now+.16);s.connect(f);f.connect(g);s.start(now);s.stop(now+.17)});
@@ -345,7 +345,7 @@ function render(ctx,W,H){if(!SCR)SCR=X.screen();const g=SCR.size(W,H);g.fillStyl
  const rects=n<=1?[[0,0,w,h]]:n===2?[[0,0,w>>1,h],[w>>1,0,w-(w>>1),h]]:[[0,0,w>>1,h>>1],[w>>1,0,w-(w>>1),h>>1],[0,h>>1,w>>1,h-(h>>1)],[w>>1,h>>1,w-(w>>1),h-(h>>1)]];
  fs.forEach((i,k)=>{const q=rects[k];view(g,cl[i],q[0],q[1],q[2],q[3],k,n>1)});SCR.present(ctx,W,H)}
 K=RA.kit({id:'icepeak',name:'ICE PEAK',kind:'Climbing race',players:'1-20 players',demo:6,localFirst:true,baseH:180,
- desc:'Ice Climber for up to 20 in pixel art: jump up into the ice to smash a hole, jump through it, knock rivals off their ledge with your hammer, outrun the avalanche and grab the condor at the summit.',
+ desc:'Mountain climbing for up to 20 in pixel art: jump up into the ice to smash a hole, jump through it, knock rivals off their ledge with your hammer, outrun the avalanche and grab the condor at the summit.',
  blurb:'Space jumps: jump up into the ice to smash it, then jump through the hole. E swings the hammer, Q throws snowballs. Grab the condor at the top!',
  howto:'A / D walk, Space / W / click jump, E / right-click hammer, Q snowball. Gamepad: stick, A jump, B hammer, X snowball.',
  icon:['....kk....','...kwwk...','..kwwwck..','..kcwwcck.','.kccccscck','.kcsccccsk','kssccsscck','kssssssssk','kkkkkkkkkk','..........'],

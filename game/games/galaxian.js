@@ -1,8 +1,8 @@
-/* GALAXIAN for Retro Arena: the convoy shooter for up to 20 Galaxips side by side, over a deep parallax starfield.
+/* GALAXOID for Retro Arena: the convoy shooter for up to 20 starfighters side by side, over a deep parallax starfield.
    A / D (or arrows) fly, Space / click fires. The convoy (flagships, red escorts, purple and blue drones) swoops down in curving
    dives; flagships bring escorts, and shooting a flagship in a dive with both escorts down is worth 800. No mouse steering.
    Modes: CO-OP (clear waves together, shared lives pool per player) · SCORE ATTACK (same waves, most points wins; host picks if your
-   shots stun rivals). Every few waves the MOTHERSHIP boss (host setting). Galaxian items (falling from flagships):
+   shots stun rivals). Every few waves the MOTHERSHIP boss (host setting). Galaxoid items (falling from flagships):
     TWIN SHOT · RAPID FIRE · ESCORT WING (two drones fly with you and shoot) · STAR SHIELD · CONVOY FREEZE · NOVA (clears every diver)
     party: DECOY (the convoy dives at a rival) · JAMMER (a rival's gun jams) · INVERTER (a rival's left and right swap).
    Your own ship runs on your machine with no lag; the host runs the aliens (RA.kit localFirst). */
@@ -15,7 +15,7 @@ RA.audio.add('zap',(AC,now,g)=>{const o=AC.createOscillator();o.type='square';o.
 RA.audio.add('dive',(AC,now,g)=>{const o=AC.createOscillator();o.type='sine';o.frequency.setValueAtTime(1200,now);o.frequency.exponentialRampToValueAtTime(400,now+.6);g.gain.setValueAtTime(.03,now);g.gain.exponentialRampToValueAtTime(.001,now+.62);o.connect(g);o.start();o.stop(now+.63)});
 const MUSIC=[T('Convoy',110,['Cm','Ab','Eb','G'],'k...s...k.k.s...','c5 - eb5 g5 - eb5 c6 - bb5 - g5 - eb5 - - - ab4 - c5 eb5 - c5 ab5 - g5 - eb5 - b4 - - -'),
  T('Swoop',144,['Am','G','F','E'],'k.hsk.hsk.hsk.hs','a5 . e5 . c5 . e5 . g5 . d5 . b4 . d5 . f5 . c5 . a4 . c5 . e5 . b4 . g#4 . b4 .'),
- T('Galaxip',160,['Dm','C','Bb','A'],'k.hhs.hhk.hhs.hk','d5 a5 f5 a5 d6 a5 f5 a5 c5 g5 e5 g5 c6 g5 e5 g5 bb4 f5 d5 f5 bb5 f5 d5 f5 a4 e5 c#5 e5 a5 e5 c#5 e5'),
+ T('Starfighter',160,['Dm','C','Bb','A'],'k.hhs.hhk.hhs.hk','d5 a5 f5 a5 d6 a5 f5 a5 c5 g5 e5 g5 c6 g5 e5 g5 bb4 f5 d5 f5 bb5 f5 d5 f5 a4 e5 c#5 e5 a5 e5 c#5 e5'),
  T('Mothership',176,['Em','C','D','B'],'k.hsk.hsk.hsk.ss','e5 . g5 . b5 . e6 . c6 . g5 . e5 . c5 . d5 . f#5 . a5 . d6 . b5 - d#6 - f#6 - b6 -')];
 let K,ships=[],aliens=[],shots=[],bombs=[],drops=[],parts=[],texts=[],stars=[],wave=0,waveT=0,fW=224,boss=null,freeze=0,nextId=0,diveT=0;
 const H=256,SY=236;
@@ -141,17 +141,17 @@ function render(g,Wv,Hv){const z=Math.min(Wv/fW,Hv/(H+14)),ox=(Wv-fW*z)/2,oy=(Hv
  const list=ships.slice().sort((a,b)=>b.score-a.score).slice(0,8);g.font='6px "Russo One",sans-serif';
  list.forEach((s,k)=>{const y=30+k*8;g.textAlign='left';g.fillStyle='rgba(0,0,0,.55)';g.fillRect(Wv-90,y-6,86,7.5);g.fillStyle=s.col;g.fillRect(Wv-89,y-5,4,5);g.fillStyle=s.out?'#777':'#fff';
   g.fillText((s.name||'').slice(0,10)+(K.S.lives>0?' '+'▲'.repeat(Math.max(0,Math.min(5,s.lives))):''),Wv-83,y);g.textAlign='right';g.fillText(s.score,Wv-7,y)})}
-K=RA.kit({id:'galaxian',name:'GALAXIAN',kind:'Space shooter',players:'1-20 players',demo:4,localFirst:true,
- desc:'The convoy shooter for up to 20 Galaxips side by side: swooping flagship dives with escorts, the Mothership boss, and Galaxian-only items like Escort Wing, Nova and Convoy Freeze.',
+K=RA.kit({id:'galaxian',name:'GALAXOID',kind:'Space shooter',players:'1-20 players',demo:4,localFirst:true,
+ desc:'The convoy shooter for up to 20 starfighters side by side: swooping flagship dives with escorts, the Mothership boss, and Galaxoid-only items like Escort Wing, Nova and Convoy Freeze.',
  blurb:'Fly with A / D, fire with Space or click. Shoot flagships in their dive with both escorts down for 800 points.',
  howto:'A / D or arrows fly, Space or click fires. Gamepad: stick or d-pad flies, A fires.',
  icon:['..........','.y......y.','.yy.rr.yy.','..yrrrry..','...rwwr...','..y.rr.y..','..........','....ww....','...wrrw...','..wwwwww..'],
  music:MUSIC,fireLabel:'FIRE',
  modes:[['CO-OP','Clear the waves together.'],['SCORE ATTACK','Same waves, most points wins.']],
  settings:[['lives','Lives',[[3,'3'],[1,'1'],[5,'5'],[0,'Endless']]],['waves','Co-op waves',[[8,'8'],[4,'4'],[16,'16']]],['boss','Mothership boss',[['on','Every 4th wave'],['off','Off']]],
-  ['items','Items',[['on','Galaxian items'],['party','Wild party'],['off','Off']]],['ff','Shots vs rivals',[['off','Pass through'],['stun','Stun']]],['len','Time limit',[[0,'None'],[5,'5 min'],[10,'10 min']]]],
+  ['items','Items',[['on','Galaxoid items'],['party','Wild party'],['off','Off']]],['ff','Shots vs rivals',[['off','Pass through'],['stun','Stun']]],['len','Time limit',[[0,'None'],[5,'5 min'],[10,'10 min']]]],
  kb:[['A D','fly'],['LMB SPACE','fire'],['C','chat'],['ESC','menu']],pad:[['LS','fly'],['A','fire'],['BACK','chat'],['START','menu']],
- ach:[{id:'first',name:'Galaxip Cadet',desc:'Finish your first match',test:s=>s.played>=1,unlock:'title:Cadet'},{id:'win1',name:'Convoy Breaker',desc:'Win a match',test:(s,m)=>m.won,unlock:'title:Convoy Breaker'},
+ ach:[{id:'first',name:'Starfighter Cadet',desc:'Finish your first match',test:s=>s.played>=1,unlock:'title:Cadet'},{id:'win1',name:'Convoy Breaker',desc:'Win a match',test:(s,m)=>m.won,unlock:'title:Convoy Breaker'},
   {id:'k50',name:'Ace',desc:'50 aliens in one match',test:(s,m)=>m.kills>=50,unlock:'title:Ace'},{id:'pts',name:'High Scorer',desc:'Score 10,000 in one match',test:(s,m)=>m.bestScore>=10000,unlock:'title:High Scorer'}],
  alive:i=>!!ships[i]&&!ships[i].out,start,step,local,upload,follow,snap,apply,render,bot,onFx,teamOf:i=>K.mode===0?0:i,
  ranks:()=>ships.slice().sort((a,b)=>b.score-a.score).map(s=>[s.name,s.col,s.score+' · '+s.kills+' aliens']),

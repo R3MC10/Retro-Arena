@@ -1,8 +1,8 @@
-/* DR. MARIO for Retro Arena: up to 20 glass bottles in a lit lab. Lag-free: your bottle runs on your machine.
+/* DR. PILLBOX for Retro Arena: up to 20 glass bottles in a lit lab. Lag-free: your bottle runs on your machine.
    A / D move the megavitamin, W / Space rotate (Q back), S drops faster. Line up 4 of a colour (viruses count) to clear them.
    Chains (a clear that makes halves fall into another clear) throw coloured halves into a rival's bottle. Clear every virus for the next stage.
    Modes: VERSUS (last bottle standing) · RACE (clear the target stages or be the last bottle standing). Host picks virus level, speed, targeting, garbage and items.
-   Dr. Mario power pills (party): a 2+ chain fills your PILL slot; press E to use it.
+   Dr. Pillbox power pills (party): a 2+ chain fills your PILL slot; press E to use it.
     CHILL PILL (your capsules fall slowly) · RAINBOW (your next capsule matches any colour) · FEVER (a rival's capsules fall fast)
     VIRUS OUTBREAK (4 new viruses in a rival's bottle) · BITTER PILL (a rival's next 3 capsules are two-tone and clash). */
 (()=>{
@@ -119,8 +119,8 @@ function render(g,Wv,Hv){const bg=g.createLinearGradient(0,0,0,Hv);bg.addColorSt
  const grid=(list,ax,aw)=>{const ah=bot-top;let best=null;for(let cols=1;cols<=list.length;cols++){const rows=Math.ceil(list.length/cols),sc=Math.min(aw/cols/BWID,ah/rows/BHG);if(!best||sc>best.sc)best={cols,sc}}
   const tw=best.cols*BWID*best.sc,ox=ax+(aw-tw)/2;list.forEach((b,k)=>drawBottle(g,b,ox+(k%best.cols)*BWID*best.sc,top+Math.floor(k/best.cols)*BHG*best.sc,best.sc,false))};
  if(main){const sc=(bot-top)/BHG,mw=BWID*sc;drawBottle(g,main,16,top,sc,true);const rest=boards.filter(b=>b!==main);if(rest.length)grid(rest,mw+28,Wv-mw-36)}else grid(boards,8,Wv-16)}
-K=RA.kit({id:'drmario',name:'DR. MARIO',kind:'Virus puzzle',players:'1-20 players',demo:4,localFirst:true,
- desc:'Up to 20 glass bottles in a lit lab: line up megavitamins to wipe out the viruses, chain clears to drop halves on rivals, and throw Dr. Mario power pills like Fever and Virus Outbreak.',
+K=RA.kit({id:'drmario',name:'DR. PILLBOX',kind:'Virus puzzle',players:'1-20 players',demo:4,localFirst:true,
+ desc:'Up to 20 glass bottles in a lit lab: line up megavitamins to wipe out the viruses, chain clears to drop halves on rivals, and throw Dr. Pillbox power pills like Fever and Virus Outbreak.',
  blurb:'A / D move, W or Space rotate, S drops faster, E uses your power pill. Clear every virus; chains drop halves into a rival bottle.',
  howto:'A / D move, W or Space rotate, Q rotate back, S drop faster, E use power pill. Gamepad: d-pad moves, A rotates, X rotates back, B uses the pill.',
  icon:['..........','..rrryyy..','..rrryyy..','..........','.b..bb..b.','bbb.bb.bbb','.b......b.','..........','...kwwk...','..k.ww.k..'],

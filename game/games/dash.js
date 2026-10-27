@@ -1,4 +1,4 @@
-/* SUPER DASH BROS for Retro Arena: a platform race for up to 20 in 8-bit pixel art, after Super Mario Bros.
+/* SUPER DASH BUDS for Retro Arena: a platform race for up to 20 in 8-bit pixel art, with running, jumping and stomping.
    The original it follows: momentum running (you speed up the longer you run, you skid when you turn), jumps that go
    higher the longer you hold the button, stomping enemies, kicking shells, ? blocks with power-ups (MUSHROOM makes you big,
    big heroes smash bricks, FLOWER throws fireballs, STAR makes you untouchable), pits, pipes and the flagpole at the end.
@@ -401,7 +401,7 @@ const PLC=['#fff07c','#e8e4dc','#ffa040'];
 function hud(g,focus,vx,vy,vw,vh){const TX=(s,x,y,o)=>X.text(g,s,x,y,Object.assign({outline:P.k},o||{})),me=focus[0];
  if(TK()<CD+40){const n=TK()<CD?3-Math.floor(TK()/(CD/3)):0;TX(n>0?n+'':'GO!',vx+vw/2,vy+50,{col:n>0?'#ffffff':'#88dc48',align:'center',scale:3});
   if(TK()%(CD/3|0)===0&&TK()<CD&&TK()>0)RA.audio.blip(440);if(TK()===CD)RA.audio.blip(880)}
- if(K.demo){TX('SUPER DASH BROS',vx+vw/2,vy+vh-16,{col:'#fff07c',align:'center',scale:2});return}
+ if(K.demo){TX('SUPER DASH BUDS',vx+vw/2,vy+vh-16,{col:'#fff07c',align:'center',scale:2});return}
  if(LV.name&&TK()<CD+60){TX(LV.name,vx+vw/2,vy+82,{col:'#ffffff',align:'center',scale:LV.name.length<14?2:1});if(cup.length>1)TX('LEVEL '+(ci+1)+' OF '+cup.length,vx+vw/2,vy+100,{col:'#a0f0ff',align:'center'})}
  if(cs==='between'){const list=heroes.slice().sort((a,b)=>cupPts[b.i]-cupPts[a.i]),n=Math.min(8,list.length),bw=150,bh=30+n*9,x0=vx+vw/2-bw/2,y0=vy+28;
   g.fillStyle='rgba(16,12,24,.88)';g.fillRect(x0,y0,bw,bh);TX('CUP STANDINGS',vx+vw/2,y0+4,{col:'#fff07c',align:'center'});
@@ -425,7 +425,7 @@ function render(ctx,W,H){if(!SCR)SCR=X.screen();const g=SCR.size(W,H);g.fillStyl
  if(!LV||!heroes.length){SCR.present(ctx,W,H);return}
  let ids=K.demo?[]:K.focus();if(!ids.length){const lead=heroes.slice().sort((a,b)=>a.place-b.place)[0];ids=[lead.i]}
  const focus=ids.map(i=>heroes[i]).filter(Boolean);view(g,focus.length?focus:[heroes[0]],0,0,SCR.w,SCR.h-(K.demo?0:9),0);SCR.present(ctx,W,H)}
-K=RA.kit({id:'dash',name:'SUPER DASH BROS',kind:'Platform race',players:'1-20 players',demo:6,localFirst:true,baseH:180,
+K=RA.kit({id:'dash',name:'SUPER DASH BUDS',kind:'Platform race',players:'1-20 players',demo:6,localFirst:true,baseH:180,
  desc:'An 8-bit platform race for up to 20: run, jump, stomp, kick shells, smash bricks with a mushroom and throw fireballs, and be first to the flagpole. Land on a rival to flatten them.',
  blurb:'A / D run (you speed up the longer you run), Space / W jump (hold for higher), E / Shift fireball. Be first to the flag!',
  howto:'A / D run, Space / W / click jump (hold it to jump higher), S crouch when big, E / Shift / right-click throws a fireball with the flower. Stomp enemies and rivals, kick shells, every 10 coins gives a dash.',

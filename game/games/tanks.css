@@ -1,4 +1,4 @@
-/* Battle City only. Everything else comes from engine/ra.css. */
+/* Battle Town only. Everything else comes from engine/ra.css. */
 .bc .bcslots{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
 .bc .slot{grid-template-columns:auto minmax(0,1fr)}
 .bc #bcOver .row{justify-content:center}

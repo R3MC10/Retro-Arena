@@ -1,4 +1,4 @@
-/* NIGHT SURVIVORS for Retro Arena: horde survival for up to 20 in pixel art, after Vampire Survivors.
+/* NIGHT SURVIVORS for Retro Arena: horde survival for up to 20 in pixel art, with automatic weapons and growing enemy swarms.
    The original it follows: you only walk - your weapons fire by themselves; the night throws ever bigger swarms at you;
    kills drop XP gems, and every level offers three cards: a new weapon, a weapon level, or a passive.
    The 20-player twist: everyone survives the same night on one field. Fall and you become a ghost: a team mate standing

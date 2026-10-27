@@ -40,7 +40,7 @@ const T=RA.music.track;
 function step(){ const k=RA.input.keys(KEYS); /* move things, 60 times a second */ }
 function frame(now){ ctx.fillStyle=RA.gfx.NES.sky; ctx.fillRect(0,0,SCR.w,SCR.h); /* draw */ }
 
-RA.register({id:'pacman',name:'PAC-MAN',kind:'Maze chase',players:'2-20 players',ready:true,el:root,
+RA.register({id:'pacman',name:'MUNCH-MAN',kind:'Maze chase',players:'2-20 players',ready:true,el:root,
   desc:'One line for the menu.',
   icon:['..........', /* 10 rows of 10 letters, colours in RA.icons */ ],
   music:[T('Dot Muncher',140,['C','Am','F','G'],'k.h.s.h.','c5 - e5 - g5 - ...')],

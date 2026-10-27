@@ -1,8 +1,8 @@
-/* DUCK HUNT for Retro Arena: up to 20 Zappers over one pseudo-3D field. The mouse (or right stick) aims the crosshair, click / A fires.
+/* QUACK HUNT for Retro Arena: up to 20 hunters over one pseudo-3D field. The mouse (or right stick) aims the crosshair, click / A fires.
    3 shells per wave. Ducks fly in from the grass at different depths; the dog pops up with your catch, and laughs at whoever is last.
    Modes: HUNT (everyone shoots CPU ducks, most points wins) · BE THE DUCK (each wave one player flies the duck with WASD and scores by
    escaping; everyone else hunts it) · CLAY (clay pigeons in pairs, quick shots).
-   Duck Hunt items fly by as balloons; shoot one to get it:
+   Quack Hunt items fly by as balloons; shoot one to get it:
     GOLDEN DUCK (worth 5x) · SHOTGUN (wide spread) · SLOW-MO (every duck flies slowly) · EXTRA SHELLS
     party: DECOY (a rival sees fake ducks that cost points) · FLASH (a rival's screen whites out) · DOG BLOCK (the dog stands in front of a rival).
    Your crosshair and shots run on your machine and you call your own hits, so there is no lag (RA.kit localFirst). */
@@ -147,19 +147,19 @@ function render(g,Wv,Hv){const z=Math.min(Wv/FW,Hv/FH),ox=(Wv-FW*z)/2,oy=(Hv-FH*
   if(K.mode===1&&me&&duckIdx===me.i){g.textAlign='center';g.fillText("YOU'RE THE DUCK! FLY WITH WASD",Wv/2,46)}}
  const list=hunters.slice().sort((a,b)=>b.score-a.score).slice(0,8);g.font='6px "Russo One",sans-serif';
  list.forEach((h,k)=>{const y=30+k*8;g.textAlign='left';g.fillStyle='rgba(0,0,0,.55)';g.fillRect(Wv-90,y-6,86,7.5);g.fillStyle=h.col;g.fillRect(Wv-89,y-5,4,5);g.fillStyle='#fff';g.fillText((h.name||'').slice(0,12),Wv-83,y);g.textAlign='right';g.fillText(h.score,Wv-7,y)})}
-K=RA.kit({id:'duckhunt',name:'DUCK HUNT',kind:'Light gun',players:'1-20 players',demo:4,localFirst:true,
- desc:'Up to 20 Zappers over one pseudo-3D field: shoot the ducks, take turns being the duck, or blast clay pigeons. The dog laughs at whoever is last. Duck Hunt items fly by on balloons.',
+K=RA.kit({id:'duckhunt',name:'QUACK HUNT',kind:'Light gun',players:'1-20 players',demo:4,localFirst:true,
+ desc:'Up to 20 hunters over one pseudo-3D field: shoot the ducks, take turns being the duck, or blast clay pigeons. The dog laughs at whoever is last. Quack Hunt items fly by on balloons.',
  blurb:'Aim with the mouse, click to fire. 3 shells a round. In BE THE DUCK, one player flies the duck with WASD and everyone else hunts it.',
- howto:'Mouse aims the Zapper, click fires (3 shells a round). As the duck: WASD flies. Gamepad: right stick aims, A fires, left stick flies the duck.',
+ howto:'Mouse aims the Sharpshot, click fires (3 shells a round). As the duck: WASD flies. Gamepad: right stick aims, A fires, left stick flies the duck.',
  icon:['..........','...gg.....','..gggw....','..kkkkkk..','.kbbbbbk..','kbbwbbbk..','.kbbbbk...','..kkkk....','....rr....','...rrrr...'],
  music:MUSIC,fireLabel:'FIRE',
  modes:[['HUNT','Everyone shoots CPU ducks. Most points wins.'],['BE THE DUCK','Each round one player is the duck. Escape for big points.'],['CLAY','Clay pigeons in pairs: quick shots.']],
  settings:[['waves','Rounds',[[10,'10'],[5,'5'],[20,'20']]],['ducks','Ducks per round',[[1,'Normal'],[2,'Lots'],[.5,'Few']]],['steal','Steal shots',[['on','Anyone can hit any duck'],['off','Your own ducks only']]],
-  ['time','Duck flight time',[[420,'7 s'],[300,'5 s'],[600,'10 s']]],['items','Items',[['on','Duck Hunt items'],['party','Wild party'],['off','Off']]]],
+  ['time','Duck flight time',[[420,'7 s'],[300,'5 s'],[600,'10 s']]],['items','Items',[['on','Quack Hunt items'],['party','Wild party'],['off','Off']]]],
  kb:[['MOUSE','aim'],['LMB','fire'],['W A S D','fly (duck)'],['C','chat'],['ESC','menu']],pad:[['RS','aim'],['A','fire'],['LS','fly (duck)'],['BACK','chat'],['START','menu']],
  aim:()=>null,
- ach:[{id:'first',name:'Zapper',desc:'Finish your first match',test:s=>s.played>=1,unlock:'title:Zapper'},{id:'win1',name:'Sharpshooter',desc:'Win a match',test:(s,m)=>m.won,unlock:'title:Sharpshooter'},
-  {id:'h20',name:'Duck Season',desc:'Hit 20 ducks in one match',test:(s,m)=>m.kills>=20,unlock:'title:Duck Season'},{id:'esc',name:'Wabbit Season',desc:'Escape as the duck',test:(s,m)=>m.escaped>=1,unlock:'title:Wabbit Season'}],
+ ach:[{id:'first',name:'Sharpshot',desc:'Finish your first match',test:s=>s.played>=1,unlock:'title:Zapper'},{id:'win1',name:'Sharpshooter',desc:'Win a match',test:(s,m)=>m.won,unlock:'title:Sharpshooter'},
+  {id:'h20',name:'Duck Season',desc:'Hit 20 ducks in one match',test:(s,m)=>m.kills>=20,unlock:'title:Duck Season'},{id:'esc',name:'Duck Escape',desc:'Escape as the duck',test:(s,m)=>m.escaped>=1,unlock:'title:Wabbit Season'}],
  alive:i=>!!hunters[i],start,step,local,upload,follow,snap,apply,render,bot,onFx,
  ranks:()=>hunters.slice().sort((a,b)=>b.score-a.score).map(h=>[h.name,h.col,h.score+' · '+h.hits+' hits']),
  result:(i,w)=>{const h=hunters[i];return{won:!!w&&w.i===i,kills:h.hits,escaped:h.escaped,bestScore:h.score}}});

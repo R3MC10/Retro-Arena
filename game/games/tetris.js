@@ -1,8 +1,8 @@
-/* TETRIS for Retro Arena: everyone vs everyone in the 99 style, up to 20 lit 3D-looking wells. Lag-free: your well runs on your machine.
+/* TETRONIX for Retro Arena: everyone vs everyone in a falling-block showdown, up to 20 lit 3D-looking wells. Lag-free: your well runs on your machine.
    A / D move, S soft drop, Space hard drop, W rotate, Q rotate back, E or Shift hold (modern rules). Lines become garbage for a rival
-   (2 lines = 1, 3 = 2, TETRIS = 4, back-to-back and combos add more); incoming garbage waits in the red meter and your own clears cancel it.
+   (2 lines = 1, 3 = 2, TETRONIX = 4, back-to-back and combos add more); incoming garbage waits in the red meter and your own clears cancel it.
    Knock players out to earn badges that boost your attacks. Host picks rules (modern / classic), targeting, badges, items and length.
-   Tetris items (party): garbage lines can hold a glowing block. Clear that line to fire it: BOMB (blasts your bottom 4 rows),
+   Tetronix items (party): garbage lines can hold a glowing block. Clear that line to fire it: BOMB (blasts your bottom 4 rows),
    S-Z STORM (a rival's next 4 pieces are S and Z), LIGHTS OUT (a rival's well goes dark), MIRROR (a rival's left and right swap),
    ROCKET (a rival falls 3x faster), SHIELD (block all garbage for 10 s). */
 (()=>{
@@ -53,7 +53,7 @@ function lock(b){const ts=tspin(b);for(const[x,y]of cells(b.cur))if(y>=0)b.well[
   let atk=ts?n*2:[0,0,1,2,4][n];const hard=n===4||ts;if(hard&&b.b2b)atk++;b.b2b=hard;atk+=[0,0,1,1,2,2,3,3,4,4,4][Math.min(10,b.combo)]||0;
   if(K.S.badges==='on')atk=Math.floor(atk*(1+Math.min(4,b.badges)*.25));
   if(!b.well.some(Boolean))atk+=4;
-  tag(b,ts?'T-SPIN '+['','SINGLE','DOUBLE','TRIPLE'][n]:n===4?'TETRIS!':b.combo>1?b.combo+' COMBO':'');
+  tag(b,ts?'T-SPIN '+['','SINGLE','DOUBLE','TRIPLE'][n]:n===4?'TETRONIX!':b.combo>1?b.combo+' COMBO':'');
   // your clears cancel your own incoming garbage first
   while(atk>0&&b.pend.length){const c=Math.min(atk,b.pend[0]);b.pend[0]-=c;atk-=c;if(!b.pend[0])b.pend.shift()}
   if(atk>0&&K.S.att!=='off')b.outq.push('G'+atk);
@@ -141,8 +141,8 @@ function render(g,Wv,Hv){const bg=g.createRadialGradient(Wv/2,Hv/2,10,Wv/2,Hv/2,
  const grid=(list,ax,aw)=>{const ah=bot-top;let best=null;for(let cols=1;cols<=list.length;cols++){const rows=Math.ceil(list.length/cols),sc=Math.min(aw/cols/WW,ah/rows/WH);if(!best||sc>best.sc)best={cols,sc}}
   const tw=best.cols*WW*best.sc,ox=ax+(aw-tw)/2;list.forEach((b,k)=>drawWell(g,b,ox+(k%best.cols)*WW*best.sc,top+Math.floor(k/best.cols)*WH*best.sc,best.sc,!main&&fs.includes(b.i)))};
  if(main){const sc=(bot-top)/WH,mw=(WW+40)*sc;drawWell(g,main,30*sc,top,sc,true);const rest=boards.filter(b=>b!==main);if(rest.length)grid(rest,mw+20,Wv-mw-28)}else grid(boards,8,Wv-16)}
-K=RA.kit({id:'tetris',name:'TETRIS',kind:'Falling blocks',players:'1-20 players',demo:6,localFirst:true,
- desc:'Everyone vs everyone in the 99 style: up to 20 lit 3D-looking wells, garbage attacks, KO badges, modern or classic rules, and Tetris-only party items.',
+K=RA.kit({id:'tetris',name:'TETRONIX',kind:'Falling blocks',players:'1-20 players',demo:6,localFirst:true,
+ desc:'Everyone vs everyone in a falling-block showdown: up to 20 lit 3D-looking wells, garbage attacks, KO badges, modern or classic rules, and Tetronix-only party items.',
  blurb:'A / D move, W rotates, S soft drops, Space hard drops, E holds. Clear lines to bury rivals in garbage. Last well standing wins.',
  howto:'A / D move, W rotate, Q rotate back, S soft drop, Space hard drop, E or Shift hold. Gamepad: d-pad moves, up rotates, A hard drop, B hold, X rotate back.',
  icon:['..........','.cccc.....','..........','....yy....','....yy....','.p......rr','ppp....rr.','.....gg...','.bbbgg....','.b........'],
@@ -151,7 +151,7 @@ K=RA.kit({id:'tetris',name:'TETRIS',kind:'Falling blocks',players:'1-20 players'
  settings:[['rules','Rules',[['modern','Modern (hold, ghost, 7-bag)'],['classic','Classic NES']]],['target','Garbage target',[['random','Random'],['attacker','Attackers'],['ko','K.O.s (highest stack)'],['badges','Badges']]],
   ['badges','Badges',[['on','On'],['off','Off']]],['items','Items',[['off','Off'],['party','Wild party']]],['att','Garbage',[['on','On'],['off','Off']]],['speed','Speed-up',[[1,'Normal'],[2,'Fast'],[0,'None']]],['len','Time limit',[[0,'None'],[5,'5 min'],[10,'10 min']]]],
  kb:[['A D','move'],['W','rotate'],['S','soft drop'],['SPACE','hard drop'],['E','hold'],['C','chat'],['ESC','menu']],pad:[['DPAD','move'],['UP','rotate'],['A','hard drop'],['B','hold'],['BACK','chat'],['START','menu']],
- ach:[{id:'first',name:'Comrade',desc:'Finish your first match',test:s=>s.played>=1,unlock:'title:Comrade'},{id:'win1',name:'Tetris 99',desc:'Win a match',test:(s,m)=>m.won,unlock:'title:Number One'},
+ ach:[{id:'first',name:'Comrade',desc:'Finish your first match',test:s=>s.played>=1,unlock:'title:Comrade'},{id:'win1',name:'Last Well Standing',desc:'Win a match',test:(s,m)=>m.won,unlock:'title:Number One'},
   {id:'ko3',name:'Badge Collector',desc:'3 K.O.s in one match',test:(s,m)=>m.kills>=3,unlock:'title:Badge Collector'},{id:'l40',name:'Line Clearer',desc:'Clear 40 lines in one match',test:(s,m)=>m.lines>=40,unlock:'title:Line Clearer'}],
  alive:i=>!!boards[i]&&!boards[i].out,start,step,local,upload,follow,snap,apply,render,bot,onFx,
  ranks:()=>boards.slice().sort((a,b)=>(a.out-b.out)||((b.outAt|0)-(a.outAt|0))||b.kos-a.kos).map(b=>[b.name,b.col,b.kos+' KO · '+b.lines+' lines']),

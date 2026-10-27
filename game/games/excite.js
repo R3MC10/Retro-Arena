@@ -1,4 +1,4 @@
-/* EXCITEBIKE for Retro Arena: side-view motocross for up to 20 riders, in hand-drawn pixel art on a 320x180 pixel screen.
+/* THRILL BIKE for Retro Arena: side-view motocross for up to 20 riders, in hand-drawn pixel art on a 320x180 pixel screen.
    Hold Space (or click) for gas, add E / Shift / right-click for turbo: it is faster but heats the engine, and an engine that
    overheats stalls until it cools. Ride over the blue cooling arrows to reset the heat. W / S change lane (on the ground),
    A / D lean back and forward: in the air, match the angle of the slope you will land on or you crash.
@@ -12,7 +12,7 @@ const LANES=4,LH=10,SKEW=5,TEAMC=['#e83838','#2c78f0'],TEAMN=['Red team','Blue t
 const GAS=1.85,TURBO=2.6,GRAV=.1;
 const ITEMS=[null,{n:'NITRO',c:'#ffa040',d:'Turbo with no heat'},{n:'ICE COOL',c:'#a0f0ff',d:'Engine stays cold'},{n:'OIL',c:'#9a94a8',d:'Q drops it behind you'},{n:'HEAT WAVE',c:'#f05050',d:'Everyone else gets hot',party:1}];
 const MUSIC=[T('Paddock',120,['G','C','D','G'],'k...s...k.k.s...','g5 - b5 d6 - b5 g5 - c6 - e6 c6 - g5 e5 - d5 - f#5 a5 - d6 - - g5 - - - - - - -'),
- T('Excite',160,['C','C','F','G'],'k.hsk.hsk.hsk.hs','c5 c5 e5 g5 . g5 e5 c5 c5 c5 e5 g5 . c6 . . f5 f5 a5 c6 . a5 f5 . g5 g5 b5 d6 . b5 g5 .'),
+ T('Thrill Ride',160,['C','C','F','G'],'k.hsk.hsk.hsk.hs','c5 c5 e5 g5 . g5 e5 c5 c5 c5 e5 g5 . c6 . . f5 f5 a5 c6 . a5 f5 . g5 g5 b5 d6 . b5 g5 .'),
  T('Dirt Track',144,['Am','G','F','E'],'k..hs.h.k.khs.h.','a4 c5 e5 a5 e5 c5 a4 c5 g4 b4 d5 g5 d5 b4 g4 b4 f4 a4 c5 f5 c5 a4 f4 a4 e4 g#4 b4 e5 - - - -'),
  T('Final Lap',178,['Dm','Bb','C','A'],'kshskshskshskshs','d5 f5 a5 d6 a5 f5 d5 f5 bb4 d5 f5 bb5 f5 d5 bb4 d5 c5 e5 g5 c6 g5 e5 c5 e5 a4 c#5 e5 a5 e5 c#5 a4 c#5')];
 RA.audio.add('land',(AC,now,g)=>{const o=AC.createOscillator();o.frequency.setValueAtTime(110,now);o.frequency.exponentialRampToValueAtTime(40,now+.12);g.gain.setValueAtTime(.3,now);g.gain.exponentialRampToValueAtTime(.001,now+.14);o.connect(g);o.start(now);o.stop(now+.15)});
@@ -192,7 +192,7 @@ function crowd(th,cheer){const k='cr'+th.n+cheer;if(IMG[k])return IMG[k];const W
   for(let x=(row&1)*2;x<W;x+=5){if(rr()<.08)continue;const sh=shirts[Math.floor(rr()*shirts.length)],sk=skins[Math.floor(rr()*3)],hr=hair[Math.floor(rr()*4)],y=row*9+1,up=cheer&&rr()<.6;
    g.fillStyle=sh;g.fillRect(x,y+4,4,3);g.fillStyle=sk;g.fillRect(x+1,y+1,2,3);g.fillStyle=hr;g.fillRect(x+1,y,2,1);if(up){g.fillStyle=sk;g.fillRect(x,y,1,3);g.fillRect(x+3,y,1,3)}}}
  return IMG[k]=c}
-function ads(){if(IMG.ads)return IMG.ads;const L=[['EXCITE!','#fff07c','#b8202c'],['RETRO ARENA','#ffffff','#2058c0'],['20 RIDERS','#100c18','#88dc48'],['TURBO!','#ffffff','#e06818']],W=L.length*72,c=X.mk(W,11),g=c.getContext('2d');
+function ads(){if(IMG.ads)return IMG.ads;const L=[['THRILL!','#fff07c','#b8202c'],['RETRO ARENA','#ffffff','#2058c0'],['20 RIDERS','#100c18','#88dc48'],['TURBO!','#ffffff','#e06818']],W=L.length*72,c=X.mk(W,11),g=c.getContext('2d');
  L.forEach((a,k)=>{g.fillStyle=X.PAL.k;g.fillRect(k*72,0,72,11);g.fillStyle=a[2];g.fillRect(k*72+1,1,70,9);txt(g,a[0],k*72+36,2,{col:a[1],align:'center',shadow:false})});return IMG.ads=c}
 function skyImg(th,h){const k='s'+th.n+h;if(IMG[k])return IMG[k];const c=X.mk(4,h),g=c.getContext('2d');
  for(let y=0;y<h;y++)for(let x=0;x<4;x++){const t=y/Math.max(1,h-1)*2,i=Math.min(1,Math.floor(t)),f=t-i;g.fillStyle=X.dither(x,y,f)?th.sky[i+1]:th.sky[i];g.fillRect(x,y,1,1)}return IMG[k]=c}
@@ -278,7 +278,7 @@ function hud(g,r,vx,vy,vw,vh,small,cam){const S=K.S,H=small?11:28,y=vy+vh-H;
  if(K.tick<CD+50){const n=K.tick<CD?Math.floor(K.tick/(CD/4)):4,li=lightsImg(n);g.drawImage(li,vx+vw/2-li.width,vy+(small?2:14),li.width*2,li.height*2);
   if(n>=4)txt(g,'GO!',vx+vw/2,vy+(small?18:32),{col:'#88dc48',align:'center',scale:small?2:3,outline:P.k});
   if(K.tick<CD&&K.tick%(CD/4|0)===0&&K.tick>0&&isMine(r))RA.audio.blip(440);if(K.tick===CD&&isMine(r))RA.audio.blip(880)}
- if(K.demo){txt(g,'EXCITEBIKE',vx+vw/2,y+(small?2:10),{col:'#fff07c',align:'center'});return}
+ if(K.demo){txt(g,'THRILL BIKE',vx+vw/2,y+(small?2:10),{col:'#fff07c',align:'center'});return}
  // temperature: segmented gauge like the original
  const segs=small?10:16,gx=vx+(small?4:6),gy2=y+(small?3:14),hot=r.heat/100;
  if(!small)txt(g,r.stall>0?((K.tick>>3)&1?'OVERHEAT':''):'TEMP',gx,y+4,{col:r.stall>0?'#f05050':'#9a94a8',shadow:false});
@@ -312,7 +312,7 @@ function engineSound(){const AC=RA.audio.ctx,me=K.demo||K.state!=='play'?null:rd
   o.connect(f);o2.connect(f);f.connect(g);g.connect(AC.destination);o.start();o2.start();engine={o,o2,g}}
  const V=RA.audio.vol,vol=V.mute?0:.035*V.master/100*V.sfx/100,f=me.cr||me.stall>0?38:45+me.vx*34+(me.gr?0:20);
  engine.o.frequency.setTargetAtTime(f,AC.currentTime,.05);engine.o2.frequency.setTargetAtTime(f*.5,AC.currentTime,.05);engine.g.gain.setTargetAtTime(vol,AC.currentTime,.08)}
-K=RA.kit({id:'excite',name:'EXCITEBIKE',kind:'Motocross',players:'1-20 players',demo:6,localFirst:true,baseH:180,
+K=RA.kit({id:'excite',name:'THRILL BIKE',kind:'Motocross',players:'1-20 players',demo:6,localFirst:true,baseH:180,
  desc:'Side-view motocross for up to 20 riders in pixel art: hold the gas, use the turbo without overheating, lean to land clean, and never ride into someone\'s back wheel.',
  blurb:'Hold Space for gas, E for turbo (watch the temperature!), W / S change lane, A / D lean in the air.',
  howto:'Space / click gas, E / Shift / right-click turbo, W / S lane, A / D lean back / forward, Q drops oil. Gamepad: A gas, B turbo, stick for lanes and lean. Touch: the button is gas, the turbo is automatic.',

@@ -1,4 +1,4 @@
-/* TRACK & FIELD for Retro Arena: the button-bashing athletics meet for up to 20, after Konami's Track & Field, in pixel art.
+/* TRACK STARS for Retro Arena: the button-bashing athletics meet for up to 20, with four track and field events, in pixel art.
    The original it follows: alternate two keys as fast as you can to sprint; hold the action key to set your angle and
    let go to jump or throw; step over the line and it's a foul. Four events: 100M DASH, LONG JUMP, 110M HURDLES, JAVELIN.
    The 20-player twist: everyone competes at once, a lane each, and every event hands out points by finishing place
@@ -124,7 +124,7 @@ function view(g,vw,vh){const e=EV(),me=ath[meIdx()]||null,N=ath.length,LS=Math.m
  // sky, crowd, wall with boards, infield
  g.fillStyle='#5c94fc';g.fillRect(0,0,vw,24);const cr=crowdImg(),off=Math.round(-((cx*PXM*.5)%cr.width));for(let x=off-cr.width;x<vw;x+=cr.width)g.drawImage(cr,x,18);
  const crowdJump=ph==='done'||ph==='go'&&(K.tick>>3)&1;if(crowdJump&&ph==='done'){g.fillStyle='rgba(0,0,0,0)'}
- g.fillStyle=P.k;g.fillRect(0,58,vw,1);g.fillStyle='#2058c0';g.fillRect(0,59,vw,8);for(let m=Math.floor((cx-40)/36)*36;m<cx+40;m+=36){const sx=SX(m);g.fillStyle=P.k;g.fillRect(sx-2,59,2,8);X.text(g,['RETRO ARENA','TRACK & FIELD','GO GO GO','20 PLAYERS'][((m/36)%4+4)%4],sx+4,60,{col:'#fff07c',shadow:false})}
+ g.fillStyle=P.k;g.fillRect(0,58,vw,1);g.fillStyle='#2058c0';g.fillRect(0,59,vw,8);for(let m=Math.floor((cx-40)/36)*36;m<cx+40;m+=36){const sx=SX(m);g.fillStyle=P.k;g.fillRect(sx-2,59,2,8);X.text(g,['RETRO ARENA','TRACK STARS','GO GO GO','20 PLAYERS'][((m/36)%4+4)%4],sx+4,60,{col:'#fff07c',shadow:false})}
  g.fillStyle='#38a038';g.fillRect(0,67,vw,top-67);for(let y=67;y<top;y++)for(let x=0;x<vw;x++)if(X.dither(x,y,.15)){g.fillStyle='#2e8a30';g.fillRect(x,y,1,1)}
  const tb=ly(N-1)+5;g.fillStyle='#c8502c';g.fillRect(0,top,vw,tb-top);g.fillStyle='#b04424';for(let y=top;y<tb;y+=2)for(let x=((y>>1)&1);x<vw;x+=3)g.fillRect(x,y,1,1);
  g.fillStyle='#e8e4dc';g.fillRect(0,top,vw,1);for(let k=0;k<N;k++)g.fillRect(0,ly(k)+Math.floor(LS/2)-LS+1+Math.floor(LS/2),vw,1);g.fillRect(0,tb,vw,1);
@@ -151,7 +151,7 @@ function view(g,vw,vh){const e=EV(),me=ath[meIdx()]||null,N=ath.length,LS=Math.m
 function hud(g,vw,vh,me,run){const TX=(s,x,y,o)=>X.text(g,s,x,y,Object.assign({outline:P.k},o||{})),e=EV(),E=EVENTS[e];
  TX(E.n,4,14,{col:'#fff07c'});TX('EVENT '+(ev+1)+'/'+evList.length,4,23,{col:'#a0f0ff'});
  if(run&&ph==='go'){const t=(me&&me.res!=null&&me.res>=0?me.res:(K.tick-ga)/60);TX(t.toFixed(2),vw-4,14,{col:'#ffffff',align:'right'})}
- if(K.demo){TX('TRACK & FIELD',vw/2,vh-16,{col:'#fff07c',align:'center',scale:2});return}
+ if(K.demo){TX('TRACK STARS',vw/2,vh-16,{col:'#fff07c',align:'center',scale:2});return}
  // the instruction card
  const touch=me&&K.seats[me.i]&&K.seats[me.i].ctrl==='touch',runK=touch?'TAP LEFT / RIGHT':'A D A D A D...';
  if(ph==='intro'){const lines={dash:[runK+' TO RUN','THE FASTER YOU BASH, THE FASTER YOU GO','DON\'T MOVE BEFORE THE GUN!'],lj:[runK+' TO RUN UP','HOLD SPACE TO RAISE THE ANGLE','LET GO BEFORE THE WHITE BOARD'],
@@ -173,7 +173,7 @@ function hud(g,vw,vh,me,run){const TX=(s,x,y,o)=>X.text(g,s,x,y,Object.assign({o
   const top3=ath.slice().sort((a,b)=>pts[b.i]-pts[a.i]).slice(0,3);TX('POINTS: '+top3.map(a=>(a.name||'').slice(0,6)+' '+pts[a.i]).join('  '),vw/2,y0+h-11,{col:'#88dc48',align:'center',shadow:false})}}
 function render(ctx,W,H){if(!SCR)SCR=X.screen();const g=SCR.size(W,H);g.fillStyle=P.k;g.fillRect(0,0,SCR.w,SCR.h);if(!ath.length){SCR.present(ctx,W,H);return}
  g.save();g.beginPath();g.rect(0,0,SCR.w,SCR.h-(K.demo?0:9));g.clip();view(g,SCR.w,SCR.h-(K.demo?0:9));g.restore();SCR.present(ctx,W,H)}
-K=RA.kit({id:'track',name:'TRACK & FIELD',kind:'Athletics',players:'1-20 players',demo:6,localFirst:true,baseH:180,
+K=RA.kit({id:'track',name:'TRACK STARS',kind:'Athletics',players:'1-20 players',demo:6,localFirst:true,baseH:180,
  desc:'The button-bashing athletics meet for up to 20: 100m dash, long jump, 110m hurdles and javelin, everyone at once. Bash two keys to run, hold to set your angle, and win the most points.',
  blurb:'Bash A and D (or the arrows) one after the other to run. Space jumps hurdles; hold it for the angle in the long jump and javelin, then let go.',
  howto:'Alternate A / D (or Left / Right) as fast as you can to run. Space / W jumps a hurdle. Long jump and javelin: hold Space to raise the angle, let go before the line. Touch: tap the left and right buttons in turn.',

@@ -1,4 +1,4 @@
-/* TINY TRACKS for Retro Arena: tabletop racing for up to 20 in pixel art, after Micro Machines.
+/* TINY TRACKS for Retro Arena: tabletop racing for up to 20 in pixel art, with one-screen elimination races.
    The original it follows: tiny cars race across a breakfast table, a school desk and the garden, seen from above, all on
    ONE screen that follows the leader. Fall behind the edge of the screen (or off the table) and you're out of the round;
    the last car left scores a point, and the pack is put back down for the next round. First to the target wins.
