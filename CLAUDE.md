@@ -38,9 +38,19 @@ packed into a Windows desktop app (Electron) with peer-to-peer rooms. The owner 
 - 2026-10-27: Build all the coming-soon games in catalog.js, simplest first (8-bit, then bigger 2D, then 3D-styled).
 - 2026-10-27: Names that sound like the classics without being them; see `NAMES.md`. Ids stay the same.
 
+- 2026-10-27: When Codex hits its usage limit, Claude takes over its work; they work together again once it is back (owner).
+- 2026-10-27: A player who leaves online: elimination games knock them out; races, team and co-op games hand the seat to a CPU (`K.takeover()`).
+
+## Lessons (testing)
+- Python is not installed on the owner's PC: serve game/ with `node game/tools/test/out/server.cjs` (port 8765), and run
+  the test tools with PLAYWRIGHT_BROWSERS_PATH=game/tools/test/out/browsers.
+- `node pass.js <id>` = every mode at 8/20 seats plus an online host/guest/leave check. Run it for any game you touch.
+- Patterns that hit many games: leavers kept playing, the winner not ranked first, timers stored in ticks multiplied again,
+  20-player matches far longer than 1-3 min, CPUs that all chase the same target.
+
 ## Next
-1. Minor fixes from AUDIT.md (branch work/minor-fixes), then the renames from NAMES.md.
-2. Full test pass of all 22 games, fixing what it finds, one commit per game.
+1. DONE: minor fixes + renames (PR #2), full test pass of all 22 games (PR #3).
+2. CPU difficulty round (branch work/difficulty): a beginner must place mid-pack and win sometimes on Easy, in every game.
 3. Build the new games in this order: ROAD BRAWLER, F-ONE RACE, RAD RUNNER, CIRCUS CHUCK, MOON BALL, BIG SNOUT, CHIP & CHUM,
    ADVENTURE ATOLL, SUPER CONTACT, GUERRILLA RAID, SKY WRECKER, TETRONIX 2, GOAL RUSH; then METAL SNAIL X, CONTACT FORCE,
    BRAWL STADIUM, CRUSH BASH, LUMINOS 2, PATAPUM, ROLLOROLLO, MORTAL KOMBO 4, GRAND THEFT TOWN, RED ALARM 2,
