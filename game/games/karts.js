@@ -165,7 +165,7 @@ function drive(p,inp){const f=p.fx;for(const k in f)if(f[k]>0&&k!=='shield')f[k]
  p.st=(p.st||0)+Math.max(-.25,Math.min(.25,steer-(p.st||0)));if(!inp.ax)steer=p.st;
  if(f.spin>0){p.sp*=.95;move(p,p.va);return}
  const s=surfAt(p.x,p.z),cpu=K.seats[p.i]&&K.seats[p.i].ctrl==='cpu';
- let max=VMAX*(f.shrink>0?.72:1);if(cpu){max*=Math.min([.82,1,1.03][K.cpu],[.78,.93,.97][K.cpu]+(BAT?0:(p.place-1)/Math.max(1,karts.length-1)*.07));
+ let max=VMAX*(f.shrink>0?.72:1);if(cpu){max*=Math.min([.74,1,1.03][K.cpu],[.68,.93,.97][K.cpu]+(BAT?0:(p.place-1)/Math.max(1,karts.length-1)*.07));
   if(!BAT&&humanProg!=null&&p.prog>humanProg+MAP.N*.2)max*=.88}       // far ahead of every human: ease off so the race stays a race
  if(f.star>0)max=VSTAR;if(f.boost>0)max=VBOOST;if(s===OFF&&!(f.star>0||f.boost>0))max*=.62;
  if(s===OFF)p.offT=(p.offT|0)+1;if(s===PAD&&!(f.boost>20)){f.boost=50;sfx('boost')}
