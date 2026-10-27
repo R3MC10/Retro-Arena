@@ -52,7 +52,7 @@ function item(p,k){say(p.x,p.y-14,ITEMS[k].n,ITEMS[k].c);sfx('pick');const f=p.f
 function boom(x,y,col){sfx('boom');for(let q=0;q<14;q++)parts.push({x,y,vx:(Math.random()-.5)*3,vy:(Math.random()-.5)*3,t:40,col:q%2?col:'#f8a030'});K.fx('x',Math.round(x),Math.round(y),col)}
 function say(x,y,s,col){texts.push({x,y,s,col,t:70});K.fx('t',Math.round(x),Math.round(y),s,col)}
 /* ---- host step */
-function step(){const S=K.S;
+function step(){K.takeover();const S=K.S;
  for(const p of planes){for(const k in p.fx)if(p.fx[k]>0&&k!=='armor')p.fx[k]--;if(p.inv>0)p.inv--;if(p.cd>0)p.cd--;if(p.bombCd>0)p.bombCd--;
   if(!p.alive){if(p.dead>0&&--p.dead===0&&!p.out){const[x,y,a]=spawnPos(p.i);Object.assign(p,{x,y,a,alive:true,hp:p.maxhp,inv:150,fx:{},sp:2})}continue}
   const s=K.seats[p.i];if(s.ctrl==='net'){const r=K.remote(p.i);if(r){p.x=r.x;p.y=r.y;p.a=r.a;p.sp=r.s;p.bank=r.b;p.netShots=r.sh||[];for(const e of r.hl||[])if((e[0]|0)>p.rSeen){p.rSeen=e[0]|0;resolve(p,e)}if(r.bm&&r.bm!==p.bmSeen){p.bmSeen=r.bm;dropBomb(p)}}continue}
