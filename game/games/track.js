@@ -78,7 +78,7 @@ function foul(a){if(a.res!=null)return;a.res=-1;a.st='done';say(a,'FOUL!','#f050
 function claim(a,k,v){if(!K.isClient()){resolve(a,[0,k,v]);return}a.cseq++;a.claims.push([a.cseq,k,v]);if(a.claims.length>8)a.claims.shift()}
 function resolve(a,[,k,v]){if(k==='r'&&ph==='go'){a.res=v;if(v>=0&&isRun()&&!ath.some(o=>o!==a&&o.res!=null&&o.res>=0&&o.res<v))say(a,'LEADS!','#fff07c')}}
 function say(a,s,col){texts.push({i:a.i,s,col,t:80})}
-function step(){phaseStep();for(const a of ath){if(ownerNet(a)){const u=K.remote(a.i);if(u)readUp(a,u);continue}athStep(a,K.inp(a.i))}vis()}
+function step(){K.takeover();phaseStep();for(const a of ath){if(ownerNet(a)){const u=K.remote(a.i);if(u)readUp(a,u);continue}athStep(a,K.inp(a.i))}vis()}
 function vis(){for(const p of parts){p.x+=p.vx/60;p.h=Math.max(0,p.h+p.vh/60);p.vh-=9.8/60;p.t--}parts=parts.filter(p=>p.t>0);for(const t of texts)t.t--;texts=texts.filter(t=>t.t>0);if(shake>0)shake*=.85;
  for(const a of ath){if(a.st==='run'&&a.v>6&&K.tick%5===0)parts.push({x:a.x-.3,h:.05,vx:-1,vh:.8,t:10,col:'#e88060',lane:a.i})}}
 /* ---------- guests ---------- */
