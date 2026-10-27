@@ -93,8 +93,13 @@ function step(){for(const b of boards){b.inSeq=b.inSeq|0;const s=K.seats[b.i];
 function local(i){const b=boards[i];if(!b)return;if(b.tagT>0)b.tagT--;stepBoard(b,K.inp(i));outflow(b)}
 function upload(i){const b=boards[i];return b?pack(b):null}
 let snapRot=0;
-function snap(){snapRot++;return{b:boards.map((b,k)=>{const d=pack(b);delete d.oq;if(!(b.sentVer===d.v&&(k+snapRot)%Math.max(4,boards.length)!==0)){b.sentVer=d.v}else delete d.s;d.in=b.inbox.slice(-8);return d})}}
-function apply(g){(g.b||[]).forEach((d,k)=>{const b=boards[k];if(!b)return;
+// Broadcast only drawing state and inboxes; upload-only routing fields stay in pack().
+// A-Z followed by a brick encode a run of 1-26 cells; omit trailing empty cells.
+function snap(){snapRot++;return{b:boards.map((b,k)=>{const d=pack(b);let s='';if(!(b.sentVer===d.v&&(k+snapRot)%Math.max(4,boards.length)!==0)){b.sentVer=d.v;s=d.s.replace(/0+$/,'').replace(/([0-9a-z])\1{2,25}/g,z=>String.fromCharCode(64+z.length)+z[0])||'0'}
+ const a=[s,d.p,d.w,d.l,d.c,d.z,d.li,d.sc.toString(36),d.lv,d.o|(d.fx.includes('laser')?2:0)|(d.fx.includes('fog')?4:0)];
+ if(d.t||b.inbox.length)a.push(d.t);if(b.inbox.length)a.push(b.inbox.slice(-8));return a})}}
+function apply(g){(g.b||[]).forEach((a,k)=>{const b=boards[k];if(!b)return;const d={p:a[1],w:a[2],l:a[3],c:a[4],z:a[5],li:a[6],sc:parseInt(a[7],36),lv:a[8],o:a[9]&1,fx:[a[9]&2?'laser':'',a[9]&4?'fog':''].join(','),t:a[10],in:a[11]};
+  if(a[0])d.s=a[0].replace(/([A-Z])([0-9a-z])/g,(_,n,c)=>c.repeat(n.charCodeAt(0)-64)).padEnd(COLS*ROWS,'0');
   if(k===K.myIdx){for(const e of d.in||[]){if((e[0]|0)>b.inSeen){b.inSeen=e[0]|0;b.lastFrom=e[2];receive(b,String(e[1]))}}return}
   const wasOut=b.out;unpack(b,d);if(!wasOut&&b.out)b.outAt=K.tick})}
 function follow(){for(const b of boards)if(b.i!==K.myIdx&&b.tagT>0)b.tagT--}
