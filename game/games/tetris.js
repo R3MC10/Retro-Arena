@@ -34,7 +34,8 @@ function gravity(b){const lv=Math.floor(b.lines/10)+Math.floor(K.tick/3600*(K.S.
 function stepBoard(b,inp){if(b.out)return;for(const k in b.fx)if(b.fx[k]>0&&k!=='storm')b.fx[k]--;if(b.tagT>0)b.tagT--;
  const ed=k=>inp[k]&&!b.prev[k];let L=inp.left,R=inp.right;if(b.fx.mirror>0){[L,R]=[R,L]}
  const modern=K.S.rules!=='classic';
- if(ed('alt')||ed('b4'))if(modern&&!b.held){const h=b.hold;b.hold=b.cur.p;if(h){b.cur={p:h,r:0,x:3,y:0}}else spawn(b);b.held=true;sfx('sel')}
+ if(ed('alt')||ed('b4'))if(modern&&!b.held){const h=b.hold;b.hold=b.cur.p;if(h){b.cur={p:h,r:0,x:3,y:0};if(collide(b,b.cur)){b.out=true;b.outAt=K.tick;tag(b,'K.O.');sfx('boom')}}else spawn(b);b.held=true;sfx('sel')}
+ if(b.out)return;
  if(ed('up')){if(tryMove(b,0,0,1)){sfx('tmove');b.lockT=0;b.lastRot=true}}if(ed('b3')){if(tryMove(b,0,0,-1)){sfx('tmove');b.lockT=0;b.lastRot=true}}
  const d=L&&!R?-1:R&&!L?1:0;if(d!==b.dir){b.dir=d;b.das=0;if(d&&tryMove(b,d,0,0)){sfx('tmove');b.lastRot=false;if(b.lockN<15)b.lockT=0}}
  else if(d){b.das++;if(b.das>10&&b.das%2===0&&tryMove(b,d,0,0)){b.lastRot=false;if(b.lockN<15)b.lockT=0}}
@@ -80,13 +81,13 @@ function outflow(b){while(b.outq.length){const c=b.outq.shift();b.outSeq++;b.out
 function checkKOs(){for(const b of boards)if(b.out&&!b.koDone){b.koDone=true;const k=b.lastHit;if(k!=null&&boards[k]&&K.tick-(b.lastHitT|0)<900){boards[k].kos++;boards[k].badges+=1+b.badges;K.fx('k',k,b.i)}}}
 /* packing for the network */
 function pack(b){return{w:b.well.map(c=>c||'.').join(''),it:b.items,c:b.cur?[b.cur.p,b.cur.r,b.cur.x,b.cur.y]:0,n:b.next.slice(0,3).join(''),h:b.hold,p:b.pend.reduce((a,v)=>a+v,0),
- l:b.lines,s:b.score,k:b.kos,bd:b.badges,o:b.out?1:0,fx:Object.keys(b.fx).filter(k=>b.fx[k]>0).join(','),t:b.tagT>0?b.tag:'',oq:b.outLog.slice(-8),v:b.ver}}
+ l:b.lines,s:b.score,k:b.kos,bd:b.badges,o:b.out?1:0,fx:Object.keys(b.fx).filter(k=>b.fx[k]>0).join(','),t:b.tagT>0?b.tag:'',is:b.inSeen,oq:b.outLog.slice(-8),v:b.ver}}
 function unpack(b,d){if(!d)return;if(typeof d.w==='string'&&d.w.length===CW*CH)b.well=[...d.w].map(c=>c==='.'?'':c);b.items=d.it||{};
  b.cur=Array.isArray(d.c)&&SH[d.c[0]]?{p:d.c[0],r:d.c[1]|0,x:d.c[2]|0,y:d.c[3]|0}:null;b.next=String(d.n||'').split('').filter(c=>SH[c]);b.hold=SH[d.h]?d.h:'';
  b.pendN=d.p|0;b.lines=d.l|0;b.score=d.s|0;b.kos=d.k|0;b.badges=d.bd|0;b.out=!!d.o;b.fxs=String(d.fx||'');if(d.t&&d.t!==b.tag){b.tag=d.t;b.tagT=60}}
 function start(seats,md,S,seed){boards=seats.map((s,i)=>newBoard(i,s.name,s.col))}
 function step(){for(const b of boards){const s=K.seats[b.i];
-  if(s.ctrl==='net'){if(b.tagT>0)b.tagT--;const d=K.remote(b.i);if(d){const wasOut=b.out;unpack(b,d);for(const e of d.oq||[])if((e[0]|0)>b.rSeen){b.rSeen=e[0]|0;route(b,String(e[1]))}if(!wasOut&&b.out)b.outAt=K.tick}continue}
+  if(s.ctrl==='net'){if(!K.R.peer(s.peer)){if(!b.out){b.out=true;b.outAt=K.tick;tag(b,'LEFT')}continue}if(b.tagT>0)b.tagT--;const d=K.remote(b.i);if(d){const wasOut=b.out;unpack(b,d);b.inbox=b.inbox.filter(e=>e[0]>(d.is|0));for(const e of d.oq||[])if((e[0]|0)>b.rSeen){b.rSeen=e[0]|0;route(b,String(e[1]))}if(!wasOut&&b.out)b.outAt=K.tick}continue}
   stepBoard(b,K.inp(b.i));outflow(b)}
  checkKOs();const al=boards.filter(b=>!b.out),lim=K.S.len*3600;
  if(boards.length>1?al.length<=1:!al.length){K.end(al[0]?{i:al[0].i}:null);return}
@@ -94,8 +95,13 @@ function step(){for(const b of boards){const s=K.seats[b.i];
  if(al.length===2&&boards.length>2||al.length<=Math.max(2,boards.length/4)&&boards.length>4)K.track(3)}
 function local(i){const b=boards[i];if(!b)return;stepBoard(b,K.inp(i));outflow(b)}
 function upload(i){return boards[i]?pack(boards[i]):null}
-let rotN=0;function snap(){rotN++;return{b:boards.map((b,k)=>{const d=pack(b);delete d.oq;if(b.sv===d.v&&(k+rotN)%Math.max(4,boards.length)!==0)delete d.w;else b.sv=d.v;d.in=b.inbox.slice(-8);return d})}}
-function apply(g){(g.b||[]).forEach((d,k)=>{const b=boards[k];if(!b)return;if(k===K.myIdx){b.kos=d.k|0;b.badges=d.bd|0;for(const e of d.in||[])if((e[0]|0)>b.inSeen){b.inSeen=e[0]|0;receive(b,String(e[1]),e[2]|0)}return}
+// Two rotating wells bound traffic at 20 seats; moving pieces update every send.
+let rotN=0;function snap(){const first=rotN;rotN=(rotN+2)%boards.length;return{b:boards.map((b,k)=>{const d=pack(b),send=(k-first+boards.length)%boards.length<2;
+ const w=send?d.w.replace(/\.+$/,'').replace(/([.IOTSZJLGX])\1{2,25}/g,z=>String.fromCharCode(96+z.length)+z[0])||'.':'';
+ return[w,d.c,d.n,d.h,d.p,d.l,d.s,d.k,d.bd,d.o,d.fx,d.t,b.out?[]:b.inbox.slice(-8),d.it]})}}
+function apply(g){(g.b||[]).forEach((a,k)=>{const b=boards[k];if(!b)return;const d={c:a[1],n:a[2],h:a[3],p:a[4],l:a[5],s:a[6],k:a[7],bd:a[8],o:a[9],fx:a[10],t:a[11],in:a[12],it:a[13]};
+ if(a[0])d.w=a[0].replace(/([a-z])([.IOTSZJLGX])/g,(_,n,c)=>c.repeat(n.charCodeAt(0)-96)).padEnd(CW*CH,'.');
+ if(k===K.myIdx){b.kos=d.k|0;b.badges=d.bd|0;for(const e of d.in||[])if((e[0]|0)>b.inSeen){b.inSeen=e[0]|0;receive(b,String(e[1]),e[2]|0)}return}
   const wasOut=b.out;unpack(b,d);if(!wasOut&&b.out)b.outAt=K.tick})}
 function follow(){for(const b of boards)if(b.i!==K.myIdx&&b.tagT>0)b.tagT--}
 function onFx(k,a){if(k==='a'&&a[1]===K.myIdx)sfx('boom');if(k==='k'&&a[0]===K.myIdx){const b=boards[a[0]];if(b)tag(b,'K.O. BADGE!')}}
@@ -138,8 +144,8 @@ function drawWell(g,b,X,Y,sc,mine){g.save();g.translate(X,Y);g.scale(sc,sc);
  g.restore()}
 function render(g,Wv,Hv){const bg=g.createRadialGradient(Wv/2,Hv/2,10,Wv/2,Hv/2,Wv*.7);bg.addColorStop(0,'#1a1430');bg.addColorStop(1,'#04040a');g.fillStyle=bg;g.fillRect(0,0,Wv,Hv);
  if(!boards.length)return;const fs=K.demo?[]:K.focus(),main=fs.length===1?boards[fs[0]]:null,top=24,bot=Hv-28;
- const grid=(list,ax,aw)=>{const ah=bot-top;let best=null;for(let cols=1;cols<=list.length;cols++){const rows=Math.ceil(list.length/cols),sc=Math.min(aw/cols/WW,ah/rows/WH);if(!best||sc>best.sc)best={cols,sc}}
-  const tw=best.cols*WW*best.sc,ox=ax+(aw-tw)/2;list.forEach((b,k)=>drawWell(g,b,ox+(k%best.cols)*WW*best.sc,top+Math.floor(k/best.cols)*WH*best.sc,best.sc,!main&&fs.includes(b.i)))};
+ const grid=(list,ax,aw)=>{const ah=bot-top,pad=!main&&fs.length?40:0,gw=WW+pad*2;let best=null;for(let cols=1;cols<=list.length;cols++){const rows=Math.ceil(list.length/cols),sc=Math.min(aw/cols/gw,ah/rows/WH);if(!best||sc>best.sc)best={cols,sc}}
+  const tw=best.cols*gw*best.sc,ox=ax+(aw-tw)/2;list.forEach((b,k)=>drawWell(g,b,ox+((k%best.cols)*gw+pad)*best.sc,top+Math.floor(k/best.cols)*WH*best.sc,best.sc,!main&&fs.includes(b.i)))};
  if(main){const sc=(bot-top)/WH,mw=(WW+40)*sc;drawWell(g,main,30*sc,top,sc,true);const rest=boards.filter(b=>b!==main);if(rest.length)grid(rest,mw+20,Wv-mw-28)}else grid(boards,8,Wv-16)}
 K=RA.kit({id:'tetris',name:'TETRONIX',kind:'Falling blocks',players:'1-20 players',demo:6,localFirst:true,
  desc:'Everyone vs everyone in a falling-block showdown: up to 20 lit 3D-looking wells, garbage attacks, KO badges, modern or classic rules, and Tetronix-only party items.',
@@ -154,7 +160,7 @@ K=RA.kit({id:'tetris',name:'TETRONIX',kind:'Falling blocks',players:'1-20 player
  ach:[{id:'first',name:'Comrade',desc:'Finish your first match',test:s=>s.played>=1,unlock:'title:Comrade'},{id:'win1',name:'Last Well Standing',desc:'Win a match',test:(s,m)=>m.won,unlock:'title:Number One'},
   {id:'ko3',name:'Badge Collector',desc:'3 K.O.s in one match',test:(s,m)=>m.kills>=3,unlock:'title:Badge Collector'},{id:'l40',name:'Line Clearer',desc:'Clear 40 lines in one match',test:(s,m)=>m.lines>=40,unlock:'title:Line Clearer'}],
  alive:i=>!!boards[i]&&!boards[i].out,start,step,local,upload,follow,snap,apply,render,bot,onFx,
- ranks:()=>boards.slice().sort((a,b)=>(a.out-b.out)||((b.outAt|0)-(a.outAt|0))||b.kos-a.kos).map(b=>[b.name,b.col,b.kos+' KO · '+b.lines+' lines']),
+ ranks:()=>boards.slice().sort((a,b)=>((K.winner&&K.winner.i===b.i)?1:0)-((K.winner&&K.winner.i===a.i)?1:0)||(a.out-b.out)||((b.outAt|0)-(a.outAt|0))||b.kos-a.kos).map(b=>[b.name,b.col,b.kos+' KO · '+b.lines+' lines']),
  result:(i,w)=>{const b=boards[i];return{won:!!w&&w.i===i,kills:b.kos,lines:b.lines,bestScore:b.score}}});
-window.__tt={get boards(){return boards},K};
+window.__tt={get boards(){return boards},K,bot};
 })();
