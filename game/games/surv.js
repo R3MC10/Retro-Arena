@@ -112,24 +112,32 @@ function vis(){for(const f of fx)f.t--;fx=fx.filter(f=>f.t>0);for(const t of tex
 
 /* ---------- guests: walk my hunter, take the host's word for the night ---------- */
 const B64='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_',b2=v=>{v=clamp(Math.round(v),0,4095);return B64[v>>6]+B64[v&63]},u2=(s,i)=>B64.indexOf(s[i])*64+B64.indexOf(s[i+1]);
-const EK={bat:'b',zomb:'z',skel:'s',ghost:'g',elite:'E',boss:'R'},KE={b:'bat',z:'zomb',s:'skel',g:'ghost',E:'elite',R:'boss'};
 function local(i){const p=pl[i];if(p&&!p.out)move(p,K.inp(i));vis()}
 function upload(i){const p=pl[i];if(!p)return null;return{x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,f:p.face,mx:Math.round(p.mx*10),my:Math.round(p.my*10),c:p.claims||[]}}
 function readUp(p,u){if(typeof u.x!=='number')return;if(!p.down){p.x=u.x;p.y=u.y}else{p.x=u.x;p.y=u.y}p.face=u.f||1;p.mx=(u.mx|0)/10;p.my=(u.my|0)/10;if(Math.abs(p.mx)+Math.abs(p.my)>.1)p.walk+=.13;
  for(const e of u.c||[])if((e[0]|0)>(p.cSeen|0)){p.cSeen=e[0]|0;resolve(p,e)}}
-const packW=o=>Object.keys(o).map(k=>k[0]+k[1]+o[k]).join('');
-function unpackW(s,set){const o={};for(let i=0;i+2<s.length;i+=3){const k=Object.keys(set).find(k=>k[0]+k[1]===s.slice(i,i+2));if(k)o[k]=+s[i+2]}return o}
-function snap(){return{pl:pl.map(p=>[Math.round(p.x),Math.round(p.y),Math.ceil(p.hp),p.mhp,p.lv,p.xp,p.next,(p.down?1:0)|(p.out?2:0)|(p.hurt>0?4:0),p.kills,packW(p.w),packW(p.ps),p.cards?p.cards.join(','):'',Math.ceil(p.down/60),p.rv,p.face]),
- en:en.map(e=>EK[e.k]+b2(e.x)+b2(e.y)+(e.fl>0?'1':'0')).join(''),gm:gems.map(g=>(g.c==='chest'?'c':g.c)+b2(g.x)+b2(g.y)).join(''),
- bo:bolts.map(b=>b2(b.x)+b2(b.y)).join(''),po:pools.map(q=>[Math.round(q.x),Math.round(q.y),q.r,q.t]),fx:fx.filter(f=>f.t>6).map(f=>[f.k[0],Math.round(f.x),Math.round(f.y),f.d||0,f.w||0]),bh:boss?Math.round(boss.hp/boss.mh*100):-1,wn:won?1:0}}
-function apply(g){(g.pl||[]).forEach((a,i)=>{const p=pl[i];if(!p)return;p.hp=a[2];p.mhp=a[3];p.lv=a[4];p.xp=a[5];p.next=a[6];p.down=a[7]&1?Math.max(1,a[12]*60):0;p.out=!!(a[7]&2);p.hurt=a[7]&4?6:0;p.kills=a[8];
-  p.w=unpackW(a[9],WPN);p.ps=unpackW(a[10],PAS);const cards=a[11]?a[11].split(','):null;if(i===K.myIdx){if(!p.picked||K.tick-p.picked>20||!cards)p.cards=cards}else p.cards=cards;p.rv=a[13];
-  if(i===K.myIdx){if(Math.hypot(p.x-a[0],p.y-a[1])>60){p.x=a[0];p.y=a[1]}return}p.tx=a[0];p.ty=a[1];p.face=a[14];if(p.gx==null){p.x=a[0];p.y=a[1];p.gx=1}});
- const s=String(g.en||''),old=new Map();for(const e of en)old.set(e.k+Math.round(e.x/16)+','+Math.round(e.y/16),e);const ne=[];
- for(let i=0;i+6<=s.length;i+=6){const k=KE[s[i]],x=u2(s,i+1),y=u2(s,i+3);ne.push({k,x,y,r:ENT[k].r,fl:s[i+5]==='1'?6:0,face:1,ph:(x*7+y)%6})}en=ne;
- const gs=String(g.gm||'');gems=[];for(let i=0;i+5<=gs.length;i+=5)gems.push({c:gs[i]==='c'?'chest':gs[i],x:u2(gs,i+1),y:u2(gs,i+3)});
+// Small unsigned integers use five data bits per character, with bit 5 continuing.
+const packN=a=>a.map(v=>{let s='';do{s+=B64[(v&31)|(v>31?32:0)];v>>>=5}while(v);return s}).join('');
+function unpackN(s){const a=[];let v=0,n=0;for(const c of s){const k=B64.indexOf(c);v|=(k&31)<<n;if(k&32)n+=5;else{a.push(v);v=0;n=0}}return a}
+const WK=Object.keys(WPN),PK=Object.keys(PAS),CK=[...WK,...PK];
+const packW=(o,keys)=>Object.keys(o).map(k=>B64[keys.indexOf(k)*5+o[k]-1]).join('');
+function unpackW(s,keys){const o={};for(const c of s){const v=B64.indexOf(c);o[keys[Math.floor(v/5)]]=v%5+1}return o}
+// Bucket positions into 256px cells: each cell header is four characters, each
+// position is two bytes. Every entity and its rounded position are retained.
+function packPos(a){const groups=new Map();for(const [k,x,y] of a){const X=Math.round(x),Y=Math.round(y),key=k+','+(X>>8)+','+(Y>>8);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(X&255,Y&255)}
+ let s='';for(const [key,xy] of groups){const [k,x,y]=key.split(',').map(Number);s+=B64[k]+B64[x*8+y]+b2(xy.length/2)+btoa(String.fromCharCode(...xy)).replace(/=+$/,'')}return s}
+function unpackPos(s){const a=[];for(let i=0;i<s.length;){const k=B64.indexOf(s[i]),cell=B64.indexOf(s[i+1]),n=u2(s,i+2),len=Math.ceil(n*8/3),xy=atob(s.slice(i+4,i+4+len));for(let j=0;j<xy.length;j+=2)a.push([k,(cell>>3)*256+xy.charCodeAt(j),(cell&7)*256+xy.charCodeAt(j+1)]);i+=4+len}return a}
+function snap(){return{pl:pl.map(p=>[packN([Math.round(p.x),Math.round(p.y),Math.ceil(p.hp),p.lv,p.xp,(p.down?1:0)|(p.out?2:0)|(p.hurt>0?4:0)|(p.face<0?8:0),p.kills,Math.ceil(p.down/60),p.rv]),packW(p.w,WK),packW(p.ps,PK),p.cards?p.cards.map(k=>B64[CK.indexOf(k)]).join(''):''].join('.').replace(/\.$/,'')).join('!'),
+ en:packPos(en.map(e=>[Object.keys(ENT).indexOf(e.k)*2+(e.fl>0?1:0),e.x,e.y])),gm:packPos(gems.map(g=>[['b','g','r','chest'].indexOf(g.c),g.x,g.y])),
+ bo:bolts.map(b=>b2(b.x)+b2(b.y)).join(''),po:pools.map(q=>b2(q.x)+b2(q.y)+B64[q.r]).join(''),fx:fx.filter(f=>f.t>6).map(f=>f.k[0]+b2(f.x)+b2(f.y)+B64[(f.d||0)+1]+b2(f.w||0)).join(''),bh:boss?Math.round(boss.hp/boss.mh*100):-1,wn:won?1:0}}
+function apply(g){(g.pl?g.pl.split('!'):[]).forEach((s,i)=>{const p=pl[i];if(!p)return;const f=s.split('.'),a=unpackN(f[0]);p.hp=a[2];p.lv=a[3];p.xp=a[4];p.next=p.lv===1?6:nextXp(p.lv);p.down=a[5]&1?Math.max(1,a[7]*60):0;p.out=!!(a[5]&2);p.hurt=a[5]&4?6:0;p.kills=a[6];
+  p.w=unpackW(f[1],WK);p.ps=unpackW(f[2],PK);p.mhp=100+25*(p.ps.heart||0);const cards=f[3]?[...f[3]].map(c=>CK[B64.indexOf(c)]):null;if(i===K.myIdx){if(!p.picked||K.tick-p.picked>20||!cards)p.cards=cards}else p.cards=cards;p.rv=a[8];
+  if(i===K.myIdx){if(Math.hypot(p.x-a[0],p.y-a[1])>60){p.x=a[0];p.y=a[1]}return}p.tx=a[0];p.ty=a[1];p.face=a[5]&8?-1:1;if(p.gx==null){p.x=a[0];p.y=a[1];p.gx=1}});
+ en=unpackPos(g.en||'').map(([v,x,y])=>{const k=Object.keys(ENT)[v>>1];return{k,x,y,r:ENT[k].r,fl:v&1?6:0,face:1,ph:(x*7+y)%6}});
+ gems=unpackPos(g.gm||'').map(([v,x,y])=>({c:['b','g','r','chest'][v],x,y}));
  const bs=String(g.bo||'');bolts=[];for(let i=0;i+4<=bs.length;i+=4)bolts.push({x:u2(bs,i),y:u2(bs,i+2)});
- pools=(g.po||[]).map(r=>({x:r[0],y:r[1],r:r[2],t:r[3]}));for(const f of g.fx||[]){const k={s:'slash',z:'zap',p:'puff'}[f[0]];if(k&&!fx.some(o=>o.k===k&&o.x===f[1]&&o.y===f[2]))fx.push({k,x:f[1],y:f[2],d:f[3],w:f[4],t:10})}
+ const ps=String(g.po||'');pools=[];for(let i=0;i+5<=ps.length;i+=5)pools.push({x:u2(ps,i),y:u2(ps,i+2),r:B64.indexOf(ps[i+4])});
+ const fs=String(g.fx||'');for(let i=0;i+8<=fs.length;i+=8){const k={s:'slash',z:'zap',p:'puff'}[fs[i]],x=u2(fs,i+1),y=u2(fs,i+3);if(k&&!fx.some(o=>o.k===k&&o.x===x&&o.y===y))fx.push({k,x,y,d:B64.indexOf(fs[i+5])-1,w:u2(fs,i+6),t:10})}
  boss=g.bh>=0?{hp:g.bh,mh:100}:null;won=!!g.wn}
 function follow(){for(const p of pl){if(p.i===K.myIdx||p.tx==null)continue;const dx=p.tx-p.x,dy=p.ty-p.y;if(Math.abs(dx)+Math.abs(dy)>.3)p.walk+=.13;p.x+=dx*.35;p.y+=dy*.35}vis()}
 function onFx(k){if(k==='bs')sfx('boom',30)}
