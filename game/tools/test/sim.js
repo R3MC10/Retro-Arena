@@ -6,6 +6,7 @@ const {browser,openGame,startLocal,arg}=require('./lib');
  const b=await browser();const{pg,errs,P}=await openGame(b,id);await startLocal(pg,P,{n,humans:hum,mode});await pg.waitForTimeout(300);
  const r=await pg.evaluate(([P,max,expr])=>{const G=RA.menu.current,over=()=>!document.getElementById(P+'Over').hidden,ft=[];let n=0;
   for(;n<max;n++){G.step();if(n%300===0){const t=performance.now();G.frame(t);ft.push(+(performance.now()-t).toFixed(1))}if(over())break}
-  let snap=0;try{const v=Object.values(window).find(v=>v&&v.K&&v.K.snapshot&&v.K.root===G.el);if(v)snap=JSON.stringify(v.K.snapshot()).length}catch(e){}
+  const v=Object.values(window).find(v=>v&&v.K&&v.K.snapshot&&v.K.root===G.el)||({bc:window.__bc,mj:window.__mj})[P];
+  if(!v)throw new Error('No snapshot hook for '+G.id);const snap=JSON.stringify(v.K?v.K.snapshot():v.snapshot()).length;
   return{steps:n,over:over(),win:document.getElementById(P+'Win').textContent,ranks:document.getElementById(P+'Ranks').innerText.split('\n').slice(0,9).join(' | '),frameMs:ft.slice(0,12).join(','),snapBytes:snap,extra:eval(expr)}},[P,max,expr]);
  console.log(JSON.stringify(r));if(shot)await pg.screenshot({path:shot});console.log(errs.length?errs.slice(0,8).join('\n'):'NO ERRORS');await b.close()})();
