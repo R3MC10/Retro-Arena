@@ -71,9 +71,9 @@ function stepSnake(s){const inp=K.inp(s.i);steer(s,inp);
  const fi=food.findIndex(f=>f.x===nx&&f.y===ny);if(fi>=0){const f=food[fi];food.splice(fi,1);if(f.k===1){s.grow+=1;s.score+=10;sfx('chomp')}else use(s,f.k);
   if(f.k===1&&!f.t)addFood(1)}}
 function step(){const S=K.S;
- for(const s of snakes){if(s.out)continue;if(!s.alive){if(--s.respawn<=0)spawnSnake(s);continue}
+ for(const s of snakes){if(s.out)continue;const seat=K.seats[s.i];if(seat.ctrl==='net'&&!K.R.peer(seat.peer)){kill(s,null);s.out=true;continue}if(!s.alive){if(--s.respawn<=0)spawnSnake(s);continue}
   if(s.inv>0)s.inv--;if(s.burrow>0)s.burrow--;if(s.charm>0)s.charm--;stepSnake(s)}
- for(const f of food)if(f.t)f.t--;food=food.filter(f=>!f.t||f.t>0);
+ for(const f of food)if(f.t!=null)f.t--;food=food.filter(f=>f.t==null||f.t>0);
  if(S.pow!=='off'&&K.tick%300===0&&food.filter(f=>f.k>1).length<2+snakes.length/4)addFood(pickItem());
  if(food.filter(f=>f.k===1).length<snakes.length)addFood(1);
  if(goose){goose.t--;const tg=snakes[goose.tgt];if(!tg||!tg.alive||goose.t<=0)goose=null;else if(++goose.mt>=5){goose.mt=0;const h=tg.body[0];
@@ -91,7 +91,7 @@ function fxStep(){for(const p of parts){p.x+=p.vx;p.y+=p.vy;p.vx*=.92;p.vy*=.92;
 /* ---- online: each body goes as head + a string of steps */
 function enc(s){let str='';for(let j=1;j<s.body.length;j++){const a=s.body[j-1],b=s.body[j];const d=DX.findIndex((dx,k)=>a[0]+dx===b[0]&&a[1]+DY[k]===b[1]);str+=d<0?'x':DCH[d]}return str}
 function snap(){return{s:snakes.map(s=>[s.alive?1:0,s.alive?s.body[0][0]:0,s.alive?s.body[0][1]:0,s.alive?enc(s):'',s.lives,s.score,s.kills,(s.burrow>0?1:0)|(s.stun>0?2:0)|(s.charm>0?4:0)|(s.inv>0?8:0)|(s.fang>0?16:0),s.out?1:0,s.dir]),
- f:food.map(f=>[f.x,f.y,f.k]),g:goose?[goose.x,goose.y]:0,mw:[...wall].map((v,i)=>v===2?i:-1).filter(i=>i>=0).slice(0,300)}}
+ f:food.map(f=>String.fromCharCode(256+at(f.x,f.y))+f.k).join(''),g:goose?[goose.x,goose.y]:0,mw:[...wall].map((v,i)=>v===2?String.fromCharCode(256+i):'').join('')}}
 function apply(g){(g.s||[]).forEach((a,i)=>{const s=snakes[i];if(!s)return;s.lives=a[4]|0;s.score=a[5]|0;s.kills=a[6]|0;s.out=!!a[8];const f=a[7]|0;
   s.burrow=f&1?1:0;s.stun=f&2;s.charm=f&4;s.inv=f&8?1:0;s.fang=f&16;
   if(!a[0]){if(s.alive)for(const b of s.body.slice(0,6))burst(b[0],b[1],s.col);s.alive=false;s.body=[];return}
@@ -99,8 +99,8 @@ function apply(g){(g.s||[]).forEach((a,i)=>{const s=snakes[i];if(!s)return;s.liv
   const moved=!s.alive||!s.body.length||s.body[0][0]!==body[0][0]||s.body[0][1]!==body[0][1];
   if(moved){s.prev=s.body.length&&s.alive?s.body.map(b=>b.slice()):body.map(b=>b.slice());while(s.prev.length<body.length)s.prev.push(s.prev[s.prev.length-1]);s.mt=0;s.iv=Math.max(2,s.lastGap||6);s.lastGap=0}
   s.body=body;s.alive=true;s.dir=a[9]|0});
- food=(g.f||[]).map(a=>({x:a[0],y:a[1],k:a[2]}));goose=g.g?{x:g.g[0],y:g.g[1]}:null;
- for(let i=0;i<wall.length;i++)if(wall[i]===2)wall[i]=0;for(const i of g.mw||[])if(i>=0&&i<wall.length)wall[i]=2}
+ food=[];for(let i=0;i<(g.f||'').length;i+=2){const n=g.f.charCodeAt(i)-256;food.push({x:n%W,y:Math.floor(n/W),k:+g.f[i+1]})}goose=g.g?{x:g.g[0],y:g.g[1]}:null;
+ for(let i=0;i<wall.length;i++)if(wall[i]===2)wall[i]=0;for(const c of g.mw||''){const i=c.charCodeAt(0)-256;if(i>=0&&i<wall.length)wall[i]=2}}
 function follow(){for(const s of snakes){s.mt=(s.mt|0)+1;s.lastGap=(s.lastGap|0)+1}fxStep()}
 function onFx(k,a){if(k==='d'){sfx('boom')}else if(k==='i'){sfx('pick');const s=snakes[a[0]];if(s&&s.body[0])say(s.body[0],ITEMS[a[1]]?ITEMS[a[1]].n:'',ITEMS[a[1]]?ITEMS[a[1]].c:'#fff')}}
 /* ---- CPU */
@@ -180,7 +180,7 @@ K=RA.kit({id:'snake',name:'SNAKE PIT',kind:'Snakes',players:'1-20 players',demo:
  ach:[{id:'first',name:'Hatchling',desc:'Finish your first match',test:s=>s.played>=1,unlock:'title:Hatchling'},{id:'win1',name:'King Cobra',desc:'Win a match',test:(s,m)=>m.won,unlock:'title:King Cobra'},
   {id:'long',name:'Anaconda',desc:'Grow to 40 long',test:(s,m)=>m.best>=40,unlock:'title:Anaconda'},{id:'ko5',name:'Constrictor',desc:'5 KOs in one match',test:(s,m)=>m.kills>=5,unlock:'title:Constrictor'}],
  alive:i=>!!snakes[i]&&snakes[i].alive&&!snakes[i].out,out:i=>!snakes[i]||snakes[i].out,start,step,follow,snap,apply,render,bot,onFx,teamOf,
- ranks:()=>snakes.slice().sort((a,b)=>(a.out-b.out)||b.best-a.best||b.score-a.score).map(s=>[s.name,s.col,'best '+s.best+' · '+s.kills+' KO']),
+ ranks:()=>snakes.slice().sort((a,b)=>((K.winner&&K.winner.i===b.i)?1:0)-((K.winner&&K.winner.i===a.i)?1:0)||(a.out-b.out)||b.best-a.best||b.score-a.score).map(s=>[s.name,s.col,'best '+s.best+' · '+s.kills+' KO']),
  result:(i,w)=>{const s=snakes[i];return{won:!!w&&(w.team!=null?teamOf(i)===w.team:w.i===i),kills:s.kills,best:s.best,bestScore:s.score}}});
-window.__sn={get snakes(){return snakes},get food(){return food},K};
+window.__sn={get snakes(){return snakes},get food(){return food},K,bot};
 })();
