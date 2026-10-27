@@ -111,7 +111,7 @@ function courtStep(c){const b=c.ball;
   if(c.next==='game'){if(single&&Math.max(...games)>=gTarget){c.st='done';return}
    if(single){c.pts=[0,0];c.srv=1-c.srv;c.srvN=0;c.gs++;c.win=-1;resetPoint(c)}else c.st='done'}
   else resetPoint(c)}}}
-function step(){for(const p of pl){const c=courts[p.court];if(isNet(p)){const u=K.remote(p.i);if(u)readUp(p,u,c);continue}control(p,p.int?bot(p.i):K.inp(p.i),c)}
+function step(){K.takeover();for(const p of pl){const c=courts[p.court];if(isNet(p)){const u=K.remote(p.i);if(u)readUp(p,u,c);continue}control(p,p.int?bot(p.i):K.inp(p.i),c)}
  for(const c of courts)courtStep(c);
  if(rs==='play'){if(!single&&K.tick-rT>3600)for(const c of courts)if(!c.sd&&c.st!=='done'){c.sd=1;say(c,'SUDDEN DEATH: NEXT POINT WINS','#f05050')}
   if(courts.every(c=>c.st==='done')){if(single){finish();return}rs='between';rT=K.tick;climb()}}
