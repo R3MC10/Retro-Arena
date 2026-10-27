@@ -110,8 +110,8 @@ function plan(b){let best=null;for(let r=0;r<4;r++)for(let x=-2;x<CW;x++){let c=
   const w=b.well.slice();for(const[px,py]of cells(c))if(py>=0)w[py*CW+px]='x';let lines=0;for(let y=0;y<CH;y++){let f=true;for(let xx=0;xx<CW;xx++)if(!w[y*CW+xx]){f=false;break}if(f)lines++}
   const h=[];let holes=0;for(let xx=0;xx<CW;xx++){let top=CH;for(let y=0;y<CH;y++)if(w[y*CW+xx]){top=y;break}h.push(CH-top);for(let y=top+1;y<CH;y++)if(!w[y*CW+xx])holes++}
   let bump=0;for(let xx=0;xx<CW-1;xx++)bump+=Math.abs(h[xx]-h[xx+1]);const agg=h.reduce((a,v)=>a+v,0);
-  const sc=-.51*agg+.76*lines-.36*holes-.18*bump+Math.random()*(K.cpu===0?3:K.cpu===1?.6:.05);if(!best||sc>best.sc)best={sc,r,x}}return best}
-function bot(i){const b=boards[i];if(!b||b.out||!b.cur)return{};const o={};const key=b.cur.p+b.ver;if(b.planK!==key){b.planK=key;b.plan=plan(b);b.wait=K.cpu===0?40:K.cpu===1?16:5}
+  const sc=-.51*agg+.76*lines-.36*holes-.18*bump+Math.random()*(K.cpu===0?5:K.cpu===1?.6:.05);if(!best||sc>best.sc)best={sc,r,x}}return best}
+function bot(i){const b=boards[i];if(!b||b.out||!b.cur)return{};const o={};const key=b.cur.p+b.ver;if(b.planK!==key){b.planK=key;b.plan=plan(b);b.wait=K.cpu===0?55:K.cpu===1?16:5}
  if(--b.wait>0)return{};const p=b.plan;if(!p)return{tap:true};
  if(((b.cur.r%4)+4)%4!==p.r){if(K.tick%3===0)o.up=true;return o}if(b.cur.x<p.x)o.right=true;else if(b.cur.x>p.x)o.left=true;else if(K.tick%(K.cpu===2?3:8)===0)o.tap=true;
  if(o.left||o.right){if(K.tick%3)return{};}return o}
