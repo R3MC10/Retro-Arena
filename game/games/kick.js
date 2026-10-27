@@ -192,7 +192,7 @@ function keeperSave(p){const b=ball;if(b.h>=0||!p.gk||p.st==='down')return false
  // a hard shot at full stretch is parried, not caught
  const hard=Math.hypot(b.vx,b.vz)>5.2;if(p.st==='dive'&&hard&&Math.random()<.5){b.vx=-b.vx*.4;b.vz=b.vz*.5+(b.z<PH/2?-1.5:1.5);b.vy=1.2;b.last=p.n;b.kt=K.tick;say(p,'PARRIED!','#f8d040');sfx('kick',.6);return true}
  b.h=p.n;b.last=p.n;b.fire=0;p.hold=0;say(p,'SAVED!','#f8d040');sfx('kick',.4);return true}
-function step(){if(K.tick===2)music();const S=K.S;
+function step(){K.takeover();if(K.tick===2)music();const S=K.S;
  // auto-switch for humans on this device
  for(let i=0;i<K.seats.length;i++){const s=K.seats[i];if(!s||s.ctrl==='cpu'||s.ctrl==='net'||seatP[i]==null)continue;const n=pickFor(i,seatP[i]);if(n!==seatP[i])switchTo(i,n)}
  // a footballer still marked with a seat that has moved on to someone else goes back to the AI (it used to freeze mid-slide)
