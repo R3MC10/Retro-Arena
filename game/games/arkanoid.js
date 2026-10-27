@@ -83,7 +83,7 @@ function route(from,code){const tg=boards.filter(o=>o!==from&&!o.out);if(!tg.len
 function outflow(b){// local boards: take what the board queued
  while(b.outq.length){const c=b.outq.shift();b.outSeq=(b.outSeq|0)+1;(b.outLog=b.outLog||[]).push([b.outSeq,c]);if(b.outLog.length>12)b.outLog.shift();if(!K.isClient())route(b,c)}}
 function step(){for(const b of boards){b.inSeq=b.inSeq|0;const s=K.seats[b.i];
-  if(s.ctrl==='net'){if(b.tagT>0)b.tagT--;const d=K.remote(b.i);if(d){const wasOut=b.out;unpack(b,d);for(const e of d.oq||[]){if((e[0]|0)>(b.rSeen|0)){b.rSeen=e[0]|0;route(b,String(e[1]))}}if(!wasOut&&b.out)b.outAt=K.tick}continue}
+  if(s.ctrl==='net'){if(!K.R.peer(s.peer)){if(!b.out){b.out=true;b.outAt=K.tick;tag(b,'LEFT')}continue}if(b.tagT>0)b.tagT--;const d=K.remote(b.i);if(d){const wasOut=b.out;unpack(b,d);b.inbox=b.inbox.filter(e=>e[0]>(d.is|0));for(const e of d.oq||[]){if((e[0]|0)>(b.rSeen|0)){b.rSeen=e[0]|0;route(b,String(e[1]))}}if(!wasOut&&b.out)b.outAt=K.tick}continue}
   if(b.tagT>0)b.tagT--;stepBoard(b,K.inp(b.i));outflow(b)}
  const alive=boards.filter(live),lim=K.S.len*3600;
  if(boards.length>1?alive.length<=1:!alive.length){K.end(alive[0]?{i:alive[0].i}:null);return}
@@ -95,9 +95,9 @@ function upload(i){const b=boards[i];return b?pack(b):null}
 let snapRot=0;
 // Broadcast only drawing state and inboxes; upload-only routing fields stay in pack().
 // A-Z followed by a brick encode a run of 1-26 cells; omit trailing empty cells.
-function snap(){snapRot++;return{b:boards.map((b,k)=>{const d=pack(b);let s='';if(!(b.sentVer===d.v&&(k+snapRot)%Math.max(4,boards.length)!==0)){b.sentVer=d.v;s=d.s.replace(/0+$/,'').replace(/([0-9a-z])\1{2,25}/g,z=>String.fromCharCode(64+z.length)+z[0])||'0'}
+function snap(){const first=snapRot;snapRot=(snapRot+2)%boards.length;return{b:boards.map((b,k)=>{const d=pack(b);let s='';if((k-first+boards.length)%boards.length<2){b.sentVer=d.v;s=d.s.replace(/0+$/,'').replace(/([0-9a-z])\1{2,25}/g,z=>String.fromCharCode(64+z.length)+z[0])||'0'}
  const a=[s,d.p,d.w,d.l,d.c,d.z,d.li,d.sc.toString(36),d.lv,d.o|(d.fx.includes('laser')?2:0)|(d.fx.includes('fog')?4:0)];
- if(d.t||b.inbox.length)a.push(d.t);if(b.inbox.length)a.push(b.inbox.slice(-8));return a})}}
+ if(d.t||b.inbox.length)a.push(d.t);if(b.inbox.length)a.push(b.out?[]:b.inbox.slice(-8));return a})}}
 function apply(g){(g.b||[]).forEach((a,k)=>{const b=boards[k];if(!b)return;const d={p:a[1],w:a[2],l:a[3],c:a[4],z:a[5],li:a[6],sc:parseInt(a[7],36),lv:a[8],o:a[9]&1,fx:[a[9]&2?'laser':'',a[9]&4?'fog':''].join(','),t:a[10],in:a[11]};
   if(a[0])d.s=a[0].replace(/([A-Z])([0-9a-z])/g,(_,n,c)=>c.repeat(n.charCodeAt(0)-64)).padEnd(COLS*ROWS,'0');
   if(k===K.myIdx){for(const e of d.in||[]){if((e[0]|0)>b.inSeen){b.inSeen=e[0]|0;b.lastFrom=e[2];receive(b,String(e[1]))}}return}
@@ -160,5 +160,5 @@ K=RA.kit({id:'arkanoid',name:'BRICKANOID',kind:'Brick breaker',players:'1-20 pla
  alive:i=>!!boards[i]&&!boards[i].out,start,step,local,upload,follow,snap,apply,render,bot,onFx,
  ranks:()=>boards.slice().sort((a,b)=>(a.out-b.out)||((b.outAt|0)-(a.outAt|0))||b.score-a.score).map(b=>[b.name,b.col,'R'+b.lvl+' · '+b.score]),
  result:(i,w)=>{const b=boards[i];return{won:!!w&&w.i===i,round:b.lvl,bestScore:b.score}}});
-window.__ak={get boards(){return boards},K};
+window.__ak={get boards(){return boards},K,bot};
 })();
