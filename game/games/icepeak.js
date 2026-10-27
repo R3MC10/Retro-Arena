@@ -148,7 +148,7 @@ function powerUp(c){const n=cl.length,fr=n>1?(c.place-1)/(n-1):.5,S=K.S;let bag=
  if(k===6)for(const o of rv)send(o,'w');else if(k===7){for(const o of rv)send(o,'q');K.fx('qk')}else for(const o of rv)if(o.y>c.y)for(let q=0;q<2;q++)icis.push({id:nextId++,x:Math.max(6,Math.min(WW-6,o.x+(q?14:-10))),y:o.y+60+q*16,fall:1,vy:0,t:200})}
 function readUp(c,u){if(typeof u.x!=='number')return;Object.assign(c,{x:u.x,y:u.y,vx:u.vx,face:u.f,pose:u.p|0,stun:u.st|0,snow:u.sn|0,floor:u.fl|0});c.gr=!!u.g;c.fl=u.fx|0;c.best=Math.max(c.best,c.floor);
  for(const e of u.c||[])if((e[0]|0)>c.cSeen){c.cSeen=e[0]|0;resolve(c,e)}}
-function step(){const S=K.S;
+function step(){K.takeover();const S=K.S;
  for(const c of cl){if(ownerNet(c)){const u=K.remote(c.i);if(u)readUp(c,u);continue}move(c,c.fin?{}:K.inp(c.i))}
  // blocks freeze again after a while unless someone stands in the gap
  for(let k=broken.length-1;k>=0;k--){const[cell,t,v]=broken[k];if(K.tick-t>1800){const f=Math.floor(cell/NC),col=cell%NC;
