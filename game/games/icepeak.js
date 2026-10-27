@@ -57,7 +57,7 @@ const cloudUnder=(x,y)=>clouds.find(k=>Math.abs(y-k.f*FH)<.01&&x>k.x-2&&x<k.x+22
 
 /* ---------- setup ---------- */
 function start(seats,md,S,seed){NF=+S.height||16;grid=build(seed);items=[];balls=[];seals=[];birds=[];icis=[];parts=[];texts=[];finN=0;firstFin=0;lastHF=0;champ=-1;nextId=1;shake=0;L.broken.clear();broken.length=0;
- avSp=(md===2?Math.max(1,+S.av||1):+S.av||0)*.05;av=-60;condor.x=WW/2;condor.y=NF*FH+50;condor.d=1;cams.length=0;
+ avSp=(md===2?Math.max(1,+S.av||1)*(K.cpu===0?.5:1):+S.av||0)*.05;   // Easy co-op: Easy climbers need ~14 s a floor, the full-speed avalanche buried them on floor 1av=-60;condor.x=WW/2;condor.y=NF*FH+50;condor.d=1;cams.length=0;
  cl=seats.map((s,i)=>({i,name:s.name,col:md===1?TEAMC[i%2]:s.col,x:16+((i*53)%(WW-32)),y:0,vx:0,vy:0,face:i%2?-1:1,gr:true,floor:0,anim:0,swing:0,stun:0,fx:{},snow:0,pose:0,
   coyote:0,buf:0,lives:+S.lives||3,out:false,fin:0,ft:0,best:0,place:i+1,buried:0,ev:[],evSeq:0,evSeen:0,claims:[],cseq:0,cSeen:0,knocks:0,smashes:0,hitT:{}}))}
 
@@ -188,7 +188,7 @@ function step(){const S=K.S;
 function places(){cl.slice().sort((a,b)=>a.fin&&b.fin?a.fin-b.fin:a.fin?-1:b.fin?1:(a.out-b.out)||b.y-a.y).forEach((c,k)=>c.place=k+1)}
 function checkEnd(){const lim=K.S.len*3600,live=cl.filter(c=>!c.out);
  if(K.mode===2){const up=live.filter(c=>c.fin||c.y>=NF*FH).length;if(!live.length){K.end({coop:0,name:'BURIED AT FLOOR '+Math.max(...cl.map(c=>c.best))});return}
-  if(live.some(c=>c.fin)&&(up===live.length||K.tick-firstFin>2400)){K.end({coop:1,name:up===live.length?'ALL TO THE TOP!':up+' OF '+live.length+' MADE IT!'});return}if(lim&&K.tick>lim+CD)K.end({coop:0,name:'OUT OF TIME'});return}
+  if(live.some(c=>c.fin)&&(up===live.length||K.tick-firstFin>2400)){K.end({coop:1,name:up===cl.length?'ALL TO THE TOP!':up+' OF '+cl.length+' MADE IT!'});return}if(lim&&K.tick>lim+CD)K.end({coop:0,name:'OUT OF TIME'});return}
  const humans=cl.filter(c=>K.seats[c.i].ctrl!=='cpu'&&!c.fin&&!c.out).length;
  if(live.every(c=>c.fin)&&finN||finN&&humans===0&&K.tick-Math.max(firstFin,lastHF)>300||finN&&K.tick-firstFin>1800||lim&&K.tick>lim+CD){places();const w=cl.find(c=>c.place===1);champ=w?w.i:-1;
   if(K.mode===1){const n=cl.length,sc=[0,1].map(t=>cl.filter(c=>c.i%2===t).reduce((a,c)=>a+(n-c.place+1),0));K.end(sc[0]===sc[1]?null:{team:sc[0]>sc[1]?0:1,name:TEAMN[sc[0]>sc[1]?0:1]})}else K.end(w?{i:w.i}:null)}}
