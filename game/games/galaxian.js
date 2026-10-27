@@ -60,7 +60,7 @@ function kill(a,s){a.dead=true;const dive=a.st!=='form';let p=AK[a.k].pts[dive?1
  if(s){s.score+=p;s.kills++;if(p>=150)say(a.x,a.y-8,String(p),'#fff')}boom(a.x,a.y,AK[a.k].c,8);
  if(a.k===0&&K.S.items!=='off'&&(dive||Math.random()<.4)){let k=1+Math.floor(Math.random()*6);if(K.S.items==='party'&&Math.random()<.45)k=7+Math.floor(Math.random()*3);drops.push({x:a.x,y:a.y,k})}}
 function step(){const S=K.S;waveT++;if(freeze>0)freeze--;
- for(const s of ships){const st=K.seats[s.i];
+ for(const s of ships){const st=K.seats[s.i];if(K.hostOnline()&&st.ctrl==='net'&&!K.R.peer(st.peer)){s.alive=false;s.out=true;s.dead=0}
   if(!s.alive){if(s.dead>0&&--s.dead===0&&!s.out){s.alive=true;s.inv=150;s.fx={}}continue}
   for(const k in s.fx)if(s.fx[k]>0)s.fx[k]--;if(s.inv>0)s.inv--;if(s.cd>0)s.cd--;if(s.decoy>0)s.decoy--;
   const inp=K.inp(s.i);if(st.ctrl==='net'){const d=K.remote(s.i);if(d&&typeof d.x==='number'){s.x=Math.max(8,Math.min(fW-8,d.x));s.bank=d.b|0}}else moveShip(s,inp);
@@ -156,5 +156,5 @@ K=RA.kit({id:'galaxian',name:'GALAXOID',kind:'Space shooter',players:'1-20 playe
  alive:i=>!!ships[i]&&!ships[i].out,start,step,local,upload,follow,snap,apply,render,bot,onFx,teamOf:i=>K.mode===0?0:i,
  ranks:()=>ships.slice().sort((a,b)=>b.score-a.score).map(s=>[s.name,s.col,s.score+' · '+s.kills+' aliens']),
  result:(i,w)=>{const s=ships[i];return{won:!!w&&(w.coop!=null?!!w.coop:w.i===i),kills:s.kills,bestScore:s.score}}});
-window.__gx={P:()=>Math.round(ships[1].x),get ships(){return ships},get aliens(){return aliens},K};
+window.__gx={P:()=>Math.round(ships[1].x),get ships(){return ships},get aliens(){return aliens},K,bot};
 })();
