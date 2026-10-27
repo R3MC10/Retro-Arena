@@ -40,7 +40,7 @@ function spawns(n){const c=[[1,1],[W-2,H-2],[W-2,1],[1,H-2]],out=[];for(const p 
  // inner pockets when the ring is full
  return out.slice(0,n)}
 function newRound(){const sp=buildMap(men.length,K.seed+round*7919);bombs=[];flames=[];parts=[];texts=[];creeps=[];hurry=0;hurryI=0;roundT=0;roundOver=0;
- men.forEach((m,i)=>Object.assign(m,{x:sp[i][0]*TS+8,y:sp[i][1]*TS+8,alive:true,ghost:false,bombs:1,fire:2,speed:1,kick:false,glove:false,pierce:false,remote:false,curse:0,curseT:0,louie:false,inv:120,dir:2,carry:null,gx:0,cart:0}));
+ men.forEach((m,i)=>Object.assign(m,{x:sp[i][0]*TS+8,y:sp[i][1]*TS+8,alive:!m.left,ghost:false,bombs:1,fire:2,speed:1,kick:false,glove:false,pierce:false,remote:false,curse:0,curseT:0,louie:false,inv:120,dir:2,carry:null,gx:0,cart:0}));
  if(K.mode===2){const n=Math.min(20,4+men.length*2+round*2);for(let k=0;k<n;k++){for(let t=0;t<100;t++){const x=1+Math.floor(Math.random()*(W-2)),y=1+Math.floor(Math.random()*(H-2));
    if(map[at(x,y)]===0&&!sp.some(p=>Math.abs(p[0]-x)+Math.abs(p[1]-y)<5)){creeps.push({x:x*TS+8,y:y*TS+8,d:Math.floor(Math.random()*4),hp:k%5===4?2:1,t:0});break}}}}
  round++;K.fx('r',round)}
@@ -91,9 +91,9 @@ function pick(m,k){const n=ITEMS[k].n;say(m,n,ITEMS[k].c);sfx('pick');
  if(k===1)m.bombs=Math.min(10,m.bombs+1);else if(k===2)m.fire=Math.min(12,m.fire+1);else if(k===3)m.speed=Math.min(6,m.speed+1);else if(k===4)m.kick=true;else if(k===5)m.glove=true;
  else if(k===6)m.fire=12;else if(k===7)m.pierce=true;else if(k===8)m.remote=true;else if(k===9){m.curse=1+Math.floor(Math.random()*6);m.curseT=600;say(m,CURSES[m.curse-1],'#c0c0c0')}else if(k===10)m.louie=true}
 /* ---- the step */
-function step(){const S=K.S;roundT++;
+function step(){const S=K.S;if(K.state==='ending'){fxStep();return}roundT++;
  if(roundOver){if(--roundOver===0){const best=Math.max(...men.map(m=>m.wins));if(best>=S.rounds||K.mode===2&&lastCoop!=null){finish();return}newRound()}fxStep();return}
- for(const m of men){
+ for(const m of men){const s=K.seats[m.i];if(K.hostOnline()&&s.ctrl==='net'&&!K.R.peer(s.peer)){m.left=true;m.alive=false;m.ghost=false;m.dead=0}if(m.left)continue;
   if(m.inv>0)m.inv--;if(m.stun>0){m.stun--;continue}
   if(!m.alive){if(m.dead>0){m.dead--;if(!m.dead&&S.revenge==='on'&&K.mode!==2){m.ghost=true;m.gx=Math.random()*perim()}}if(m.ghost)ghostStep(m);continue}
   const inp=K.inp(m.i);let d=-1;if(inp.up)d=0;else if(inp.down)d=2;else if(inp.left)d=3;else if(inp.right)d=1;
@@ -268,5 +268,5 @@ K=RA.kit({id:'blast',name:'BLAST MAZE',kind:'Bomb maze',players:'1-20 players',d
  alive:i=>!!men[i]&&men[i].alive,out:i=>!men[i]||(!men[i].alive&&!men[i].ghost&&!(men[i].dead>0)),start,step,follow,snap,apply,render,bot,onFx,teamOf,
  ranks:()=>men.slice().sort((a,b)=>b.wins-a.wins||b.kills-a.kills).map(m=>[m.name,m.col,'★'+m.wins+' · '+m.kills+' KO']),
  result:(i,w)=>{const m=men[i];return{won:!!w&&(w.coop!=null?!!w.coop:w.team!=null?teamOf(i)===w.team:w.i===i),kills:m.kills,ko:m.ko,bestScore:m.wins}}});
-window.__bm={get men(){return men},get bombs(){return bombs},K};
+window.__bm={get men(){return men},get bombs(){return bombs},K,bot};
 })();
