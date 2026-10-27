@@ -138,7 +138,7 @@ function control(p,inp,c){if(flipped(p))inp=flipInp(inp);const tap=inp.fire&&!p.
    else if(p.toss){p.tz+=p.tvz;p.tvz-=G;if((tap||p.auto&&p.tvz<.002)&&p.tz>1.25){serveHit(p,c,inp);return}if(p.tz<1&&p.tvz<0){p.toss=0;p.tz=0}}}
   if(p.toss)mx=0}
  // run: snappy acceleration, slower while the swing plays out
- const cpu=isCpu(p),lvl=cpu?K.cpu:2,max=PSPD*(cpu?[.74,.9,.97][lvl]:1)*(p.swT>0?.45:1),l=Math.hypot(mx,my);
+ const cpu=isCpu(p),lvl=cpu?K.cpu:2,max=PSPD*(cpu?[.62,.9,.97][lvl]:1)*(p.swT>0?.45:1),l=Math.hypot(mx,my);
  const tx=l>0?mx/Math.max(1,l)*max:0,ty=l>0?my/Math.max(1,l)*max:0;p.vx+=(tx-p.vx)*.25;p.vy+=(ty-p.vy)*.25;
  // beginner assist: an armed swing drifts you sideways onto the incoming ball
  if(!cpu&&p.sw>0&&c.st==='rally'&&b.hs!==p.side&&b.y*sgn(p.side)>-2){const ax=b.x-hand(p)*.55-p.x;if(Math.abs(ax)<3.5)p.vx+=Math.sign(ax)*Math.min(Math.abs(ax),.045)}
