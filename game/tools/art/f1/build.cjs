@@ -1,0 +1,1 @@
+const fs=require('fs'),path=require('path'),p=path.resolve(__dirname,'../../../games/f1.js');const s=fs.readFileSync(p,'utf8');fs.writeFileSync(p,s.replace(/\/\* ART_BEGIN \*\/[\s\S]*?\/\* ART_END \*\//,'/* ART_BEGIN */'+JSON.stringify(require('./art'))+'/* ART_END */'));
