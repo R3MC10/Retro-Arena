@@ -78,6 +78,8 @@ RA.kit=o=>{
   note:'Up to '+MAX+' players per room, CPU players fill seats. The host picks the mode and settings above. '+(o.howto||''),
   onStart:startOnline,onState:applySnap,onLeave:()=>{if(!RA.menu.open&&RA.menu.current&&RA.menu.current.id===id)toLobby()}});
  K.R=R;const isClient=()=>R.online&&!R.host,hostOnline=()=>R.online&&R.host;K.isClient=isClient;K.hostOnline=hostOnline;
+ // host: a CPU takes over the seat of a player who left the room (call at the top of the game's step)
+ K.takeover=()=>{if(!hostOnline())return;for(const s of K.seats)if(s.ctrl==='net'&&!R.peer(s.peer))s.ctrl='cpu'};
  // ---- input
  const {mouse,touchK,touchAim}=RA.input;
  const padIn=n=>{const p=RA.input.pad(n),r={up:p.up,down:p.down,left:p.left,right:p.right,fire:p.a||p.rt,alt:p.b||p.rb,b3:p.x||p.lb,b4:p.y};
