@@ -130,7 +130,8 @@ function readUp(r,u){if(typeof u.d!=='number')return;Object.assign(r,{d:u.d,z:u.
  for(const e of u.cl||[])if((e[0]|0)>r.cSeen){r.cSeen=e[0]|0;resolve(r,e)}}
 const CD=180;
 function step(){const S=K.S;
- for(const r of rd){if(ownerNet(r)){const u=K.remote(r.i);if(u)readUp(r,u)}else ride(r,r.fin||K.seats[r.i].ctrl==='cpu'?bot(r.i):K.inp(r.i))}
+ for(const r of rd){const s=K.seats[r.i];if(K.hostOnline()&&s.ctrl==='net'&&!K.R.peer(s.peer))s.ctrl='cpu';   // a player who left: a CPU rides their bike home
+ if(ownerNet(r)){const u=K.remote(r.i);if(u)readUp(r,u)}else ride(r,r.fin||K.seats[r.i].ctrl==='cpu'?bot(r.i):K.inp(r.i))}
  if(S.items!=='off'&&K.tick%220===110&&crates.length<3+rd.length/4){const lead=Math.max(...rd.map(r=>r.d));crates.push({id:nextId++,x:mod(lead+260+Math.random()*400,TR.L),z:Math.floor(Math.random()*LANES),t:2400})}
  for(const c of crates)c.t--;crates=crates.filter(c=>!c.dead&&c.t>0);for(const o of oils)o.t--;oils=oils.filter(o=>o.t>0&&!o.gone);
  for(const r of rd){r.lap=Math.max(0,Math.floor(r.d/TR.L));if(!r.fin&&!r.out&&r.d>=S.laps*TR.L){r.fin=++finN;r.ft=K.tick-CD;if(finN===1)firstFin=K.tick;if(K.seats[r.i].ctrl!=='cpu')lastHF=K.tick;say(r,ord(r.fin)+' PLACE!',r.fin<=3?'#fff07c':'#ffffff');K.fx('f',r.i)}}
