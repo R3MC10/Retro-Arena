@@ -1,0 +1,335 @@
+{
+  "sim": [
+    {
+      "steps": 9039,
+      "min": 2.5,
+      "over": true,
+      "win": "CPU 2 WINS",
+      "first": "1 CPU 2 170 points",
+      "peak": 797,
+      "ftMed": 0.8,
+      "ftMax": 1.2,
+      "n": 8,
+      "mode": 0,
+      "errs": []
+    },
+    {
+      "steps": 9041,
+      "min": 2.5,
+      "over": true,
+      "win": "RED WINS",
+      "first": "1 CPU 3 170 points",
+      "peak": 803,
+      "ftMed": 0.8,
+      "ftMax": 1.2,
+      "n": 8,
+      "mode": 1,
+      "errs": []
+    },
+    {
+      "steps": 10841,
+      "min": 3,
+      "over": true,
+      "win": "DRAW",
+      "first": "1 CPU 1 0 points",
+      "peak": 586,
+      "ftMed": 0.6,
+      "ftMax": 0.9,
+      "n": 8,
+      "mode": 2,
+      "errs": []
+    },
+    {
+      "steps": 9040,
+      "min": 2.5,
+      "over": true,
+      "win": "DRAW",
+      "first": "1 CPU 7 120 points",
+      "peak": 1293,
+      "ftMed": 1,
+      "ftMax": 1.5,
+      "n": 20,
+      "mode": 0,
+      "errs": []
+    },
+    {
+      "steps": 9040,
+      "min": 2.5,
+      "over": true,
+      "win": "RED WINS",
+      "first": "1 CPU 15 170 points",
+      "peak": 1309,
+      "ftMed": 1,
+      "ftMax": 1.3,
+      "n": 20,
+      "mode": 1,
+      "errs": []
+    },
+    {
+      "steps": 10842,
+      "min": 3,
+      "over": true,
+      "win": "CPU 3 WINS",
+      "first": "1 CPU 3 20 points",
+      "peak": 817,
+      "ftMed": 0.7,
+      "ftMax": 1.5,
+      "n": 20,
+      "mode": 2,
+      "errs": []
+    }
+  ],
+  "trials": [
+    {
+      "kind": "novice",
+      "run": 0,
+      "steps": 9059,
+      "over": true,
+      "place": 2,
+      "score": 100,
+      "scores": [
+        210,
+        100,
+        30,
+        10
+      ],
+      "shots": 74,
+      "pots": 2,
+      "win": false
+    },
+    {
+      "kind": "novice",
+      "run": 1,
+      "steps": 9059,
+      "over": true,
+      "place": 1,
+      "score": 330,
+      "scores": [
+        330,
+        210,
+        200,
+        30
+      ],
+      "shots": 73,
+      "pots": 4,
+      "win": true
+    },
+    {
+      "kind": "novice",
+      "run": 2,
+      "steps": 9059,
+      "over": true,
+      "place": 3,
+      "score": 180,
+      "scores": [
+        355,
+        290,
+        180,
+        90
+      ],
+      "shots": 72,
+      "pots": 5,
+      "win": false
+    },
+    {
+      "kind": "novice",
+      "run": 3,
+      "steps": 9059,
+      "over": true,
+      "place": 3,
+      "score": 110,
+      "scores": [
+        470,
+        185,
+        110,
+        110
+      ],
+      "shots": 72,
+      "pots": 2,
+      "win": false
+    },
+    {
+      "kind": "novice",
+      "run": 4,
+      "steps": 9059,
+      "over": true,
+      "place": 3,
+      "score": 20,
+      "scores": [
+        170,
+        130,
+        20,
+        0
+      ],
+      "shots": 72,
+      "pots": 2,
+      "win": false
+    },
+    {
+      "kind": "novice",
+      "run": 5,
+      "steps": 9059,
+      "over": true,
+      "place": 1,
+      "score": 370,
+      "scores": [
+        370,
+        260,
+        150,
+        0
+      ],
+      "shots": 74,
+      "pots": 5,
+      "win": true
+    },
+    {
+      "kind": "skilled",
+      "run": 0,
+      "steps": 9059,
+      "over": true,
+      "place": 1,
+      "score": 900,
+      "scores": [
+        900,
+        430,
+        360,
+        250
+      ],
+      "shots": 58,
+      "pots": 13,
+      "win": true
+    },
+    {
+      "kind": "skilled",
+      "run": 1,
+      "steps": 9059,
+      "over": true,
+      "place": 4,
+      "score": 180,
+      "scores": [
+        630,
+        510,
+        340,
+        180
+      ],
+      "shots": 58,
+      "pots": 7,
+      "win": false
+    },
+    {
+      "kind": "skilled",
+      "run": 2,
+      "steps": 9059,
+      "over": true,
+      "place": 1,
+      "score": 760,
+      "scores": [
+        760,
+        465,
+        270,
+        260
+      ],
+      "shots": 53,
+      "pots": 11,
+      "win": true
+    }
+  ],
+  "physics": [
+    {
+      "test": "elastic collision",
+      "ok": true,
+      "velocity": [
+        0,
+        2.955
+      ]
+    },
+    {
+      "test": "cushion bounce",
+      "ok": true,
+      "vy": 1.7335999999999998
+    },
+    {
+      "test": "friction settles",
+      "ok": true
+    },
+    {
+      "test": "number pocket",
+      "ok": true
+    },
+    {
+      "test": "rival steal",
+      "ok": true
+    },
+    {
+      "test": "cue respawn",
+      "ok": true
+    },
+    {
+      "test": "raids off",
+      "ok": true
+    }
+  ],
+  "envelopes": [
+    {
+      "mode": 0,
+      "peak": 2176,
+      "results": 2674,
+      "state": "over"
+    },
+    {
+      "mode": 1,
+      "peak": 2179,
+      "results": 2674,
+      "state": "over"
+    },
+    {
+      "mode": 2,
+      "peak": 1696,
+      "results": 1912,
+      "state": "over"
+    }
+  ],
+  "extra": {
+    "r": [
+      {
+        "minutes": 2,
+        "over": true,
+        "tick": 7259,
+        "peak": 833
+      },
+      {
+        "minutes": 3,
+        "over": true,
+        "tick": 10859,
+        "peak": 756
+      },
+      {
+        "minutes": 4,
+        "over": true,
+        "tick": 14459,
+        "peak": 828
+      },
+      {
+        "teammateSafe": true
+      },
+      {
+        "wrong": true,
+        "returned": true,
+        "correct": true
+      },
+      {
+        "combo": 3,
+        "score": 135,
+        "ok": true
+      },
+      {
+        "mouseShot": true
+      },
+      {
+        "touchShot": true,
+        "angle": 0
+      }
+    ],
+    "errs": []
+  }
+}

@@ -1,0 +1,23 @@
+// Moon Ball: aiming-game novice trials, deterministic scenarios, and visual checks.
+const {browser,openGame,startLocal}=require('./lib'),fs=require('fs');
+const out='out/moon';fs.mkdirSync(out,{recursive:true});
+(async()=>{const b=await browser(),results={trials:[],physics:[],visual:[]};try{
+ const {pg,P,errs}=await openGame(b,'lunar-ball');
+ for(const kind of ['novice','skilled'])for(let run=0;run<(kind==='novice'?6:3);run++){
+ await startLocal(pg,P,{n:4,humans:1,cpu:kind==='novice'?0:1});
+ const r=await pg.evaluate(({kind,run})=>{const H=__moon,K=H.K,G=RA.menu.current;K.seed=421+run*398;K.tick=0;H.players.forEach(p=>Object.assign(p,{score:0,a:-Math.PI/2,power:0,cd:0,prev:false,combo:0,best:0,shots:0,pots:0,scratches:0,scoreAt:0,chains:{}}));H.table();const old=K.inp;let q=[],held=0,target=null;K.inp=i=>{if(i!==0)return old(i);const p=H.players[0];if(p.cd)return{};if(!target){if(Math.hypot(H.balls[0].vx,H.balls[0].vy)>.18)return{};target=H.plan(0,2);held=0}if(kind==='skilled')target=H.plan(0,2);if(!target)return{};const error=kind==='novice'?Math.sin(K.tick*.013+run)*.09:Math.sin(K.tick*.01)*.012;const action={aim:target.a+error,fire:held++<Math.round(target.power*48*(kind==='novice'?.9:1))};if(!action.fire)target=null;q.push(action);return q.length>(kind==='novice'?8:0)?q.shift():{}};let steps=0;for(;steps<16000&&K.state!=='over';steps++)G.step();K.inp=old;const rank=H.players.slice().sort(H.compare);return{kind,run,steps,over:K.state==='over',place:rank.findIndex(p=>p.i===0)+1,score:H.players[0].score,scores:rank.map(p=>p.score),shots:H.players[0].shots,pots:H.players[0].pots,win:K.winner?.i===0}}, {kind,run});results.trials.push(r);console.log(JSON.stringify(r));await pg.evaluate(()=>__moon.K.toLobby());
+ }
+ if(process.env.TRIALS_ONLY){fs.writeFileSync(out+'/trials.json',JSON.stringify(results.trials,null,2));return}await startLocal(pg,P,{n:4,humans:1,cpu:0});
+ results.physics=await pg.evaluate(()=>{const H=__moon,K=H.K;H.setShape(0);const clean=()=>H.balls.forEach(b=>{b.dead=999;b.vx=b.vy=0});const checks=[];
+ clean();let a=H.balls[0],b=H.balls[4];Object.assign(a,{x:70,y:55,vx:3,vy:0,dead:0,owner:0});Object.assign(b,{x:78,y:55,vx:0,vy:0,dead:0});H.physics();checks.push({test:'elastic collision',ok:b.vx>2.8&&Math.abs(a.vx)<.1,velocity:[a.vx,b.vx]});
+ clean();Object.assign(a,{x:80,y:4.2,vx:0,vy:-2,dead:0});H.physics();checks.push({test:'cushion bounce',ok:a.vy>0,vy:a.vy});
+ clean();Object.assign(a,{x:80,y:55,vx:2,vy:0,dead:0});for(let j=0;j<400;j++)H.physics();checks.push({test:'friction settles',ok:a.vx===0&&a.vy===0});
+ clean();b=H.balls[4];Object.assign(b,{x:2,y:2,dead:0,owner:0});const before=H.players[0].score;H.physics();checks.push({test:'number pocket',ok:b.dead>0&&H.players[0].score>before});
+ const rival=H.balls[1];H.players[1].score=60;Object.assign(rival,{dead:0,owner:0});H.pocket(rival);checks.push({test:'rival steal',ok:H.players[1].score===30});for(let j=0;j<120;j++)H.physics();checks.push({test:'cue respawn',ok:rival.dead===0&&H.inside(rival.x,rival.y)});
+ K.S.ff='off';H.players[1].score=60;rival.dead=0;rival.owner=0;H.pocket(rival);checks.push({test:'raids off',ok:H.players[1].score===60});return checks});console.log(JSON.stringify(results.physics));require('assert')(results.physics.every(x=>x.ok),'physics scenarios');
+ for(const [vw,vh,dpr] of [[1280,720,1],[2560,1440,1],[1536,864,1.25]]){const ctx=await b.newContext({viewport:{width:vw,height:vh},deviceScaleFactor:dpr}),v=await openGame(b,'lunar-ball',{ctx});await startLocal(v.pg,v.P,{n:20,humans:1});for(let shape=0;shape<8;shape++){await v.pg.evaluate(i=>{__moon.setShape(i);for(let j=0;j<200;j++)RA.menu.current.step();RA.menu.current.frame(performance.now())},shape);const file=out+'/table-'+shape+'-'+vw+'.png';await v.pg.screenshot({path:file});results.visual.push(file)}await ctx.close()}
+ // Two local humans share the full table, each has its own guide and power.
+ await pg.evaluate(()=>__moon.K.toLobby());await startLocal(pg,P,{n:4,humans:2});await pg.keyboard.down('KeyD');await pg.keyboard.down('Space');await pg.keyboard.down('Slash');await pg.waitForTimeout(650);await pg.keyboard.up('Space');await pg.keyboard.up('Slash');await pg.keyboard.up('KeyD');await pg.waitForTimeout(300);await pg.screenshot({path:out+'/two-local.png'});results.local=await pg.evaluate(()=>__moon.players.slice(0,2).map(p=>({shots:p.shots,power:p.power})));
+ require('assert')(results.local.every(p=>p.shots>0),'two local cues fire');results.errors=errs;require('assert').equal(errs.length,0);fs.writeFileSync(out+'/suite.json',JSON.stringify(results,null,2));console.log('LOCAL',JSON.stringify(results.local),'ERRORS',JSON.stringify(errs));
+ }finally{await b.close()}})().catch(e=>{console.error(e);process.exitCode=1});
+

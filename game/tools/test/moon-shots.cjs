@@ -1,0 +1,2 @@
+const {spawnSync}=require('child_process');
+for(const [VW,VH,DPR] of [[1280,720,1],[2560,1440,1],[1536,864,1.25]])for(const tables of ['classic','wild','random']){const r=spawnSync(process.execPath,['shots.js','lunar-ball','20','moon/'+tables+'-'+VW,'300,900','0',JSON.stringify({tables}),'1'],{env:{...process.env,VW:String(VW),VH:String(VH),DPR:String(DPR)},stdio:'inherit'});if(r.status)process.exit(r.status)}
