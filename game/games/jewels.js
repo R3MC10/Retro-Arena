@@ -216,7 +216,7 @@ function newPiece(lvl,b){if(Math.random()<(lvl>=2?.03:0))return[8,8,8];const j=[
 function makeBoard(i,ctrl,name,peer){return{i,ctrl,name,peer:peer||'',col:COLORS[i][1],g:new Uint8Array(BW*BH),pc:null,next:newPiece(1),team:i,ph:'spawn',t:20,chain:0,
  score:0,jewels:0,lvl:1,garb:0,alive:true,outAt:0,mark:null,das:0,dasDir:0,lock:0,lockN:0,soft:false,prev:{},mcol:null,shake:0,bot:null,
  tm:ctrl==='cpu'?Math.floor(Math.random()*4):0,tg:-1,ko:0,lastBy:-1,lr:0,ld:0,lt:0,li:0,lmc:-2,item:0,itemT:0,fx:{fog:0,speed:0,rev:0,slow:0,shield:0,flip:0,disco:0}}}
-const CPU=[{react:14,noise:60,drop:0},{react:7,noise:18,drop:.3},{react:3,noise:3,drop:.8}];
+const CPU=[{react:40,noise:400,drop:0},{react:7,noise:18,drop:.3},{react:3,noise:3,drop:.8}];
 function startMatch(list,isDemo){
  demo=!!isDemo;if(hostOnline())SY.reset();M=demo?{...CFG,mode:'ffa',len:0,size:'6x13',tgt:'pick'}:{...CFG};const sz=M.size.split('x');setSize(+sz[0]||6,+sz[1]||13);
  boards=list.map((d,i)=>makeBoard(i,d.ctrl,d.name,d.peer));for(const b of boards){b.team=M.mode==='teams'?b.i%2:b.i;if(M.mode==='teams')b.col=TEAMC[b.team];if(lockedTm()!=null)b.tm=lockedTm()}NET.royT=0;tick=0;matchT=0;parts=[];texts=[];lastTrack=-1;NET.ev=[];NET.winner=-1;NET.wl='';
