@@ -47,6 +47,12 @@ packed into a Windows desktop app (Electron) with peer-to-peer rooms. The owner 
 - Python is not installed on the owner's PC: serve game/ with `node game/tools/test/out/server.cjs` (port 8765), and run
   the test tools with PLAYWRIGHT_BROWSERS_PATH=game/tools/test/out/browsers.
 - `node pass.js <id>` = every mode at 8/20 seats plus an online host/guest/leave check. Run it for any game you touch.
+- Run Codex with `< /dev/null`, or it waits on stdin forever. Codex cannot commit; the lead commits.
+- Each worktree needs its own test server port (an old server on 8766 can serve another checkout). Check with curl first.
+- novice.js (delayed CPU brain) cannot judge shooters or puzzles: the novice dies in seconds. Use a slow-human brain
+  (slowhuman.js, coming with SKY WRECKER) for shooters, and Easy pace for puzzles.
+- Ids sharing their first 3 letters clash (tetris / tetris-2, skyaces / sky-destroyer): use the RA.kit `prefix` option.
+- Every team mode needs a balance check: 10 all-CPU matches per seat count, no side above 7/10 (CHIP & CHUM was 10/10 red).
 - Patterns that hit many games: leavers kept playing, the winner not ranked first, timers stored in ticks multiplied again,
   20-player matches far longer than 1-3 min, CPUs that all chase the same target.
 
