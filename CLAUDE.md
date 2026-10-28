@@ -53,7 +53,7 @@ packed into a Windows desktop app (Electron) with peer-to-peer rooms. The owner 
 ## Next
 1. DONE: minor fixes + renames (PR #2), full test pass of all 22 games (PR #3).
 2. CPU difficulty round (branch work/difficulty): a beginner must place mid-pack and win sometimes on Easy, in every game.
-3. Build the new games in this order: ROAD BRAWLER, F-ONE RACE, RAD RUNNER, CIRCUS CHUCK, MOON BALL, BIG SNOUT, CHIP & CHUM,
+3. Build the remaining games per ROADMAP.md (phases A-G, grouped by shared engine modules). Old order kept below for reference:
    ADVENTURE ATOLL, SUPER CONTACT, GUERRILLA RAID, SKY WRECKER, TETRONIX 2, GOAL RUSH; then METAL SNAIL X, CONTACT FORCE,
    BRAWL STADIUM, CRUSH BASH, LUMINOS 2, PATAPUM, ROLLOROLLO, MORTAL KOMBO 4, GRAND THEFT TOWN, RED ALARM 2,
    POCKET CRITTERS YELLOW, DIABOLO; then the 3D-styled ones. One game per branch and PR.
