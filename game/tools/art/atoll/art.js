@@ -1,0 +1,24 @@
+// Original letter-row island art. Run build.cjs to embed and render the sheet.
+module.exports={
+idle:['....kkkk....','...kYYYYk...','..kYYYYYYk..','..kssWksk...','..ksssssk...','...kSSSk....','..k11223k...','.ks12223sk..','.kk12223kk..','...kWWWk....','...ksksk....','..kSSkSSk...','..kkk.kkk...'],
+run:['....kkkk....','...kYYYYk...','..kYYYYYYk..','..kssWksk...','..ksssssk...','...kSSSk....','..k11223kk..','.ks12223ssk.','.kk12223kk..','...kWWWk....','..kSSkkSk...','.kSSk..kSk..','.kkk...kkk..'],
+run2:['....kkkk....','...kYYYYk...','..kYYYYYYk..','..kssWksk...','..ksssssk...','...kSSSk....','..k11223k...','..ks2223sk..','..kk2223kk..','...kWWWk....','....kSSk....','...kSSk.....','...kkkk.....'],
+jump:['....kkkk....','...kYYYYk...','..kYYYYYYk..','..kssWksk...','..ksssssk...','.kskSSSksk..','.kk11223kk..','..k12223k...','..k12223k...','...kWWWk....','..kSSkSSk...','..kkk.kkk...','............'],
+skate:['....kkkk....','...kYYYYk...','..kYYYYYYk..','..kssWksk...','..ksssssk...','...kSSSk....','..k11223kk..','.ks12223ssk.','.kk12223kk..','...kWWWk....','..kSSkkSSk..','..kkk..kkk..','............'],
+throw:['....kkkk....','...kYYYYk...','..kYYYYYYk..','..kssWksk...','..ksssssk...','...kSSSkkkk.','..k11223SSSk','..k12223kkk.','..k12223k...','...kWWWk....','...ksksk....','..kSSkSSk...','..kkk.kkk...'],
+faint:['............','............','............','............','............','............','....kkk.....','...kYYkk....','..kYsXsSk...','.kSSsssSk...','k1222WWWSSk.','kkkkkkkkkkk.','............'],
+board:['kkkkkkkkkkkkkk','kYYYYYYYYYYYYk','.kkkkkkkkkkkk.','..kggk..kggk..','...kk....kk...'],
+axe:['..kkkk..','.kWWWgk.','kWWWggk.','.kkgkk..','..kNk...','..kNk...','..kNk...','..kkk...'],
+egg:['..kkkk..','.kWWWWk.','kWWYWWWk','kWWWWYWk','kWYWWWWk','.kkkkkk.'],
+fruit:['...eL...','..kLek..','.kRRRrk.','kRWRRrrk','kRRRRrrk','.kRRrrk.','..kkkk..'],
+banana:['.....kk.','....kYk.','k..kYYk.','kYkYYYk.','.kYYYk..','..kkk...'],
+pine:['..eLe...','.eLLLe..','..kYk...','.kYOYk..','kYOYOYk.','kOYOYOk.','.kkkkk..'],
+snail:['..kkkk......','.kOOYOk.....','kOYOOOkk.k.k','kOOYOOkSkWkW','kkkkkkkkSSSk','.kSSSSSSSSk.','..kkkkkkkk..'],
+frog:['.kk...kk..','kWWk.kWWk.','kLkLLLkLk.','.kLLLLLk..','kLLkkkkLLk','kLLLllLLLk','.kkk..kkk.'],
+bat:['k..........k','kVk..kk..kVk','.kVkkWWkkVk.','..kVVkkVVk..','...kkVVkk...','.....kk.....'],
+rock:['..kkkk..','.kggggk.','kggWgggk','kgWggggk','kggggGgk','.kGGGGk.','..kkkk..'],
+fire:['...Y....','..kYk...','.kYYOk..','kYYOORk.','kYOORRk.','.kRRRk..','..kkk...'],
+fairy:['Wk..kW','kWkkWk','.kYYk.','kWPPWk','WkPPkW','..kk..'],
+palm:['......LL.......','..LLLLLeLLL....','.LLLeLLLeLLLe..','LLLe..Nl..eLLe.','e....eNNLe...e.','....LLNNLL.....','....eeNNee.....','......NN.......','......NN.......','.....NNN.......','.....NNN.......','....NNNN.......'],
+boss:['.....kkkkkkkk.....','...kkRRROOOOkk....','..kRRWWRRWWROOk...','.kRRRkkRRkkRROOk..','kRRRRRRRRRRRROOOk.','kRRRkkkkkkkkRROOk.','kRRkWWWWWWWWkROOk.','.kRkkkkkkkkkkROk..','..kRRROOOORROOk...','...kkRRRRRRkk.....','..kRRk....kRRk....','.kkkkk....kkkkk...']
+};
