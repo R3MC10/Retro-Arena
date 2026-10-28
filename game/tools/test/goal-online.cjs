@@ -1,0 +1,12 @@
+const cp=require('child_process'),fs=require('fs');process.chdir(__dirname);
+const script=`
+ const seat=await G.evaluate(()=>__goal.K.myIdx);if(seat<0)throw Error('No guest seat');
+ await H.evaluate(()=>{const w=__goal.worlds[0];w.pause=0;w.clock=500;w.ball.owner=0;w.ball.x=300;w.ball.z=150;__goal.pl[0].x=300;__goal.pl[0].z=150;__goal.pl[1].x=300;__goal.pl[1].z=80});await G.waitForTimeout(500);
+ const before=await G.evaluate(()=>__goal.pl[__goal.K.myIdx].x);await G.keyboard.down('KeyD');await G.waitForTimeout(600);await G.keyboard.up('KeyD');await G.waitForTimeout(180);const after=await G.evaluate(()=>__goal.pl[__goal.K.myIdx].x),hostSees=await H.evaluate(i=>__goal.pl[i].x,seat);if(Math.abs(after-before)<20||Math.abs(hostSees-after)>15)throw Error('Guest movement not replicated');
+ await H.evaluate(()=>__goal.pose(__goal.pl[0],4,90));await G.waitForTimeout(180);if(await G.evaluate(()=>__goal.pl[0].pose!==4))throw Error('Host dive pose missing');
+ await G.evaluate(()=>__goal.pose(__goal.pl[__goal.K.myIdx],2,90));await H.waitForTimeout(180);if(await H.evaluate(i=>__goal.pl[i].pose!==2,seat))throw Error('Guest header pose missing');
+ await H.evaluate(i=>__goal.pose(__goal.pl[i],7,50),seat);await G.waitForTimeout(180);if(await G.evaluate(()=>__goal.pl[__goal.K.myIdx].pose!==7))throw Error('Host tackle event not applied to guest owner');
+ const oldGen=await G.evaluate(()=>__goal.worlds[0].gen);await H.evaluate(()=>{const w=__goal.worlds[0];w.pause=0;Object.assign(w.ball,{x:601,z:90,h:0,vx:0,vz:0,vh:0,owner:-1,last:0});__goal.physics(w)});await G.waitForTimeout(350);const gen=await G.evaluate(()=>__goal.worlds[0].gen);if(gen===oldGen)throw Error('Kickoff reset generation missing');
+ const snap=await H.evaluate(()=>JSON.stringify(__goal.K.snapshot()).length);if(snap>=3000)throw Error('Snapshot too large');console.log('ONLINE_ASSERTIONS',JSON.stringify({seat,before,after,hostSees,snapshot:snap,gen,hostDive:true,guestHeader:true,guestTackle:true,kickoffReset:true}));
+ await G.evaluate(()=>__goal.K.R.leave());await H.waitForTimeout(1500);if(await H.evaluate(i=>__goal.K.seats[i].ctrl!=='cpu',seat))throw Error('CPU takeover failed');console.log('TAKEOVER_OK');`;
+const r=cp.spawnSync(process.execPath,['online.js','goal-3','0','18','({bytes:JSON.stringify(__goal.K.snapshot()).length})','({myIdx:__goal.K.myIdx})',script],{encoding:'utf8',timeout:90000});console.log(r.stdout,r.stderr);fs.writeFileSync('out/goal/online.log',r.stdout+r.stderr);if(r.status!==0)process.exitCode=1;

@@ -1,0 +1,5 @@
+// node game/tools/art/goal/render-sheet.cjs: embed art and render an inspectable sheet.
+const fs=require('fs'),path=require('path'),{chromium}=require('playwright'),ART=require('./art');
+const root=path.resolve(__dirname,'../../..'),game=path.join(root,'games/goal.js');
+fs.writeFileSync(game,fs.readFileSync(game,'utf8').replace(/\/\* ART_BEGIN \*\/[\s\S]*?\/\* ART_END \*\//,'/* ART_BEGIN */'+JSON.stringify(ART)+'/* ART_END */'));
+(async()=>{const b=await chromium.launch(),p=await b.newPage({viewport:{width:800,height:330}});await p.setContent('<body style="margin:0;background:#242038"><canvas width="800" height="330"></canvas>');await p.addScriptTag({content:'window.RA={}'});await p.addScriptTag({path:path.join(root,'engine/pix.js')});await p.evaluate(ART=>{const g=document.querySelector('canvas').getContext('2d');g.imageSmoothingEnabled=false;Object.entries(ART).forEach(([key,rows],i)=>{const x=20+i%5*155,y=20+Math.floor(i/5)*155;RA.pix.text(g,key,x,y,{col:'#ffffff',scale:2});const c=RA.pix.recolor(rows,'#f05050');g.drawImage(c,x+20,y+28,c.width*6,c.height*6)})},ART);await p.screenshot({path:path.join(__dirname,'sheet.png')});await b.close()})();

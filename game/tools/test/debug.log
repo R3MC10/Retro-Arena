@@ -1,0 +1,14 @@
+[1028/144803.294:WARNING:services\audio\sync_reader.cc:154] ASR: No room in socket buffer.: Trwa zamykanie potoku. (0xE8)
+[1028/145135.130:WARNING:services\audio\sync_reader.cc:154] ASR: No room in socket buffer.: Trwa zamykanie potoku. (0xE8)
+[1028/145226.223:WARNING:services\audio\sync_reader.cc:154] ASR: No room in socket buffer.: Trwa zamykanie potoku. (0xE8)
+[1028/145502.386:WARNING:services\audio\sync_reader.cc:154] ASR: No room in socket buffer.: Trwa zamykanie potoku. (0xE8)
+[1028/145551.290:WARNING:services\audio\sync_reader.cc:154] ASR: No room in socket buffer.: Trwa zamykanie potoku. (0xE8)
+[1028/145910.095:WARNING:services\audio\sync_reader.cc:175] SyncReader::Read timed out, audio glitch count=10
+[1028/145910.165:WARNING:services\audio\sync_reader.cc:154] ASR: No room in socket buffer.: Trwa zamykanie potoku. (0xE8)
+[1028/150359.119:WARNING:services\audio\sync_reader.cc:175] SyncReader::Read timed out, audio glitch count=10
+[1028/150359.169:WARNING:services\audio\sync_reader.cc:154] ASR: No room in socket buffer.: Trwa zamykanie potoku. (0xE8)
+[1028/150404.761:WARNING:services\audio\sync_reader.cc:154] ASR: No room in socket buffer.: Trwa zamykanie potoku. (0xE8)
+[1028/150410.598:WARNING:services\audio\sync_reader.cc:154] ASR: No room in socket buffer.: Trwa zamykanie potoku. (0xE8)
+[1028/150532.157:WARNING:services\audio\sync_reader.cc:175] SyncReader::Read timed out, audio glitch count=10
+[1028/150532.181:WARNING:services\audio\sync_reader.cc:154] ASR: No room in socket buffer.: Trwa zamykanie potoku. (0xE8)
+[1028/150538.004:WARNING:services\audio\sync_reader.cc:154] ASR: No room in socket buffer.: Trwa zamykanie potoku. (0xE8)

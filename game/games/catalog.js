@@ -1,9 +1,6 @@
 /* Cartridges on the menu that are still being made. When one is built it gets its own games/<id>.js
    (see games/README.md) and its line here goes away. [stable id, name, kind, players, description, 10x10 icon] */
 [
- ['goal-3','GOAL RUSH','Football','2-20 players',
-  'Side-view arcade football up to 10 a side.',
-  ['wwwwwwwwww','w.k.k.k.kw','wk.k.k.k.w','w.k.k.k.kw','wk.k.k.k.w','w........w','w...kk...w','w..kwwk..w','w...kk...w','gggggggggg']],
  ['sky-destroyer','SKY WRECKER','Air combat','2-20 players',
   'WWII-style air battles: dive, strafe and shoot down rival fighters.',
   ['....kk....','....ss....','k..kssk..k','kssssssssk','k.kssssk.k','...kssk...','....ss....','..kssssk..','..........','....rr....']],
