@@ -1,0 +1,3 @@
+process.chdir(__dirname);
+const {browser,openGame,startLocal}=require('./lib'),fs=require('fs');
+(async()=>{const b=await browser(),{pg,P,errs}=await openGame(b,'big-nose');for(const [name,settings]of [['masher',{world:0}],['quiet',{world:2}]]){await startLocal(pg,P,{n:4,humans:1,settings});console.log(name,await pg.evaluate(name=>{let tick=0;RA.input.keys=map=>{const o={};for(const c in map)if(name==='masher'&&(c==='KeyD'||c==='Space'&&tick%50<8)||name==='quiet'&&c==='Space')o[map[c]]=true;return o};for(;tick<12000&&__snout.K.state!=='over';tick++)RA.menu.current.step();const c=__snout.people[0];return{steps:tick,over:__snout.K.state==='over',level:c.lv,x:Math.round(c.x),deaths:c.deaths,causes:c.log}},name))}console.log(errs);await b.close()})();
