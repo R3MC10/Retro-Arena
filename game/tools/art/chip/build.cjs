@@ -1,0 +1,2 @@
+const fs=require('fs'),path=require('path');const art=require('./art');const file=path.join(__dirname,'../../../games/chip.js');let s=fs.readFileSync(file,'utf8');s=s.replace(/\/\* ART_BEGIN \*\/[\s\S]*?\/\* ART_END \*\//,'/* ART_BEGIN */'+JSON.stringify(art)+'/* ART_END */');fs.writeFileSync(file,s);console.log('Embedded '+Object.keys(art).length+' hand-painted sprites.');
+
