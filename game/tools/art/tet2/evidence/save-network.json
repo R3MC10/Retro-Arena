@@ -1,0 +1,24 @@
+{
+  "r": {
+    "dense": 1760,
+    "over": 1490,
+    "state": "over",
+    "stats": {
+      "played": 1,
+      "wins": 1,
+      "bestScore": 999999,
+      "flash": 0,
+      "chain": 0
+    },
+    "ach": [
+      "first",
+      "win"
+    ],
+    "music": [
+      "Flash Foundry",
+      "Prism Relay",
+      "Junk Reactor"
+    ]
+  },
+  "errs": []
+}

@@ -28,7 +28,7 @@ const KEYS={mk:{KeyW:'up',KeyS:'down',KeyA:'left',KeyD:'right',Space:'fire',KeyE
  k3:{ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',Slash:'fire',Period:'alt'},
  k4:{Numpad8:'up',Numpad5:'down',Numpad4:'left',Numpad6:'right',Numpad0:'fire',NumpadDecimal:'alt'}};
 RA.kit=o=>{
- const id=o.id,P=id.slice(0,3),MAX=o.max||20,COLORS=Array.from({length:MAX},(_,i)=>[i<10?BASE[i][0]:BASE[i%10][0]+' 2',BASE[i%10][1]]);
+ const id=o.id,P=o.prefix||id.slice(0,3),MAX=o.max||20,COLORS=Array.from({length:MAX},(_,i)=>[i<10?BASE[i][0]:BASE[i%10][0]+' 2',BASE[i%10][1]]);
  const q=s=>$(P+s),modes=o.modes||[['MATCH','']];
  const root=RA.mount(`
   <div class="top"><div class="row"><button id="${P}Back">◀ GAMES</button><div class="brand">RETRO <b>ARENA</b> · ${esc(o.name)}</div></div><div class="info" id="${P}Info"></div></div>

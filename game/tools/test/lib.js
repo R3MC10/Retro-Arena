@@ -9,9 +9,10 @@ async function openGame(b,id,{name='Tester',ctx=null}={}){// VW / VH / DPR env v
  pg.on('pageerror',e=>errs.push('PAGEERR '+e.message+' '+(e.stack||'').split('\n')[1]));pg.on('console',m=>{if(m.type()==='error')errs.push('CONSOLE '+m.text());if(m.type()==='warning'&&/clashes/.test(m.text()))errs.push('WARN '+m.text())});
  // Tetris and Tiny Tracks both publish __tt; retain Tetris before Tiny Tracks replaces it.
  if(id==='tetris')await pg.addInitScript(()=>{let tt;Object.defineProperty(window,'__tt',{configurable:true,enumerable:true,get:()=>tt,set:v=>{tt=v;if(v.K.root.querySelector('#tetStart'))window.__testTetris=v}})});
+ if(process.env.RA_LOCAL_ROOT){const fs=require('fs'),path=require('path'),root=path.resolve(process.env.RA_LOCAL_ROOT);await pg.route(new globalThis.URL(URL).origin+'/**',async route=>{const u=new globalThis.URL(route.request().url()),file=path.resolve(root,'.'+decodeURIComponent(u.pathname));if(!file.startsWith(root+path.sep))return route.fulfill({status:403,body:'Forbidden'});try{return await route.fulfill({path:file,contentType:({'.js':'text/javascript','.css':'text/css','.html':'text/html'})[path.extname(file)]})}catch(e){return route.fulfill({status:404,body:'Missing'})}})}
  await pg.goto(URL);await pg.waitForTimeout(600);await pg.evaluate(n=>RA.player.set(n),name);
  await pg.evaluate(id=>{for(const b of document.querySelectorAll('#games button')){b.click();if(RA.menu.current&&RA.menu.current.id===id)return;RA.menu.show()}},id);
- await pg.waitForTimeout(1200);return{pg,errs,P:({tanks:'bc',jewels:'mj'})[id]||id.slice(0,3)}}
+ await pg.waitForTimeout(1200);return{pg,errs,P:({'tetris-2':'te2',tanks:'bc',jewels:'mj'})[id]||id.slice(0,3)}}
 // start a local match: n seats, the first `humans` on keyboards (mk, k3, k2, k4), the rest CPU; settings {key: value}
 // CPU level: env CPU=0|1|2 (default: the lobby default)
 async function startLocal(pg,P,{n=4,humans=1,mode=0,settings={},cpu=process.env.CPU}={}){await pg.evaluate(([P,n,humans,mode,settings,cpu])=>{

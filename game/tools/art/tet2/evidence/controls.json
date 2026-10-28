@@ -1,0 +1,10 @@
+{
+  "r": {
+    "turned": true,
+    "dropped": true,
+    "touchTurn": true,
+    "touchDrop": true
+  },
+  "solo": "play",
+  "errs": []
+}

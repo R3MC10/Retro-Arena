@@ -1,0 +1,216 @@
+{
+ "b": {
+  "h": {
+   "idx": 0,
+   "state": "play",
+   "ctrl": [
+    "me",
+    "net",
+    "cpu"
+   ],
+   "s": [
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    },
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    },
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    }
+   ]
+  },
+  "g": {
+   "idx": 1,
+   "state": "play",
+   "ctrl": [
+    "net",
+    "me",
+    "net"
+   ],
+   "s": [
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    },
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    },
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    }
+   ]
+  }
+ },
+ "ga": {
+  "h": {
+   "idx": 0,
+   "state": "play",
+   "ctrl": [
+    "me",
+    "net",
+    "cpu"
+   ],
+   "s": [
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    },
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    },
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    }
+   ]
+  },
+  "g": {
+   "idx": 1,
+   "state": "play",
+   "ctrl": [
+    "net",
+    "me",
+    "net"
+   ],
+   "s": [
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    },
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    },
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    }
+   ]
+  }
+ },
+ "ha": {
+  "h": {
+   "idx": 0,
+   "state": "play",
+   "ctrl": [
+    "me",
+    "net",
+    "cpu"
+   ],
+   "s": [
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    },
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    },
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    }
+   ]
+  },
+  "g": {
+   "idx": 1,
+   "state": "play",
+   "ctrl": [
+    "net",
+    "me",
+    "net"
+   ],
+   "s": [
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    },
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    },
+    {
+     "x": 0,
+     "y": 0,
+     "out": false
+    }
+   ]
+  }
+ },
+ "leave": {
+  "idx": 0,
+  "state": "play",
+  "ctrl": [
+   "me",
+   "net",
+   "cpu"
+  ],
+  "s": [
+   {
+    "x": 0,
+    "y": 0,
+    "out": false
+   },
+   {
+    "x": 0,
+    "y": 0,
+    "out": true
+   },
+   {
+    "x": 0,
+    "y": 0,
+    "out": false
+   }
+  ]
+ },
+ "leave2": {
+  "idx": 0,
+  "state": "play",
+  "ctrl": [
+   "me",
+   "net",
+   "cpu"
+  ],
+  "s": [
+   {
+    "x": 0,
+    "y": 0,
+    "out": false
+   },
+   {
+    "x": 0,
+    "y": 0,
+    "out": true
+   },
+   {
+    "x": 0,
+    "y": 0,
+    "out": false
+   }
+  ]
+ }
+}

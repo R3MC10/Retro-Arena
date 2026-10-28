@@ -1,0 +1,2 @@
+// Hand-painted 7x7 symbol tiles. Four colour-independent marks and cracked junk.
+module.exports={square:['kkkkkkk','k12222k','k2kkk2k','k2k2k2k','k2kkk2k','k33333k','kkkkkkk'],cross:['kkkkkkk','k12222k','k22k22k','k2kkk2k','k22k22k','k33333k','kkkkkkk'],bars:['kkkkkkk','k12222k','k2k2k2k','k2k2k2k','k2k2k2k','k33333k','kkkkkkk'],diamond:['kkkkkkk','k12222k','k22k22k','k2k2k2k','k22k22k','k33333k','kkkkkkk'],junk:['kkkkkkk','kgggggk','kgKgKgk','kggKggk','kgKgKgk','kGGGGGk','kkkkkkk']};

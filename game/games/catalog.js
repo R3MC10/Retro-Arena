@@ -90,8 +90,5 @@
   ['..kkkkkk..','.kssssssk.','kssrssrssk','ksrrssrrsk','kssssssssk','.ksskkssk.','.kskwwksk.','..kwkkwk..','..kkkkkk..','..........']],
  ['pokemon-yellow','POCKET CRITTERS YELLOW','Monster RPG','2-20 players',
   'Handheld-style monster adventure: catch creatures with your partner, explore together, then battle and trade with everyone in the room.',
-  ['.....kk...','....kyyk..','...kyyyk..','.kkyyyyykk','kyykwyykwk','kyykkyykkk','kyyryyyyrk','.kyyyyyyk.','..kyyyyk..','...kkkk...']],
- ['tetris-2','TETRONIX 2','Puzzle','2-20 players',
-  'The sequel twist: fixed coloured blocks on the field, drop pieces to line up three of a colour and blast them, flood rivals with junk.',
-  ['..........','.kkk......','.krk......','.krkkkkk..','.krrrrrk..','.kkkkkkk..','..........','kkkkk.kkkk','kgkbk.kyyk','kkkkkkkkkk']]
+  ['.....kk...','....kyyk..','...kyyyk..','.kkyyyyykk','kyykwyykwk','kyykkyykkk','kyyryyyyrk','.kyyyyyyk.','..kyyyyk..','...kkkk...']]
 ].forEach(([id,name,kind,players,desc,icon])=>RA.register({id,name,kind,players,desc,icon,ready:false}));

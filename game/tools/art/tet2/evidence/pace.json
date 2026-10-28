@@ -1,0 +1,98 @@
+[
+  {
+    "cpu": 0,
+    "flashPerSeatMinute": 2.48,
+    "survivors": 23,
+    "runs": [
+      {
+        "ticks": 3600,
+        "flash": 29,
+        "survivors": 6
+      },
+      {
+        "ticks": 3600,
+        "flash": 20,
+        "survivors": 3
+      },
+      {
+        "ticks": 3600,
+        "flash": 18,
+        "survivors": 6
+      },
+      {
+        "ticks": 3600,
+        "flash": 15,
+        "survivors": 4
+      },
+      {
+        "ticks": 3600,
+        "flash": 17,
+        "survivors": 4
+      }
+    ]
+  },
+  {
+    "cpu": 1,
+    "flashPerSeatMinute": 9.5,
+    "survivors": 40,
+    "runs": [
+      {
+        "ticks": 3600,
+        "flash": 80,
+        "survivors": 8
+      },
+      {
+        "ticks": 3601,
+        "flash": 61,
+        "survivors": 8
+      },
+      {
+        "ticks": 3600,
+        "flash": 76,
+        "survivors": 8
+      },
+      {
+        "ticks": 3601,
+        "flash": 94,
+        "survivors": 8
+      },
+      {
+        "ticks": 3601,
+        "flash": 69,
+        "survivors": 8
+      }
+    ]
+  },
+  {
+    "cpu": 2,
+    "flashPerSeatMinute": 12.97,
+    "survivors": 40,
+    "runs": [
+      {
+        "ticks": 3601,
+        "flash": 86,
+        "survivors": 8
+      },
+      {
+        "ticks": 3600,
+        "flash": 130,
+        "survivors": 8
+      },
+      {
+        "ticks": 3601,
+        "flash": 116,
+        "survivors": 8
+      },
+      {
+        "ticks": 3600,
+        "flash": 106,
+        "survivors": 8
+      },
+      {
+        "ticks": 3600,
+        "flash": 81,
+        "survivors": 8
+      }
+    ]
+  }
+]
